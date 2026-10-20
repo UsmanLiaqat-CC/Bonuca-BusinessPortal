@@ -1,0 +1,70 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* Expose design tokens as Tailwind utilities (bg-canvas, text-fg, border-line, ...). */
+@theme inline {
+  --color-canvas: var(--bn-bg);
+  --color-fg: var(--bn-fg);
+  --color-muted: var(--bn-muted);
+  --color-surface: var(--bn-surface);
+  --color-surface-2: var(--bn-surface-2);
+  --color-line: var(--bn-border);
+  --color-accent: var(--bn-accent);
+  --color-accent-hover: var(--bn-accent-hover);
+  --color-accent-soft: var(--bn-accent-soft);
+  --color-on-accent: var(--bn-on-accent);
+  --color-success: var(--bn-success);
+  --color-success-soft: var(--bn-success-soft);
+  --color-warning: var(--bn-warning);
+  --color-warning-soft: var(--bn-warning-soft);
+  --color-danger: var(--bn-danger);
+  --color-danger-soft: var(--bn-danger-soft);
+  --color-wallet-from: var(--bn-wallet-gradient-from);
+  --color-wallet-to: var(--bn-wallet-gradient-to);
+  --radius-card: var(--bn-radius);
+  --shadow-card: var(--bn-shadow);
+  --font-sans: var(--bn-font);
+}
+
+html,
+body {
+  background: var(--bn-bg);
+  color: var(--bn-fg);
+  font-family: var(--bn-font);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--bn-accent);
+  outline-offset: 2px;
+}
+
+/* Scan success micro-interaction (spec §4.4): ≈0.8s total, purely cosmetic. */
+@keyframes bn-card-flip {
+  0% { transform: perspective(600px) rotateY(0deg); }
+  50% { transform: perspective(600px) rotateY(180deg); }
+  100% { transform: perspective(600px) rotateY(360deg); }
+}
+@keyframes bn-check-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes bn-confetti {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(260deg); opacity: 0; }
+}
+.bn-flip { animation: bn-card-flip 0.8s ease-in-out; }
+.bn-check { animation: bn-check-pop 0.4s ease-out both; }
+.bn-confetti-piece { animation: bn-confetti 0.8s ease-out forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bn-flip, .bn-check, .bn-confetti-piece { animation: none; }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; color: #000; }
+}

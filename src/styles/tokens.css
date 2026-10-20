@@ -1,0 +1,70 @@
+/*
+ * Bonuca platform design tokens (spec §4.10).
+ *
+ * SPEC VALUES (colour-picked from the client brand guide — final confirmation pending, OI-10):
+ *   Light background #FBFBFB · Light primary text #0A0A0A
+ *   Dark background  #010414 · Dark primary text  #FFFFFF
+ *   Primary accent "Bonuca Blue" #1747F8 (both modes)
+ *   Default wallet template gradient #0A112F → #000000 (independent of dashboard theme)
+ *   App icon background #080808
+ *
+ * PROVISIONAL (not supplied by the client — implementation values only, see docs/open-items.md):
+ *   --bn-surface (OI-09), borders, muted text, status colours, accent hover/soft tints.
+ *
+ * Business brand colours (set per business/program) never override these tokens.
+ */
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bn-bg: #fbfbfb;
+  --bn-fg: #0a0a0a;
+  --bn-accent: #1747f8;
+
+  /* PROVISIONAL — OI-09: "one shade lighter than page background" */
+  --bn-surface: #ffffff;
+  --bn-surface-2: #f3f4f7;
+  --bn-border: #e4e6ec;
+  --bn-muted: #5a6072;
+  --bn-accent-hover: #0f3ad6;
+  --bn-accent-soft: #e8edff;
+  --bn-on-accent: #ffffff;
+  --bn-success: #12805c;
+  --bn-success-soft: #e3f6ee;
+  --bn-warning: #9a5b00;
+  --bn-warning-soft: #fff4dd;
+  --bn-danger: #c62a2a;
+  --bn-danger-soft: #fdeaea;
+  --bn-shadow: 0 1px 2px rgb(10 10 10 / 0.04), 0 4px 16px rgb(10 10 10 / 0.04);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bn-bg: #010414;
+  --bn-fg: #ffffff;
+  --bn-accent: #1747f8;
+
+  /* PROVISIONAL — OI-09: "one shade lighter than #010414" */
+  --bn-surface: #0b1024;
+  --bn-surface-2: #121936;
+  --bn-border: #1e2647;
+  --bn-muted: #a2a9c2;
+  --bn-accent-hover: #3a63ff;
+  --bn-accent-soft: #111d4d;
+  --bn-on-accent: #ffffff;
+  --bn-success: #3ccf91;
+  --bn-success-soft: #0b2a20;
+  --bn-warning: #f1b24a;
+  --bn-warning-soft: #2b2110;
+  --bn-danger: #ff6b6b;
+  --bn-danger-soft: #331418;
+  --bn-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px rgb(0 0 0 / 0.3);
+}
+
+:root {
+  /* Theme-independent brand constants */
+  --bn-wallet-gradient-from: #0a112f;
+  --bn-wallet-gradient-to: #000000;
+  --bn-app-icon-bg: #080808;
+  --bn-radius: 12px;
+  --bn-font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}

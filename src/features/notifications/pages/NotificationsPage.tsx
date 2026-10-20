@@ -1,0 +1,122 @@
+import { useState } from 'react'
+import { Bell, Plus, Send } from 'lucide-react'
+import type { NotificationCampaign } from '@/types/domain'
+import type { NotificationValues } from '@/schemas/notification'
+import { useT } from '@/i18n'
+import { useAccess } from '@/state/session'
+import { useToast } from '@/state/toast'
+import { errorMessage } from '@/lib/errors'
+import { formatDateTime } from '@/lib/dates'
+import { PageHeader } from '@/components/data-display/PageHeader'
+import { Card } from '@/components/ui/Card'
+import { Badge } from '@/components/ui/Badge'
+import { Tabs } from '@/components/ui/Tabs'
+import { ConfirmDialog } from '@/components/ui/Dialog'
+import { GuardedButton } from '@/components/feedback/GuardedButton'
+import { EmptyState, QueryState } from '@/components/feedback/QueryState'
+import { IntegrationNotice } from '@/components/feedback/Banners'
+import { usePrograms } from '@/features/loyalty-programs/hooks'
+import { CampaignComposer } from '../components/CampaignComposer'
+import { AiDraftPanel } from '../components/AiDraftPanel'
+import { WinBackSettings } from '../components/WinBackSettings'
+import { CAMPAIGN_TYPE_LABELS } from '../labels'
+import { useNotifications, useSendNotification } from '../hooks'
+
+type Tab = 'campaigns' | 'winback' | 'ai'
+
+export default function NotificationsPage() {
+  const t = useT()
+  const toast = useToast()
+  const access = useAccess()
+  const notifications = useNotifications()
+  const programs = usePrograms()
+  const send = useSendNotification()
+  const [tab, setTab] = useState<Tab>('campaigns')
+  const [composer, setComposer] = useState<{ editing: NotificationCampaign | null; initial?: Partial<NotificationValues> } | null>(null)
+  const [confirmSend, setConfirmSend] = useState<NotificationCampaign | null>(null)
+
+  return (
+    <>
+      <PageHeader title={t('nav.notifications')} actions={tab === 'campaigns' && <GuardedButton permission="notifications.manage" onClick={() => setComposer({ editing: null })}><Plus className="size-4" aria-hidden /> New campaign</GuardedButton>} />
+      <div className="mb-6">
+        <Tabs
+          label="Notification sections"
+          value={tab}
+          onChange={setTab}
+          items={[
+            { value: 'campaigns', label: 'Manual campaigns' },
+            { value: 'winback', label: 'Win-back automation' },
+            { value: 'ai', label: 'AI tools' },
+          ]}
+        />
+      </div>
+      {tab === 'campaigns' && (
+        <div className="flex flex-col gap-4">
+          <IntegrationNotice title="Wallet push delivery not connected">Campaigns can be drafted and reviewed. Sending requires the push notification service, which is not available in this environment — campaigns stay drafts until delivery is confirmed.</IntegrationNotice>
+          <Card>
+            <QueryState query={notifications}>
+              {(list) =>
+                list.length === 0 ? (
+                  <div className="p-5">
+                    <EmptyState icon={<Bell className="size-6" />} title="No campaigns yet" body="Happy Hour, New Item, Double Stamps, Birthday Reward, Holiday Campaign, Limited Offers and similar wallet push notifications." />
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-line">
+                    {list.map((n) => (
+                      <li key={n.id} className="flex flex-wrap items-center gap-3 px-5 py-4">
+                        <div className="min-w-0 flex-1">
+                          <p className="flex flex-wrap items-center gap-2 font-medium">
+                            {n.title}
+                            <Badge>{CAMPAIGN_TYPE_LABELS[n.type]}</Badge>
+                            {n.origin !== 'manual' && <Badge tone="accent">{n.origin === 'ai_bonus' ? 'AI bonus' : 'AI campaign'}</Badge>}
+                            <Badge tone={n.status === 'sent' ? 'success' : 'neutral'}>{n.status === 'sent' ? 'Sent' : 'Draft'}</Badge>
+                          </p>
+                          <p className="truncate text-sm text-muted">{n.message}</p>
+                          <p className="text-xs text-muted">{n.status === 'sent' ? `Sent ${formatDateTime(n.sentAt)}` : `Updated ${formatDateTime(n.updatedAt)}`}</p>
+                        </div>
+                        {n.status === 'draft' && (
+                          <div className="flex gap-2">
+                            <GuardedButton permission={n.origin === 'manual' ? 'notifications.manage' : 'notifications.ai'} size="sm" variant="secondary" onClick={() => setComposer({ editing: n })}>
+                              Edit
+                            </GuardedButton>
+                            <GuardedButton permission="notifications.manage" size="sm" onClick={() => setConfirmSend(n)}>
+                              <Send className="size-3.5" aria-hidden /> Send
+                            </GuardedButton>
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )
+              }
+            </QueryState>
+          </Card>
+        </div>
+      )}
+      {tab === 'winback' && <WinBackSettings />}
+      {tab === 'ai' && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {access.role !== 'owner' && (
+            <p className="text-sm text-muted lg:col-span-2">AI Campaigns and the AI Bonus Generator are available to the business Owner.</p>
+          )}
+          <AiDraftPanel kind="campaign" onDraft={(initial) => setComposer({ editing: null, initial })} />
+          <AiDraftPanel kind="bonus" onDraft={(initial) => setComposer({ editing: null, initial })} />
+        </div>
+      )}
+      <CampaignComposer open={!!composer} onClose={() => setComposer(null)} editing={composer?.editing ?? null} initial={composer?.initial} programs={programs.data ?? []} />
+      <ConfirmDialog
+        open={!!confirmSend}
+        onClose={() => setConfirmSend(null)}
+        title="Send this campaign?"
+        confirmLabel="Send"
+        loading={send.isPending}
+        body={`"${confirmSend?.title}" will be pushed to the selected members' wallet passes.`}
+        onConfirm={() => {
+          const n = confirmSend
+          setConfirmSend(null)
+          if (n) send.mutate(n.id, { onSuccess: () => toast.success('Campaign sent.'), onError: (e) => toast.error(errorMessage(e)) })
+        }}
+      />
+    </>
+  )
+}
