@@ -96,7 +96,7 @@
   g.SHELL_BITS = { themeSeg, lang };
 
   function shell(ctx, nav, inner) {
-    const r = ROLE[ctx.role], st = ctx.state, plans = can(ctx.role, 'billing'), emp = ctx.role === 'employee';
+    const r = ROLE[ctx.role], st = ctx.state, plans = can(ctx.role, 'billing'), emp = ctx.role === 'employee', biz = (g.mem.get('business', {}) || {}).name || 'Sample Business (development)';
     const navHtml = (ctx.role === 'employee' ? NAV_EMPLOYEE : NAV).map((n, i) => [...n, ctx.role === 'employee' ? '' : groups[i]]).filter(([, , , key]) => can(ctx.role, key)).map(([label, ic, pre, , grp]) => `${grp ? `<div class="nav-label">${grp}</div>` : ''}<a href="${link(ctx.role, pre)}" class="${label === nav ? 'active' : ''}">${icon(ic)}${label}</a>`).join('');
     const planCard = emp ? '' : st.preview ? `<div class="trial-card"><b>Preview Mode</b><span>No plan selected · demo data.</span><br><a href="${link(ctx.role, '49-')}">View plans ${icon('arrowRight', 'sm')}</a></div>`
       : st.override ? `<div class="trial-card"><b>Managed by Bonuca</b><span>${st.overrideEnd ? 'Until ' + st.overrideEnd + '.' : 'No end date.'}</span></div>`
@@ -115,7 +115,7 @@
   <div class="main">
     <header class="topbar">
       <button class="icon-btn menu-btn" data-menu aria-label="Open navigation">${icon('menu')}</button>
-      <div class="biz"><span class="avatar">S</span><div><b>Sample Business (development)</b><small>${r.user} <span class="role-chip ${r.isOwner ? 'owner' : ''}">${r.label}</span></small></div></div>
+      <div class="biz"><span class="avatar">${g.UI.esc(biz.charAt(0).toUpperCase())}</span><div><b>${g.UI.esc(biz)}</b><small>${r.user} <span class="role-chip ${r.isOwner ? 'owner' : ''}">${r.label}</span></small></div></div>
       <div class="top-actions">${emp ? '' : `<span class="trial-pill">${icon('info', 'sm')}<span>${pill}</span></span>`}${lang()}${themeSeg()}<a class="btn btn-text btn-sm" href="../../common/pages/03-login.html">${icon('logout', 'sm')}Log out</a></div>
     </header>
     <main class="content" id="content">${inner}</main>
@@ -133,6 +133,7 @@
     let eff = t;
     if (t === 'system') eff = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     document.documentElement.dataset.theme = eff;
+    document.documentElement.lang = ({ Deutsch: 'de', 'Türkçe': 'tr', 'Français': 'fr', Italiano: 'it' })[g.mem.get('lang', 'English')] || 'en';
     document.querySelectorAll('[data-theme-set]').forEach(b => b.classList.toggle('on', b.dataset.themeSet === t));
     document.querySelectorAll('[data-seg="theme"]').forEach(placeThumb);
   }
