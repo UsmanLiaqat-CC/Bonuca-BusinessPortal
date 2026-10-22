@@ -107,7 +107,7 @@
   const upload = (filled, wide, extra = '') => `<div class="upload"><div class="tile ${wide ? 'wide' : ''} ${filled ? 'filled' : ''}">${filled ? '☕' : icon('image', 'lg')}</div><button class="btn btn-ghost btn-sm">${filled ? 'Replace' : 'Upload'}</button>${extra}</div>`;
   const optionRow = (title, sub, on, attrs = '', extra = '') => `<div class="option-row"><div><b>${title}</b><small>${sub}</small>${extra}</div>${toggle(on, attrs)}</div>`;
   const badge = (t, kind = '', live) => `<span class="badge ${kind} ${live ? 'live' : ''}">${kind && kind !== 'outline' ? '<i class="d"></i>' : ''}${t}</span>`;
-  const status = s => ({ Active: badge('Active', 'green', true), Draft: badge('Draft', ''), Paused: badge('Paused', 'amber'), Archived: badge('Archived', ''), Available: badge('Available', 'green'), Redeemed: badge('Redeemed', 'blue'), Pending: badge('Pending', 'amber'), Expired: badge('Expired', 'red'), 'Not delivered': badge('Not delivered', 'amber') }[s] || badge(s));
+  const status = s => ({ Active: badge('Active', 'green', true), Draft: badge('Draft', ''), Inactive: badge('Inactive', 'amber'), Available: badge('Available', 'green'), Redeemed: badge('Redeemed', 'blue'), Pending: badge('Pending', 'amber'), Expired: badge('Expired', 'red'), 'Not delivered': badge('Not delivered', 'amber') }[s] || badge(s));
 
   function card({ title, sub, icon: ic, actions = '', body = '', foot = '', cls = '', split = true, attrs = '' }) {
     return `<section class="card ${cls}" ${attrs}>${title ? `<header class="card-head ${split ? 'split' : ''}"><div><div class="card-title">${ic ? `<span class="ic">${icon(ic)}</span>` : ''}${title}</div>${sub ? `<div class="card-sub">${sub}</div>` : ''}</div>${actions ? `<div class="row">${actions}</div>` : ''}</header>` : ''}${body !== null ? `<div class="card-body">${body}</div>` : ''}${foot ? `<footer class="card-foot">${foot}</footer>` : ''}</section>`;
@@ -122,7 +122,7 @@
     let mid = '';
     if (p.type === 'stamp') {
       const n = p.total || 10, f = p.filled || 0, ic = STAMP_ICONS[p.icon || 'coffee'];
-      mid = `<div class="pass-lbl">Reward</div><div class="pass-val">${esc(p.reward)}</div><div class="stamps">${Array.from({ length: n }, (_, i) => `<span class="stamp ${i < f ? 'on' : ''}" style="animation-delay:${i * 70}ms">${icon(ic)}</span>`).join('')}</div><div class="pass-lbl">Progress</div><div class="pass-val sm">${n - f} stamps to go</div>`;
+      mid = `<div class="pass-lbl">Reward</div><div class="pass-val">${esc(p.reward)}</div><div class="stamps">${Array.from({ length: n }, (_, i) => `<span class="stamp ${i < f ? 'on' : ''}" style="animation-delay:${i * 70}ms">${icon(ic)}</span>`).join('')}</div><div class="pass-lbl">Progress</div><div class="pass-val sm">${n - f} stamp${n - f === 1 ? '' : 's'} to go</div>`;
     } else if (p.type === 'membership') {
       mid = `<div class="pass-lbl">Benefit</div><div class="pass-val">${esc(p.benefit)}</div><div class="pass-lbl">Member since</div><div class="pass-val sm">${esc(p.since || 'Jan 15, 2026')}</div>`;
     } else if (p.type === 'tier') {

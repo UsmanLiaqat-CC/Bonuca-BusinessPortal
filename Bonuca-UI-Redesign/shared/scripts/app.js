@@ -23,10 +23,14 @@
   const PAGES = {
     common: [['01-landing', 'landing'], ['02-landing-download-app', 'landing', { modal: true }], ['03-login', 'login'], ['04-register', 'register'], ['05-register-validation', 'register', { errors: true }], ['06-verify-email', 'verify'], ['07-onboarding-business-profile', 'onboarding1'], ['08-onboarding-plan-selection', 'onboarding2'], ['09-onboarding-first-program', 'onboarding3'],
       ['10-forgot-password', 'forgot'], ['11-forgot-password-sent', 'forgot', { sent: true }], ['12-reset-password', 'resetPassword'], ['13-accept-invitation', 'acceptInvite']],
-    manager: [...shared, ['57-settings-wallet', 'settings', { sec: 'wallet' }], ['58-settings-language', 'settings', { sec: 'language' }], ['59-dashboard-dark-mode', 'dashboard', { theme: 'dark' }]],
+    manager: [...shared, ['57-settings-wallet', 'settings', { sec: 'wallet' }], ['58-settings-language', 'settings', { sec: 'language' }], ['59-dashboard-dark-mode', 'dashboard', { theme: 'dark' }],
+      ['60-scanner-stamp-reward-ready', 'scanner', { state: 'rewardReady' }]],
     owner: [...shared, ['57-settings-billing', 'settings', { sec: 'billing' }], ['58-settings-wallet', 'settings', { sec: 'wallet' }], ['59-settings-language', 'settings', { sec: 'language' }], ['60-dashboard-dark-mode', 'dashboard', { theme: 'dark' }],
-      ['61-dashboard-preview-mode', 'dashboard', { preview: true }]]
+      ['61-dashboard-preview-mode', 'dashboard', { preview: true }], ['62-scanner-stamp-reward-ready', 'scanner', { state: 'rewardReady' }]]
   };
+  // New screens get different numbers per role (R6), so link to them by name: page(role, 'scanner-stamp-reward-ready').
+  const page = (role, name) => (PAGES[role].find(p => p[0].slice(3) === name) || [name])[0] + '.html';
+  g.page = page;
   g.PAGES = PAGES;
 
   const ROLE = {
@@ -39,7 +43,8 @@
   /* ---------- role access (client spec: Owner full · Manager no billing, employees if permitted) ---------- */
   const ACCESS = {
     billing: role => role === 'owner',
-    team: role => role === 'owner' || g.DATA.team.some(([, , r, , canManage]) => r === 'Manager' && canManage)
+    team: role => role === 'owner' || g.DATA.team.some(([, , r, , canManage]) => r === 'Manager' && canManage),
+    multiStamp: role => role !== 'employee' || g.DATA.team.some(([, , r, , , canMulti]) => r === 'Employee' && canMulti)
   };
   const can = (role, key) => !ACCESS[key] || ACCESS[key](role);
   g.can = can;
@@ -200,7 +205,7 @@
     const entry = PAGES[role].find(p => p[0] === file); if (!entry) { body.innerHTML = '<p style="padding:40px">Unknown page ' + esc(file) + '</p>'; return; }
     const [, screen, opts = {}] = entry;
     const state = role === 'common' ? {} : accessState(role, opts);
-    const ctx = { role, file, opts, owner: role === 'owner', link: pre => link(role, pre), state, can: key => can(role, key) };
+    const ctx = { role, file, opts, owner: role === 'owner', link: pre => link(role, pre), page: name => page(role, name), state, can: key => can(role, key) };
     const out = S[screen](ctx);
     document.title = `${out.title || out.nav} · Bonuca`;
     let inner = out.html;

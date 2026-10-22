@@ -4,7 +4,8 @@
   const programs = [
     { id: 'coffee', name: 'Coffee Card', type: 'Stamp Card', kind: 'stamp', status: 'Active', date: 'Published Dec 5, 2025', icon: 'stamp', c: '#1747F8', url: 'https://join.bonuca.invalid/program/join-prg_coffee', qrAction: 'Add wallet card',
       pass: { type: 'stamp', name: 'Coffee Card', reward: '1 Free Coffee', total: 10, filled: 3 }, cap: 'Digital Stamp Card',
-      setup: [['Stamps required', '10'], ['Reward', '1 Free Coffee'], ['Expiry rule', 'Off'], ['Surprise rewards', 'Off']] },
+      multi: { on: true, max: 3 },
+      setup: [['Stamps required', '10'], ['Reward', '1 Free Coffee'], ['Multiple stamps per scan', 'On · max 3'], ['Surprise rewards', 'Off']] },
     { id: 'vip', name: 'VIP Member', type: 'Membership Card', kind: 'membership', status: 'Active', date: 'Published Dec 5, 2025', icon: 'crown', c: '#7C3AED', url: 'https://join.bonuca.invalid/program/join-prg_vip', qrAction: 'Join membership',
       pass: { type: 'membership', name: 'VIP Member', benefit: '10% off every visit', since: 'Jan 15, 2026', bg: '#1B1B1F' }, cap: 'Membership Card',
       setup: [['Benefit', '10% off every visit'], ['Benefit type', 'percent discount'], ['Validity', 'renews annually'], ['Surprise rewards', 'Off']] },
@@ -16,7 +17,8 @@
       setup: [['Currency', 'EUR'], ['Ratio', '1 EUR = 10 pts'], ['Awarding', 'Manual entry'], ['Rewards', '100 pts = Free Coffee, 250 pts = Free Dessert, 500 pts = Free Burger'], ['Surprise rewards', 'On (5%)']] },
     { id: 'lunch', name: 'Lunch Card', type: 'Stamp Card', kind: 'stamp', status: 'Draft', date: 'Created Dec 5, 2025', icon: 'stamp', c: '#B45309', url: '',
       pass: { type: 'stamp', name: 'Lunch Card', reward: 'Free Lunch Menu', total: 8, filled: 3, icon: 'star', bg: '#7A2E21' }, cap: 'Digital Stamp Card',
-      setup: [['Stamps required', '8'], ['Reward', 'Free Lunch Menu'], ['Expiry rule', '90 days without a scan'], ['Surprise rewards', 'Off']] }
+      multi: { on: false, max: 3 },
+      setup: [['Stamps required', '8'], ['Reward', 'Free Lunch Menu'], ['Multiple stamps per scan', 'Off'], ['Surprise rewards', 'Off']] }
   ];
   const campaigns = [
     { id: 'cuplid', name: 'Cup-lid Campaign', type: 'Stamp card acquisition', status: 'Active', created: 'Aug 22, 2026', url: 'https://join.bonuca.invalid/campaign/cmp-cuplid' },
@@ -76,13 +78,15 @@
     weeksL: ['08-10', '08-17', '08-24', '08-31', '09-07', '09-14', '09-21', '09-28', '10-05', '10-12', '10-19'], weeks: [3, 1, 1, 0, 0, 5, 3, 1, 3, 3, 5],
     top: [['Tara Ricci', 18], ['Nina Schmidt', 17], ['Lena Weber', 16], ['Oscar Demir', 15], ['Umut Demir', 14]]
   };
-  /* [name, email, role, since, canManageEmployees] — the last flag applies to Managers only and is set by the Owner. */
-  const team = [['Sam Owner', 'owner@sample.dev', 'Owner', 'Dec 5, 2025'], ['Mia Manager', 'manager@sample.dev', 'Manager', 'Dec 5, 2025', true], ['Eli Employee', 'employee@sample.dev', 'Employee', 'Dec 5, 2025']];
+  /* [name, email, role, since, canManageEmployees (Managers, set by the Owner), canAwardMultipleStamps (Employees)] */
+  const team = [['Sam Owner', 'owner@sample.dev', 'Owner', 'Dec 5, 2025'], ['Mia Manager', 'manager@sample.dev', 'Manager', 'Dec 5, 2025', true], ['Eli Employee', 'employee@sample.dev', 'Employee', 'Dec 5, 2025', false, false]];
+  /* stamp-card holders the scanner can open: [name, customer ID, stamps already on the Coffee Card] */
+  const stampScans = { anna: ['Anna Schmidt', 'C-10001', 1], leon: ['Leon Fischer', 'C-10009', 9] };
   const roles = [['Owner', 'Full access — billing/subscription, employees, customers, loyalty programs, analytics, scanner, business settings.', 'shield'], ['Manager', 'Customers, loyalty programs, rewards, analytics, scanner, limited settings, and employees if permitted.', 'badge'], ['Employee', 'Scanner, limited customer info, add stamps/points/visits, redeem rewards. No billing or subscription access.', 'scan']];
   const plans = {
     free: ['Up to 15 customers', 'Up to 1 programs', 'Up to 1 locations', 'Up to 1 employees'],
     trial: ['All Pro features, temporarily', 'Unlimited customers', 'Unlimited programs', 'Unlimited locations', 'Unlimited employees'],
     pro: ['Unlimited customers', 'Unlimited programs', 'Unlimited locations', 'Unlimited employees', 'AI heatmap commentary']
   };
-  g.DATA = { programs, campaigns, customers, scansBase, rewards, winbackLog, stages, dash, analytics, team, roles, plans };
+  g.DATA = { programs, campaigns, customers, scansBase, rewards, winbackLog, stages, dash, analytics, team, roles, plans, stampScans };
 })(window);

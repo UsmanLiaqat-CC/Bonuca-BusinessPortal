@@ -40,7 +40,7 @@
   /* ================= PROGRAMS LIST ================= */
   const TYPES = [['Stamp Card', 'stamp', '#1747F8', 'Customers collect stamps per visit and earn a reward.', '06-'], ['Membership Card', 'crown', '#7C3AED', 'Identifies members and states their benefit at checkout.', '07-'], ['Tier Program', 'layers', '#0F9D6E', 'Levels unlocked by visits, points or spend.', '08-'], ['Points Program', 'coins', '#C2410C', 'Points per purchase, redeemed for rewards.', '09-']];
   S.programs = ctx => {
-    const counts = { All: 5, Active: 4, Draft: 1, Paused: 0, Archived: 0 };
+    const counts = { All: 5, Active: 4, Inactive: 0, Draft: 1 };
     const cards = D.programs.map(p => `<article class="card hover prog-card reveal-up" style="--c:${p.c}" data-status="${p.status}" data-href="${ctx.link(({ coffee: '10-', vip: '11-', club: '12-', points: '13-', lunch: '14-' })[p.id])}" tabindex="0">
       <div class="top"><span class="ti">${icon(p.icon, 'lg')}</span>${status(p.status)}</div>
       <div><h3>${p.name}</h3><p class="muted" style="margin-top:2px">${p.type}</p></div>
@@ -61,6 +61,12 @@
   /* ================= PROGRAM FORM ================= */
   const KIND = { stamp: ['Stamp Card', 'Digital Stamp Card'], membership: ['Membership Card', 'Membership Card'], tier: ['Tier Program', 'Tier Program Pass'], points: ['Points Program', 'Generic layout (no launch template)'] };
   const sec = (n, title, sub, body, id) => `<section class="card reveal-up" ${id ? `id="${id}"` : ''}><header class="card-head split"><div class="row" style="align-items:flex-start"><span class="badge ink lg" style="width:28px;padding:0;justify-content:center">${n}</span><div><div class="card-title">${title}</div>${sub ? `<div class="card-sub">${sub}</div>` : ''}</div></div></header><div class="card-body">${body}</div></section>`;
+  // Client: "Allow Multiple Stamps" — default OFF (1 stamp per scan), changeable anytime, max 3 / 5 / unlimited.
+  const multiStamps = m => {
+    const sel = m.max === 'Unlimited' ? 'Unlimited' : [3, 5].includes(m.max) ? String(m.max) : 'Custom';
+    return `<div class="stack" style="gap:12px">${optionRow('Allow Multiple Stamps', 'Off: one stamp per scan. Can be changed anytime, even while the program is running.', m.on, 'data-reveal="[data-multi-max]" data-multi-toggle')}
+      <div data-multi-max ${m.on ? '' : 'hidden'}>${field({ label: 'Max stamps per scan', required: true, input: `<div class="choice-chips" data-max-chips>${['3', '5', 'Unlimited', 'Custom'].map(v => `<button class="chip ${v === sel ? 'on' : ''}" data-max="${v}">${v}</button>`).join('')}</div><input class="input" type="number" min="2" value="${sel === 'Custom' ? m.max : ''}" placeholder="e.g. 4" aria-label="Custom max stamps per scan" data-max-custom style="max-width:140px;margin-top:10px" ${sel === 'Custom' ? '' : 'hidden'}>`, hint: 'Team permissions still apply: employees can award multiple stamps only if they have permission.' })}</div></div>`;
+  };
   const bgChoice = () => `<div class="choice-chips"><button class="chip on">Bonuca template gradient</button><button class="chip">Flat colour (RGB)</button><button class="chip">Background image</button></div>`;
 
   S.programForm = ctx => {
@@ -81,7 +87,7 @@
       <div></div>${field({ label: 'Custom stamp icon', optional: true, input: upload(false) })}
       ${field({ label: 'Reward Description', required: true, input: input({ value: edit ? '1 Free Coffee' : '', ph: 'e.g. 1 Free Coffee', attrs: 'data-bind-src="reward" data-fallback="Reward description"' }), hint: 'What the customer gets, e.g. “1 Free Coffee”.' })}
       ${field({ label: 'Reward Type', required: true, input: select(['Free item', 'Discount', 'Upgrade', 'Other'], 'Free item'), hint: 'Used for reporting and the redeem-reward wording.' })}
-      <div class="full">${optionRow('Expiry Rule', 'If enabled, an inactive card resets/expires after X days without a scan.', false)}</div></div>`;
+      <div class="full">${multiStamps(edit ? P('coffee').multi : { on: false, max: 3 })}</div></div>`;
     if (k === 'membership') rules = `<div class="stack">${callout('info', '', 'Membership Cards never track stamps or points — they identify the customer and state their benefit at checkout.')}<div class="form-grid">
       <div class="full">${field({ label: 'Benefit Description', required: true, input: input({ ph: '10% off every visit', attrs: 'data-bind-src="benefit" data-fallback="Benefit description"' }), hint: 'Main line on the pass, e.g. “10% off every visit”.' })}</div>
       ${field({ label: 'Benefit Type', required: true, input: select(['% discount', 'Fixed amount', 'Free item', 'Other'], '% discount'), hint: 'Drives what the employee sees when scanning this member.' })}
@@ -119,6 +125,7 @@
         ${sec(4, 'Terms &amp; Conditions', '', terms)}
         <div class="row reveal-up">${actions}</div>
       </div><div class="sticky">${phonePreview(pv, cap)}</div></div>${edit ? wm : ''}`, after() {
+        document.querySelectorAll('[data-max-chips] .chip').forEach(c => c.addEventListener('click', () => { document.querySelector('[data-max-custom]').hidden = c.dataset.max !== 'Custom'; }));
         const s = document.querySelector('[data-save]'); if (s) s.onclick = () => { const i = document.querySelector('[data-orig]'); if (i.value !== i.dataset.orig) g.openModal('warn'); else g.toast('Saved'); };
         const add = document.querySelector('[data-add-reward]'); if (add) add.onclick = () => { const list = document.querySelector('[data-reward-list]'); const n = list.parentElement.querySelectorAll('[data-reward-list]').length + 1; const c = list.cloneNode(true); c.innerHTML = c.innerHTML.replaceAll('Reward 1', 'Reward ' + n); c.querySelectorAll('input').forEach(x => x.value = ''); c.style.marginTop = '10px'; c.style.animation = 'fadeUp .35s both'; add.before(c); };
       } };
@@ -126,9 +133,11 @@
 
   /* ================= PROGRAM DETAIL ================= */
   const walletPage = { coffee: '23-', vip: '24-', club: '25-', points: '26-' };
+  // E11: lifecycle is only Active ⇄ Inactive (no archive / suspend) — ❓ pending client confirmation.
+  const activeToggle = what => optionRow('Active', `Turn off to make this ${what} inactive. Members keep their cards; scans show “temporarily unavailable”.`, true);
   S.programDetail = ctx => {
     const p = P(ctx.opts.id), draft = p.status === 'Draft'; g.__pass = p.pass;
-    const life = card({ title: 'Lifecycle', icon: 'zap', actions: status(p.status), body: draft ? `<div class="stack"><button class="btn btn-primary btn-lg btn-block" data-toast="Program published">${icon('send', 'sm')}Publish</button><button class="btn btn-ghost btn-block">${icon('archive', 'sm')}Archive</button></div>` : `<div class="stack">${optionRow('Enabled', 'Turn off to pause temporarily. Members keep their cards; scans show “temporarily unavailable”.', true)}<button class="btn btn-ghost btn-block">${icon('archive', 'sm')}Archive</button></div>`, cls: 'reveal-up' });
+    const life = card({ title: 'Lifecycle', icon: 'zap', actions: status(p.status), body: draft ? `<button class="btn btn-primary btn-lg btn-block" data-toast="Program published">${icon('send', 'sm')}Publish</button>` : activeToggle('program'), cls: 'reveal-up' });
     const qrc = card({ title: 'Join QR code', icon: 'qr', sub: 'Generated the first time the program is published.', body: draft ? `<div class="empty"><div class="ill">${icon('qr', 'lg')}</div><b style="color:var(--color-text-primary)">No QR exists yet</b><span>Draft programs are invisible to customers.</span></div>` : qrPanel({ url: p.url, link: ctx.link('34-') }), cls: 'reveal-up' });
     const st = card({ title: 'Setup', icon: 'sliders', body: setup(p.setup), cls: 'reveal-up' });
     return { nav: 'Loyalty Programs', title: p.name, html: `${pageHead({ eyebrow: crumb('Loyalty Programs', ctx.link('03-')) + p.name, title: p.name, sub: `<span class="row" style="gap:8px">${badge(p.type, 'outline')}<span>${p.date}</span></span>`, actions: `${walletPage[p.id] ? `<a class="btn btn-ghost" href="${ctx.link(walletPage[p.id])}">${icon('palette', 'sm')}Wallet design</a>` : `<a class="btn btn-ghost" href="${ctx.link('22-')}">${icon('palette', 'sm')}Wallet design</a>`}<a class="btn btn-primary" href="${ctx.link('15-')}">${icon('edit', 'sm')}Edit</a>` })}
@@ -168,7 +177,7 @@
   /* ================= CAMPAIGN DETAIL ================= */
   S.campaignDetail = ctx => {
     const c = D.campaigns.find(x => x.id === ctx.opts.id), acq = c.id === 'cuplid';
-    const life = card({ title: 'Lifecycle', icon: 'zap', actions: status('Active'), body: `<div class="stack">${optionRow('Enabled', 'Turn off to pause temporarily. Members keep their cards; scans show “temporarily unavailable”.', true)}<button class="btn btn-ghost btn-block">${icon('archive', 'sm')}Archive</button></div>`, cls: 'reveal-up' });
+    const life = card({ title: 'Lifecycle', icon: 'zap', actions: status('Active'), body: activeToggle('campaign'), cls: 'reveal-up' });
     const qrc = card({ title: 'Campaign QR code', icon: 'qr', sub: 'System-generated on publish. Download for print.', body: qrPanel({ url: c.url, format: 'Cup' }), cls: 'reveal-up' });
     const st = card({ title: 'Setup', icon: 'sliders', body: setup(acq ? [['Linked stamp card', 'Coffee Card'], ['Starting stamps', '2'], ['Welcome gift', 'Free cookie · valid 30 days']] : [['Voucher reward', '1 Free Coffee'], ['Valid from', 'Sep 11, 2026'], ['Valid to', 'Dec 10, 2026']], 3), cls: 'reveal-up' });
     const pv = { type: 'voucher', name: 'Free Coffee Campaign', reward: '1 Free Coffee', from: 'Sep 11, 2026', to: 'Dec 10, 2026' }; g.__pass = pv;
