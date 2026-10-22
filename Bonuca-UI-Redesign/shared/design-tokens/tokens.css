@@ -101,34 +101,35 @@
 }
 
 :root[data-theme="dark"]{
-  --color-background:#010414;
-  --color-background-2:#060A20;
-  --color-surface:#0B1029;
-  --color-surface-muted:#10163A;
-  --color-surface-sunken:#0E1434;
-  --color-surface-elevated:#121A44;
-  --color-glass:rgba(11,16,41,.72);
+  --color-background:#000000;
+  --color-background-2:#050505;
+  --color-surface:#0D0D0F;
+  --color-surface-muted:#151517;
+  --color-surface-sunken:#101012;
+  --color-surface-elevated:#1A1A1D;
+  --color-glass:rgba(13,13,15,.78);
   --color-ink:#FFFFFF;
-  --color-ink-soft:#E7E9F5;
+  --color-ink-soft:#EDEDED;
   --color-text-primary:#FFFFFF;
-  --color-text-secondary:#A4AAC6;
-  --color-text-tertiary:#6E7598;
-  --color-text-inverse:#05081A;
-  --color-border:rgba(160,175,255,.10);
-  --color-border-strong:rgba(160,175,255,.18);
-  --color-accent:#2F5BFF;
+  --color-text-secondary:#A8A8B0;
+  --color-text-tertiary:#707078;
+  --color-text-inverse:#050505;
+  --color-border:rgba(255,255,255,.09);
+  --color-border-strong:rgba(255,255,255,.17);
+  --color-accent:#3D66FF;
   --color-accent-600:#1747F8;
-  --color-accent-soft:rgba(47,91,255,.18);
-  --color-accent-softer:rgba(47,91,255,.09);
+  --color-accent-soft:rgba(61,102,255,.20);
+  --color-accent-softer:rgba(61,102,255,.10);
   --color-highlight-soft:rgba(255,212,59,.14);
   --color-mint-soft:rgba(34,176,125,.16);
   --color-danger-soft:rgba(229,72,77,.16);
   --color-warning-soft:rgba(255,176,32,.12);
   --color-warning:#FFB020;
-  --glow-pink:rgba(120,60,180,.45);
-  --glow-blue:rgba(23,71,248,.55);
-  --chart-grid:rgba(160,175,255,.08);
-  --shadow-card:0 0 0 1px rgba(160,175,255,.06),0 18px 40px -20px rgba(0,0,0,.8);
-  --shadow-hover:0 0 0 1px rgba(47,91,255,.35),0 24px 50px -20px rgba(23,71,248,.45);
-  --shadow-pop:0 40px 90px -20px rgba(0,0,0,.9),0 0 0 1px rgba(160,175,255,.14);
+  --glow-pink:rgba(255,255,255,.05);
+  --glow-blue:rgba(255,255,255,.04);
+  --chart-grid:rgba(255,255,255,.08);
+  --shadow-card:0 0 0 1px rgba(255,255,255,.05),0 18px 40px -20px rgba(0,0,0,.9);
+  --shadow-hover:0 0 0 1px rgba(61,102,255,.45),0 24px 50px -20px rgba(0,0,0,.9);
+  --shadow-pop:0 40px 90px -20px rgba(0,0,0,.95),0 0 0 1px rgba(255,255,255,.12);
 }
+

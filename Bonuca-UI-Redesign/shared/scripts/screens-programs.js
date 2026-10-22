@@ -70,15 +70,16 @@
   S.dashboard = ctx => {
     const o = ctx.owner, d = D.dash, cards = d.dist.reduce((a, x) => a + x[1], 0), active = PROGS().filter(p => p.status === 'Active').length;
     // One business, one dataset: Owner and Manager see the same totals; Wallet Cards = the Membership Distribution total.
+    const added = (g.mem.get('customers-added', []) || []).length, biz = (g.mem.get('business', {}) || {}).name || 'Sample Business';
     const stats = [
-      ['New Members Today', 5, 'calendar'], ['New Members This Week', 5, 'calendar'], ['New Members This Month', 12, 'calendar'], ['Total Scans', 871, 'scan'],
+      ['New Members Today', 5 + added, 'calendar'], ['New Members This Week', 5 + added, 'calendar'], ['New Members This Month', 12 + added, 'calendar'], ['Total Scans', 871, 'scan'],
       ['Active Programs', active, 'stamp'], ['Wallet Cards', cards, 'wallet'], ['Visits', 693, 'footprints', 'One customer on one day'], ['Returning Customers', 57, 'repeat', 'Visited on 2+ days']
     ];
     const statCard = ([l, v, ic, note]) => `<div class="card hover stat reveal-up"><div class="lbl">${l}<span class="ico">${icon(ic, 'sm')}</span></div><div class="val" data-count="${v}">${v}</div>${note ? `<div class="note">${note}</div>` : ''}</div>`;
     const feature = `<div class="card stat feature reveal-up" style="grid-row:span 2;display:flex;flex-direction:column">
       <div class="lbl">Total Members<span class="ico">${icon('users', 'sm')}</span></div>
-      <div class="val" style="font-size:56px;margin-top:14px" data-count="64">64</div>
-      <div class="note">${badge('+12 this month', 'green')}</div>
+      <div class="val" style="font-size:56px;margin-top:14px" data-count="${64 + added}">${64 + added}</div>
+      <div class="note">${badge(`+${12 + added} this month`, 'green')}</div>
       <div style="margin-top:auto;padding-top:14px">${sparkline(d.growth)}</div>
       <div class="note" style="display:flex;justify-content:space-between"><span>${d.growthLabels[0]}</span><span>${d.growthLabels.at(-1)}</span></div>
     </div>`;
@@ -89,7 +90,7 @@
     const tp = U.chartTableToggle('top', U.hBarChart(d.top.map(x => x[0]), d.top.map(x => x[1]), { max: 280 }), d.top, ['Program', 'Scans']);
     const md = U.chartTableToggle('dist', U.donut(d.dist.map(([l, v], i) => ({ l, v, c: ['#1747F8', '#8B7CF6', '#4FC3F7', '#22B07D'][i] })), { center: 'wallet cards' }), d.dist, ['Program', 'Wallet cards']);
     const chartCard = (t, sub, x, cls = '') => card({ title: t, sub, actions: x.seg, body: x.body, cls: 'reveal-up ' + cls });
-    return { nav: 'Dashboard', html: `${pageHead({ eyebrow: `${icon('dashboard', 'sm')} Overview · Sample Business`, title: '<span class="hl">Dashboard</span>', sub: `Good afternoon, ${o ? 'Sam' : 'Mia'} — here’s how your loyalty programs are performing.`, actions: `<a class="btn btn-ghost" href="${ctx.link('28-')}">${icon('scan', 'sm')}Open scanner</a><a class="btn btn-primary" href="${ctx.link('04-')}">${icon('plus', 'sm')}Create Program</a>` })}
+    return { nav: 'Dashboard', html: `${pageHead({ eyebrow: `${icon('dashboard', 'sm')} Overview · ${esc(biz)}`, title: '<span class="hl">Dashboard</span>', sub: `Good afternoon, ${o ? 'Sam' : 'Mia'} — here’s how your loyalty programs are performing.`, actions: `<a class="btn btn-ghost" href="${ctx.link('28-')}">${icon('scan', 'sm')}Open scanner</a><a class="btn btn-primary" href="${ctx.link('04-')}">${icon('plus', 'sm')}Create Program</a>` })}
       <div class="grid" style="grid-template-columns:1.25fr repeat(4,minmax(0,1fr))">${feature}${stats.map(statCard).join('')}</div>
       <div class="grid g2" style="margin-top:18px">${chartCard('Customer Growth', 'Total members, last 30 days', cg)}${chartCard('Daily Scans', 'Last 30 days', ds)}${chartCard('Monthly Growth', 'New members per month, last 12 months', mg)}${chartCard('Top Programs', 'By scans', tp)}</div>
       <div style="margin-top:18px">${chartCard('Membership Distribution', 'Wallet cards per program', md)}</div>` };
@@ -111,7 +112,8 @@
       <div class="top"><span class="ti">${icon(p.icon, 'lg')}</span>${status(p.status)}</div>
       <div><h3>${esc(p.name)}</h3><p class="muted" style="margin-top:2px">${p.type}</p></div>
       <div class="foot"><span>${icon('calendar', 'sm')} ${p.date}</span><span class="arrow">${icon('arrowRight', 'sm')}</span></div></article>`).join('');
-    const camp = `<div class="table-wrap"><table class="t"><thead><tr><th>Campaign</th><th>Type</th><th>Status</th><th>Created</th><th></th></tr></thead><tbody>${D.campaigns.map(x => CMP(x.id)).map(c => `<tr class="clickable" data-href="${campLink(ctx, c)}"><td><div class="person"><span class="feed-ic" style="background:${c.type.startsWith('Stamp') ? 'var(--color-accent-soft);color:var(--color-accent)' : 'var(--color-highlight-soft);color:#9A7300'}">${icon(c.type.startsWith('Stamp') ? 'stamp' : 'ticket', 'sm')}</span>${esc(c.name)}</div></td><td>${badge(c.type, 'outline')}</td><td>${status(c.status)}</td><td class="muted">${c.created}</td><td class="num">${icon('chevronRight', 'sm')}</td></tr>`).join('')}</tbody></table></div>`;
+    const addedCamps = (g.mem.get('campaigns-added', []) || []).map(c => `<tr><td><div class="person"><span class="feed-ic" style="background:${c.type.startsWith('Stamp') ? 'var(--color-accent-soft);color:var(--color-accent)' : 'var(--color-highlight-soft);color:#9A7300'}">${icon(c.type.startsWith('Stamp') ? 'stamp' : 'ticket', 'sm')}</span>${esc(c.name)}</div></td><td>${badge(c.type, 'outline')}</td><td>${status('Active')}</td><td class="muted">${c.created}</td><td></td></tr>`).join('');
+    const camp = `<div class="table-wrap"><table class="t"><thead><tr><th>Campaign</th><th>Type</th><th>Status</th><th>Created</th><th></th></tr></thead><tbody>${addedCamps}${D.campaigns.map(x => CMP(x.id)).map(c => `<tr class="clickable" data-href="${campLink(ctx, c)}"><td><div class="person"><span class="feed-ic" style="background:${c.type.startsWith('Stamp') ? 'var(--color-accent-soft);color:var(--color-accent)' : 'var(--color-highlight-soft);color:#9A7300'}">${icon(c.type.startsWith('Stamp') ? 'stamp' : 'ticket', 'sm')}</span>${esc(c.name)}</div></td><td>${badge(c.type, 'outline')}</td><td>${status(c.status)}</td><td class="muted">${c.created}</td><td class="num">${icon('chevronRight', 'sm')}</td></tr>`).join('')}</tbody></table></div>`;
     const m1 = modal({ id: 'programType', open: ctx.opts.modal === 'programType', wide: true, title: 'Choose a program type', sub: 'The type can’t be changed after creation.', body: `<div class="type-grid">${TYPES.map(([n, ic, c, d, pre]) => `<button class="type-card" style="--c:${c}" data-href="${ctx.link(pre)}"><span class="ti">${icon(ic)}</span><b>${n}</b><small>${d}</small></button>`).join('')}</div>` });
     const m2 = modal({ id: 'campaignType', open: ctx.opts.modal === 'campaignType', wide: true, title: 'Choose a campaign type', sub: 'Campaigns are special QR codes layered on top of programs, or standalone vouchers.', body: `<div class="type-grid">${[['Stamp card acquisition campaign', 'stamp', '#1747F8', 'A special join QR layered on an existing Stamp Card program.', '17-'], ['One-time voucher campaign', 'ticket', '#C2410C', 'Standalone voucher; each claim can be redeemed once.', '19-']].map(([n, ic, c, d, pre]) => `<button class="type-card" style="--c:${c}" data-href="${ctx.link(pre)}"><span class="ti">${icon(ic)}</span><b>${n}</b><small>${d}</small></button>`).join('')}</div>` });
     return { nav: 'Loyalty Programs', html: `${pageHead({ eyebrow: `${icon('stamp', 'sm')} Programs`, title: 'Loyalty <span class="hl">Programs</span>', sub: 'Programs are what customers join. Campaigns are special QR codes layered on top (acquisition) or standalone vouchers.', actions: `<button class="btn btn-ghost" data-open="campaignType">${icon('ticket', 'sm')}Create campaign</button><button class="btn btn-primary" data-open="programType">${icon('plus', 'sm')}Create Program</button>` })}
@@ -334,6 +336,8 @@ ${ptsFields}
   const twoPasses = gift => `<div class="stack"><div data-preview-card>${phonePreview(g.__passes.card, 'Pass 1 · Digital Stamp Card', { key: 'card', back: true })}</div><div data-gift-preview ${gift ? '' : 'hidden'}>${phonePreview(g.__passes.gift, 'Pass 2 · Welcome gift voucher', { key: 'gift', back: true })}</div></div>`;
   const keepFace = (key, v) => { g.__passes[key] = { ...v, face: (g.__passes[key] || {}).face }; U.repaint(key); };
 
+  // A published campaign is kept in demo memory so it appears in the programs list and the QR codes page.
+  const publishCamp = (ctx, name, type) => { g.mem.set('campaigns-added', [{ name, type, created: 'Oct 21, 2026' }, ...g.mem.get('campaigns-added', [])]); g.toast('Campaign published — QR generated'); setTimeout(() => { location.href = ctx.nav(ctx.link('03-')); }, 800); };
   S.campaignForm = ctx => {
     const cid = qid(), c0 = cid && CMP(cid);
     if (ctx.opts.kind === 'acq') {
@@ -374,7 +378,7 @@ ${ptsFields}
             V.t(prog, pick() ? '' : 'Choose the stamp card this campaign issues.'); V.t(custom, startErr());
             if (tog.checked) { V.t(name, name.value.trim() ? '' : 'Reward Name is required.'); V.t(days, days.value.trim() !== '' && !(Number.isInteger(+days.value) && +days.value >= 1) ? 'Enter whole days, at least 1 — or leave empty.' : ''); }
             return V.ok(); };
-          const b1 = $('[data-camp-publish]'); if (b1) b1.onclick = () => { if (validate()) g.toast('Campaign published — QR generated'); };
+          const b1 = $('[data-camp-publish]'); if (b1) b1.onclick = () => { if (validate()) publishCamp(ctx, nameIn.value.trim(), 'Stamp card acquisition'); };
           const b2 = $('[data-camp-draft]'); if (b2) b2.onclick = () => { if (validate(true)) g.toast('Saved as draft'); };
           const b3 = $('[data-camp-save]'); if (b3) b3.onclick = () => { if (!validate()) return;
             memPut('campaign-edits', c.id, { name: nameIn.value.trim(), program: pick().id, start: n0(), gift: tog.checked ? name.value.trim() : '', validity: parseInt(days.value, 10) || 0, desc: $('[data-gift-desc]').value.trim(), cond: $('[data-gift-cond]').value.trim() }); g.toast('Saved'); };
@@ -404,7 +408,7 @@ ${ptsFields}
           V.t(toIn, !toIn.value ? 'Choose the last valid day.' : from.value && toIn.value < from.value ? 'Valid To must be on or after Valid From.' : '');
           V.t($('[data-up="logo"]'), UPS.logo ? '' : 'Upload a logo.'); bgCheck(V, UPS); V.t(fgIn, isHex(fgIn.value.trim()) ? '' : 'Enter a colour as #RRGGBB, e.g. #FFFFFF.');
           return V.ok(); };
-        const b1 = $('[data-camp-publish]'); if (b1) b1.onclick = () => { if (validate()) g.toast('Campaign published — QR generated'); };
+        const b1 = $('[data-camp-publish]'); if (b1) b1.onclick = () => { if (validate()) publishCamp(ctx, nameIn.value.trim(), 'One-time voucher'); };
         const b2 = $('[data-camp-draft]'); if (b2) b2.onclick = () => { if (validate(true)) g.toast('Saved as draft'); };
         const b3 = $('[data-camp-save]'); if (b3) b3.onclick = () => { if (!validate()) return; const b = bgRead(UPS);
           memPut('campaign-edits', c.id, { name: nameIn.value.trim(), reward: rw.value.trim(), from: fmtDate(from.value), to: fmtDate(toIn.value), pass: { logo: UPS.logo === true ? undefined : UPS.logo || false, bg: b.bg, bgImg: b.bgImg, fg: fgIn.value.trim() } }); g.toast('Saved'); };
@@ -448,7 +452,7 @@ ${ptsFields}
     const br = brand(), lgOf = p => /^data:image\//.test(p.pass.logo || '') ? p.pass.logo : p.pass.logo !== false && /^data:image\//.test(br.logo || '') ? br.logo : '';
     const logo = p => lgOf(p) ? `<div class="pass-logo" style="width:28px;height:28px;background:#fff center/cover url('${esc(lgOf(p))}')"></div>` : p.pass.logo === false ? `<div class="pass-logo ph" style="width:28px;height:28px">${esc(p.name[0])}</div>` : '<div class="pass-logo" style="width:28px;height:28px;font-size:14px">☕</div>';
     const tiles = PROGS().map(p => `<article class="card hover wallet-tile reveal-up" data-href="${designLink(ctx, p.id)}"><div class="pass mini" style="${p.pass.bg || U.brandBg() ? `--bgp:${p.pass.bg || U.brandBg()};` : ''}${p.pass.fg ? `--fg:${p.pass.fg}` : ''}"><div class="pass-top"><div class="pass-name">${esc(p.name)}</div>${logo(p)}</div><div><div class="pass-lbl" style="margin-top:0">${{ stamp: 'Reward', membership: 'Benefit', tier: 'Current tier', points: 'Balance' }[p.kind]}</div><div class="pass-val sm">${esc(sub(p))}</div></div></div><div class="meta"><span>${p.cap}</span>${status(p.status)}</div></article>`).join('');
-    return { nav: 'Wallet Cards', html: `${pageHead({ eyebrow: `${icon('wallet', 'sm')} Wallet`, title: 'Wallet <span class="hl">Cards</span>', sub: 'Every field is entered once in the program’s setup. Here you choose how the pass starts (Bonuca template or custom) and preview how it renders.' })}
+    return { nav: 'Wallet Cards', html: `${pageHead({ eyebrow: `${icon('wallet', 'sm')} Wallet`, title: 'Wallet <span class="hl">Cards</span>', sub: 'Every field is entered once in the program’s setup. Here you see the Bonuca template each program starts from and preview how its pass renders.' })}
       <h2 class="section-title" style="margin-top:0">Base templates</h2><div class="grid g3">${tplCards}</div>
       <h2 class="section-title">Program wallet passes</h2><div class="grid g3">${tiles}</div>
       <div style="margin-top:22px">${callout('', 'Apple Wallet / Google Wallet integration not connected', 'Issued passes are generated and updated by the Bonuca backend (APNs push for Apple Wallet, Google Wallet API PATCH). That integration is not available in this environment, so no real passes are issued or updated from this portal.')}</div>` };

@@ -89,6 +89,7 @@ const lit = p => p.locator('[data-stamp-pass] .stamp.on').count();
 
   await check('P2.6 9/10 + 2 stamps → reward ready, new card shows 1/10; redeem requires tap; wallet preview updates', async () => {
     for (const r of ['manager', 'owner']) {
+      await p.evaluate(() => sessionStorage.clear()).catch(() => { }); // stamps persist in demo memory between scans
       await p.goto(url(`${r}/pages/28-scanner.html`)); await ready(p);
       await p.selectOption('[data-pick]', { label: 'Leon Fischer — Coffee Card (Stamp Card)' }); await p.waitForURL(/29-scanner/); await ready(p);
       assert(await lit(p) === 9, 'Leon should start at 9/10');

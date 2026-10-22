@@ -208,6 +208,8 @@
   }
 
   function wire() {
+    // A field's validation error disappears as soon as the field holds a value again.
+    ['input', 'change'].forEach(t => document.addEventListener(t, e => { const el = e.target, fd = el.closest && el.closest('.field.has-error'); if (!fd || !el.matches || !el.matches('input,select,textarea')) return; const empty = el.matches('select') ? el.selectedIndex <= 0 : el.type === 'checkbox' ? !el.checked : !String(el.value || '').trim(); if (empty) return; fd.classList.remove('has-error'); fd.querySelectorAll(':scope > .error-msg').forEach(x => x.remove()); fd.querySelectorAll(':scope > .hint').forEach(h => { h.hidden = false; }); }));
     document.addEventListener('click', e => { if (!e.target.closest('[data-preview-lock]')) return; e.preventDefault(); e.stopPropagation(); toast(PREVIEW_MSG, 'lock'); }, true);
     document.addEventListener('change', e => { const s = e.target.closest && e.target.closest('select.lang, select[data-lang]'); if (!s || s.dataset.previewLock !== undefined) return; g.mem.set('lang', s.value); document.querySelectorAll('select.lang, select[data-lang]').forEach(o => { if (o !== s && [...o.options].some(x => x.value === s.value)) o.value = s.value; }); toast('Language saved: ' + s.value); });
     ['mousedown', 'keydown'].forEach(t => document.addEventListener(t, e => { if (e.target.closest && e.target.closest('select[data-preview-lock]') && e.key !== 'Tab') { e.preventDefault(); if (t === 'keydown') toast(PREVIEW_MSG, 'lock'); } }, true));

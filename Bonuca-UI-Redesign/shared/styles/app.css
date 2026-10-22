@@ -30,7 +30,7 @@ svg.i.lg{width:22px;height:22px}
 .sidebar{position:sticky;top:14px;align-self:start;height:calc(100vh - 28px);min-height:640px;background:var(--color-glass);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);border:1px solid var(--color-border);border-radius:var(--radius-panel);display:flex;flex-direction:column;padding:20px 14px 14px;box-shadow:var(--shadow-card);z-index:var(--z-sidebar)}
 .brand{display:flex;align-items:center;gap:10px;padding:2px 8px 18px}
 .brand-mark{width:34px;height:34px;border-radius:11px;background:var(--color-ink);display:grid;place-items:center;color:var(--color-accent);font-family:var(--font-display);font-weight:800;font-size:19px;box-shadow:var(--shadow-ink);position:relative;overflow:hidden}
-:root[data-theme="dark"] .brand-mark{background:#0A0F2A;border:1px solid var(--color-border-strong)}
+:root[data-theme="dark"] .brand-mark{background:#111114;border:1px solid var(--color-border-strong)}
 .brand-mark::after{content:"";position:absolute;inset:auto -6px -10px auto;width:18px;height:18px;border-radius:50%;background:var(--color-highlight);opacity:.9;filter:blur(6px)}
 .brand-name{font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:-.03em;line-height:1}
 .brand-sub{font-size:11.5px;color:var(--color-text-tertiary);margin-top:3px}
@@ -47,7 +47,7 @@ svg.i.lg{width:22px;height:22px}
 .nav a .dot{margin-left:auto;width:6px;height:6px;border-radius:50%;background:var(--color-highlight)}
 .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:10px}
 .trial-card{position:relative;overflow:hidden;border-radius:18px;padding:14px;background:var(--color-ink);color:var(--color-text-inverse)}
-:root[data-theme="dark"] .trial-card{background:linear-gradient(150deg,#121A44,#0A0F2A);color:#fff;border:1px solid var(--color-border-strong)}
+:root[data-theme="dark"] .trial-card{background:linear-gradient(150deg,#1A1A1D,#0A0A0B);color:#fff;border:1px solid var(--color-border-strong)}
 .trial-card .ring{position:absolute;right:12px;top:12px}
 .trial-card b{display:block;font-family:var(--font-display);font-size:15px;letter-spacing:-.01em}
 .trial-card span{font-size:12px;opacity:.7}
@@ -157,7 +157,7 @@ html{scroll-padding-top:96px}
 .stat.feature{background:var(--color-ink);color:var(--color-text-inverse);border-color:transparent}
 .stat.feature .lbl,.stat.feature .note{color:color-mix(in srgb,var(--color-text-inverse) 65%,transparent)}
 .stat.feature .ico{background:rgba(255,255,255,.1);color:var(--color-highlight)}
-:root[data-theme="dark"] .stat.feature{background:linear-gradient(140deg,#1747F8,#4A6BFF);color:#fff}
+:root[data-theme="dark"] .stat.feature{background:linear-gradient(140deg,#26262B,#121214);color:#fff;border:1px solid var(--color-border-strong)}
 :root[data-theme="dark"] .stat.feature .lbl,:root[data-theme="dark"] .stat.feature .note{color:rgba(255,255,255,.75)}
 .stat .bar{margin-top:14px;height:6px;border-radius:99px;background:var(--color-surface-sunken);overflow:hidden}
 .stat .bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--color-mint),#5AD3A4);width:var(--w,0);animation:grow 1.1s var(--ease-out) both}
@@ -449,7 +449,7 @@ table.t{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
 .otp input:focus{outline:0;border-color:var(--color-accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--color-accent) 16%,transparent);transform:translateY(-2px)}
 .otp input.filled{border-color:var(--color-ink);background:var(--color-surface-muted)}
 .scan-hero{position:relative;overflow:hidden;border-radius:24px;padding:28px;background:var(--color-ink);color:var(--color-text-inverse);display:flex;align-items:center;gap:26px;cursor:pointer;border:0;width:100%;text-align:left;transition:transform var(--transition-normal)}
-:root[data-theme="dark"] .scan-hero{background:linear-gradient(140deg,#1747F8,#3B63FF);color:#fff}
+:root[data-theme="dark"] .scan-hero{background:linear-gradient(140deg,#26262B,#121214);color:#fff;border:1px solid var(--color-border-strong)}
 .scan-hero:hover{transform:translateY(-2px)}
 .scan-hero .frame{position:relative;width:112px;height:112px;flex:none}
 .scan-hero .frame i{position:absolute;width:30px;height:30px;border:3px solid var(--color-highlight);border-radius:4px}

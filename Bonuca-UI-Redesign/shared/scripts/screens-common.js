@@ -86,7 +86,7 @@
       e.preventDefault(); const v = em.value.trim(), acc = ACCOUNTS.find(a => a[1] === v.toLowerCase());
       const ok = [setErr(em, !v ? 'Enter your email address.' : EMAIL.test(v) ? '' : 'Enter a valid email address.'), setErr(pw, pw.value ? '' : 'Enter your password.')].every(Boolean);
       if (!ok) return;
-      if (acc) location.href = acc[2]; else setErr(pw, 'Incorrect email or password. In this prototype, log in with a development sample account.');
+      if (acc && /^(password1|Bonuca123)$/.test(pw.value)) location.href = acc[2]; else setErr(pw, 'Incorrect email or password. In this prototype, log in with a development sample account (password: password1).');
     };
   } });
 
@@ -277,7 +277,7 @@
   S.onboarding3 = () => {
     const types = [['Stamp Card', 'stamp', '#1747F8', 'Collect stamps, earn a reward'], ['Membership Card', 'crown', '#7C3AED', 'A standing perk for members'], ['Tier Program', 'layers', '#0F9D6E', 'Levels unlocked by visits'], ['Points Program', 'coins', '#C2410C', 'Earn points per purchase']];
     const biz = g.mem.get('business', {}).name || '', start = { name: biz ? `${biz} Card` : '' };
-    return { title: 'Create your first loyalty program', html: authFrame('Create your first <span class="hl">loyalty program</span>', 'Saved as a Draft. Finish the full setup (logo, design, publishing) in Loyalty Programs.', `${bars(3)}<div class="layout-preview" data-first>
+    return { title: 'Create your first loyalty program', html: authFrame('Create your first <span class="hl">loyalty program</span>', 'Pick a type and add the basics — it is saved as a Draft. Finish the full setup (logo, design, publishing) in Loyalty Programs.', `${bars(3)}<div class="layout-preview" data-first>
       <div class="stack">
         <div class="grid g2" data-types>${types.map(([n, ic, c, d], i) => `<button type="button" class="type-card ${i === 0 ? 'on' : ''}" data-select="${n}" style="--c:${c}"><span class="ti">${icon(ic)}</span><b>${n}</b><small>${d}</small></button>`).join('')}</div>
         <div class="form-grid" data-fields>${kindFields('stamp', start)}</div>
@@ -300,7 +300,7 @@
       root.querySelector('[data-create]').onclick = e => {
         e.preventDefault(); const v = vals(), el = n => box.querySelector(`[name="${n}"]`);
         const need = { stamp: ['name', 'reward', 'stamps'], membership: ['name', 'benefit'], tier: ['name'], points: ['name', 'reward', 'needed'] }[kind];
-        const msg = n => !v[n] ? ({ name: 'Program name is required.', reward: 'Reward is required.', benefit: 'Membership benefit is required.', stamps: 'Enter the number of stamps required.', needed: 'Enter the points required.' }[n]) : (n === 'stamps' || n === 'needed') && !(/^\d+$/.test(v[n]) && +v[n] >= 1 && (n === 'needed' || +v[n] <= 30)) ? (n === 'stamps' ? 'Use a whole number from 1 to 30.' : 'Use a whole number of at least 1.') : '';
+        const msg = n => !v[n] ? ({ name: 'Program name is required.', reward: 'Reward is required.', benefit: 'Membership benefit is required.', stamps: 'Enter the number of stamps required.', needed: 'Enter the points required.' }[n]) : (n === 'stamps' || n === 'needed') && !(/^\d+$/.test(v[n]) && +v[n] >= (n === 'stamps' ? 2 : 1) && (n === 'needed' || +v[n] <= 30)) ? (n === 'stamps' ? 'Use a whole number from 2 to 30.' : 'Use a whole number of at least 1.') : '';
         if (!need.map(n => setErr(el(n), msg(n))).every(Boolean)) return;
         g.mem.set('draft-programs', [...g.mem.get('draft-programs', []), { ...v, type: kind, status: 'Draft' }]);
         root.closest('.card').innerHTML = `<div class="empty" style="padding:18px 6px"><div class="ill" style="color:var(--color-mint)">${icon('checkCircle', 'lg')}</div><b style="color:var(--color-text-primary);font-size:18px">“${esc(v.name)}” saved as a Draft</b><span>Finish the full setup (logo, design, publishing) in Loyalty Programs.</span><div class="row wrap" style="justify-content:center;margin-top:10px"><a class="btn btn-primary" href="../../owner/pages/01-dashboard.html">Go to dashboard ${icon('arrowRight', 'sm')}</a><a class="btn btn-ghost" href="../../owner/pages/03-programs-list.html">Open Loyalty Programs</a></div></div>`;

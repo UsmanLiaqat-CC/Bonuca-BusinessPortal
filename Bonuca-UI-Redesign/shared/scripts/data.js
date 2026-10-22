@@ -111,7 +111,7 @@
   const memberScans = { anna: ['Anna Schmidt', 'C-10001', 12, 'Oct 21, 2026', 'Jan 15, 2026'], kemal: ['Kemal Fischer', 'C-10006', 5, 'Sep 11, 2026', 'Mar 2, 2026'] };
   /* customer info shown after a scan: [name, active programs [program id, progress, progress %, pass code], available rewards [reward, source, icon]] */
   const custInfo = {
-    anna: ['Anna Schmidt', [['coffee', '2 / 10 stamps', 20, 'BNC-DEMO1000'], ['points', '120 points · next: Free Dessert at 250']], [['1 Free Coffee', 'stamp card', 'stamp'], ['1 Free Coffee', 'voucher', 'ticket']]],
+    anna: ['Anna Schmidt', [['coffee', '1 / 10 stamps', 10, 'BNC-DEMO1000'], ['points', '120 points · next: Free Dessert at 250']], [['1 Free Coffee', 'stamp card', 'stamp'], ['1 Free Coffee', 'voucher', 'ticket']]],
     leon: ['Leon Fischer', [['coffee', '9 / 10 stamps', 90]], []],
     vera: ['Vera Conti', [['points', '237 points · next: Free Burger at 500']], [['Free Coffee', 'points · 100 points', 'coins']]]
   };

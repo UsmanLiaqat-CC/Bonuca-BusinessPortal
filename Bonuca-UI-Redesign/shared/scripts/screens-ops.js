@@ -8,10 +8,12 @@
   const ME = { owner: 'Sam Owner', manager: 'Mia Manager', employee: 'Eli Employee' };
 
   /* ================= QR SCANNER ================= */
+  // Every confirmed scan is written to the demo log so Recent scans shows it (customer name comes from the result card).
+  function logScan(ctx, text, kind) { const el = document.querySelector('#content .card-title'), d = new Date(), h = d.getHours() % 12 || 12, tm = `${String(h).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} ${d.getHours() < 12 ? 'AM' : 'PM'}`; mem.set('scans-log', [[el ? el.textContent.trim() : '', text, tm, kind, ME[ctx.role]], ...mem.get('scans-log', [])].slice(0, 30)); }
   function feed(ctx, withAnna, max = ctx.has('recent-scans') && ctx.opts.state ? 3 : 10) {
     // Employees see their own scans only; owners/managers see the business feed with who scanned.
     const emp = ctx.role === 'employee', me = ME[ctx.role], base = (ctx.owner ? D.scansBase.slice(1) : D.scansBase.slice(0)).filter(s => !emp || s[4] === me);
-    const list = (withAnna ? [['Anna Schmidt', 'Stamp added · Coffee Card', ctx.owner ? '02:27 PM' : '02:29 PM', 'stamp', me], ...base] : base).slice(0, max);
+    const logged = mem.get('scans-log', []).filter(x => !emp || x[4] === me), list = (logged.length ? [...logged, ...base] : withAnna ? [['Anna Schmidt', 'Stamp added · Coffee Card', ctx.owner ? '02:27 PM' : '02:29 PM', 'stamp', me], ...base] : base).slice(0, max);
     const ic = { points: ['coins', 'var(--color-highlight-soft)', '#9A7300'], visit: ['footprints', 'var(--color-accent-soft)', 'var(--color-accent)'], stamp: ['stamp', 'var(--color-mint-soft)', '#13845B'] };
     const all = max < 10 ? `<a class="link" href="${ctx.page('recent-scans')}">View all ${icon('arrowRight', 'sm')}</a>` : '';
     return card({ title: 'Recent scans', icon: 'clock', sub: emp ? 'Scanned by you.' : '', actions: badge('Live', 'green', true) + all, body: null, cls: 'reveal-up scan-feed', attrs: 'style="overflow:hidden"' }).replace('</section>', `<div>${list.map(([n, d, t, k, by], i) => { const [a, b, c] = ic[k]; return `<div class="list-row" style="${i === 0 && withAnna ? 'background:var(--color-mint-soft);animation:fadeUp .5s both' : ''}"><div class="row" style="min-width:0"><span class="feed-ic" style="background:${b};color:${c}">${icon(a, 'sm')}</span><div style="min-width:0"><b style="font-weight:600;font-size:14px">${n}</b><div class="hint" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d}${emp ? '' : ` · by ${by === me ? 'you' : by}`}</div></div></div><span class="faint" style="font-size:12px;white-space:nowrap">Oct 21 · ${t}</span></div>`; }).join('')}</div></section>`);
@@ -54,7 +56,7 @@
     // Stamp card scans (Coffee Card): which customer (?c=) and how many stamps were just added (?n=).
     const q = new URLSearchParams(location.search), coffee = D.programs.find(p => p.id === 'coffee'), total = coffee.pass.total, reward = coffee.pass.reward;
     // Reward-ready opened without params shows the client example: 9/10 + 2 stamps → new card 1/10.
-    const ready = st === 'rewardReady' && !q.has('c'), ck = ready ? 'leon' : Object.hasOwn(D.stampScans, q.get('c') || '') ? q.get('c') : 'anna', [cname, cid, filled] = D.stampScans[ck];
+    const ready = st === 'rewardReady' && !q.has('c'), ck = ready ? 'leon' : Object.hasOwn(D.stampScans, q.get('c') || '') ? q.get('c') : 'anna', [cname, cid, filled0] = D.stampScans[ck], stampMem = mem.get('stamps', {}), filled = q.has('from') ? Math.max(0, parseInt(q.get('from'), 10) || 0) : Object.hasOwn(stampMem, ck) ? stampMem[ck] : filled0;
     // Multiple stamps only when the program allows it AND the user has permission (client: team permissions still apply).
     const maxPer = coffee.multi.on && ctx.can('multiStamp') ? (coffee.multi.max === 'Unlimited' ? Infinity : coffee.multi.max) : 1;
     const nRaw = Math.max(1, parseInt(ready ? '2' : q.get('n'), 10) || 1), added = st === 'rewardReady' ? Math.min(Math.max(nRaw, total - filled), total * 5) : Math.min(nRaw, maxPer);
@@ -168,27 +170,28 @@
         const as = document.querySelector('[data-add-stamp]'); if (as) as.onclick = () => {
           [...document.querySelectorAll('[data-stamp-pass] .stamp:not(.on)')].slice(0, qty).forEach(x => x.classList.add('on'));
           document.querySelector('[data-stamps]').textContent = Math.min(total, filled + qty); as.disabled = true; g.successSound();
-          const qs = `?c=${ck}&n=${qty}`; setTimeout(() => location.href = ctx.nav((filled + qty >= total ? ctx.scan('rewardReady') : ctx.scan('confirmed')) + qs), 650);
+          logScan(ctx, `${qty > 1 ? qty + ' stamps' : 'Stamp'} added · ${coffee.name}`, 'stamp'); if (filled + qty < total) mem.set('stamps', { ...mem.get('stamps', {}), [ck]: filled + qty });
+          const qs = `?c=${ck}&n=${qty}&from=${filled}`; setTimeout(() => location.href = ctx.nav((filled + qty >= total ? ctx.scan('rewardReady') : ctx.scan('confirmed')) + qs), 650);
         };
         const rv = document.querySelector('[data-redeem-voucher]'); if (rv) rv.onclick = () => {
-          vMem.add(vk); document.querySelector('[data-v-pass]').innerHTML = vPass('Redeemed'); document.querySelector('[data-v-kv]').innerHTML = vRows('Redeemed');
+          vMem.add(vk); logScan(ctx, 'Voucher redeemed', 'stamp'); document.querySelector('[data-v-pass]').innerHTML = vPass('Redeemed'); document.querySelector('[data-v-kv]').innerHTML = vRows('Redeemed');
           rv.disabled = true; rv.innerHTML = `${icon('check', 'sm')}Voucher redeemed`; g.toast('Voucher redeemed — it can’t be used again');
         };
         const sr = document.querySelector('[data-stamp-redeem]'); if (sr) sr.onclick = () => {
-          memAdd('stamp-rewards-redeemed', cid); document.querySelector('[data-sr-status]').innerHTML = status('Redeemed'); sr.disabled = true; sr.textContent = 'Redeemed';
+          memAdd('stamp-rewards-redeemed', cid); logScan(ctx, `Reward redeemed · ${coffee.name}`, 'stamp'); document.querySelector('[data-sr-status]').innerHTML = status('Redeemed'); sr.disabled = true; sr.textContent = 'Redeemed';
           g.toast(`${reward} redeemed for ${cname}`); g.scanSuccess(sr.closest('.card'));
         };
         // Membership visit (Record visit, or recorded by a redeemed win-back reward) — counted once per scan.
-        const mv = document.querySelector('[data-m-visit]'), visit = () => { if (!mv || mv.disabled) return false;
+        const mv = document.querySelector('[data-m-visit]'), visit = () => { if (!mv || mv.disabled) return false; logScan(ctx, `Visit · ${vp.name}`, 'visit');
           document.querySelector('[data-m-visits]').textContent = mvis + 1; document.querySelector('[data-m-last]').textContent = 'Just now';
           mv.disabled = true; mv.innerHTML = `${icon('check', 'sm')}Visit recorded`; const pl = document.querySelector('[data-m-profile]'); if (pl) pl.hidden = false; return true; };
         document.querySelectorAll('[data-wb-redeem]').forEach(b => b.onclick = () => {
-          const c = b.closest('[data-wb]'), l = c.querySelector('[data-wb-profile]'); memAdd('winback-redeemed', c.dataset.wb); visit(); c.querySelector('[data-wb-kv]').innerHTML = wbRows(c.dataset.wb, true);
+          const c = b.closest('[data-wb]'), l = c.querySelector('[data-wb-profile]'); if (!mv) logScan(ctx, 'Win-back reward redeemed', 'visit'); memAdd('winback-redeemed', c.dataset.wb); visit(); c.querySelector('[data-wb-kv]').innerHTML = wbRows(c.dataset.wb, true);
           b.disabled = true; b.innerHTML = `${icon('check', 'sm')}Reward redeemed`; if (l) l.hidden = false; g.toast('Reward redeemed · visit recorded · inactivity timer reset');
         });
-        const rr = document.querySelector('[data-redeem-ready]'); if (rr) rr.onclick = () => {
+        const rr = document.querySelector('[data-redeem-ready]'); if (rr) rr.onclick = () => { logScan(ctx, `Reward redeemed · ${coffee.name}`, 'stamp');
           document.querySelector('[data-rw-status]').innerHTML = badge('Redeemed', 'blue'); document.querySelector('[data-stamp-pass]').innerHTML = stampPass(carry);
-          rr.disabled = true; rr.innerHTML = `${icon('check', 'sm')}Reward redeemed`; g.toast(`Reward redeemed — new card ${carry}/${total}`); g.scanSuccess(document.querySelector('[data-stamp-pass]'));
+          rr.disabled = true; rr.innerHTML = `${icon('check', 'sm')}Reward redeemed`; mem.set('stamps', { ...mem.get('stamps', {}), [ck]: carry }); g.toast(`Reward redeemed — new card ${carry}/${total}`); g.scanSuccess(document.querySelector('[data-stamp-pass]'));
         };
         const am = document.querySelector('[data-amount]'), cr = document.querySelector('[data-credit]');
         if (cr) {
@@ -199,13 +202,13 @@
             document.querySelector('[data-pt-kv]').innerHTML = creditRows(a, r); document.querySelector('[data-cr]').textContent = r.pts;
             note.hidden = !(r.below || r.capped); note.textContent = r.below ? `Below the minimum purchase amount (${cfg.min} ${cfg.currency}) — no points.` : r.capped ? `Capped at the maximum of ${cfg.max} points per transaction.` : ''; cr.disabled = r.pts === 0; };
           if (am) am.oninput = upd; upd();
-          cr.onclick = () => { const r = calc(); g.successSound(); location.href = ctx.nav(ctx.has('points-transactions') ? `${ctx.page('points-transactions')}?new=credit&c=${pk}&a=${amt()}&p=${r.pts}` : `${ctx.scan('confirmed')}?k=points&c=${pk}&p=${r.pts}`); };
+          cr.onclick = () => { const r = calc(); logScan(ctx, `Points credited · +${r.pts} pts · ${pp.name}`, 'points'); g.successSound(); location.href = ctx.nav(ctx.has('points-transactions') ? `${ctx.page('points-transactions')}?new=credit&c=${pk}&a=${amt()}&p=${r.pts}` : `${ctx.scan('confirmed')}?k=points&c=${pk}&p=${r.pts}`); };
         }
         const tg = document.querySelector('[data-tier-go]'); if (tg) {
           const ta = document.querySelector('[data-tier-amount]');
           const delta = () => { const a = ta ? parseFloat(ta.value) || 0 : 0; return tc.req === 'Visits' ? 1 : tc.req === 'Points' ? (ta ? g.calcPoints(a, tc).pts : tc.perVisit) : +a.toFixed(2); };
           if (ta) ta.oninput = () => { const d = delta(); tg.disabled = !(d > 0); if (tc.req === 'Points') document.querySelector('[data-tier-go-l]').textContent = `Credit ${d} points`; };
-          tg.onclick = () => { const d = delta(); if (!(d > 0)) return; const nv = +(tv + d).toFixed(2), was = T.at(tc, tv), now = T.at(tc, nv), up = now.i > was.i;
+          tg.onclick = () => { const d = delta(); if (!(d > 0)) return; logScan(ctx, `Visit · ${cp.name}`, 'visit'); const nv = +(tv + d).toFixed(2), was = T.at(tc, tv), now = T.at(tc, nv), up = now.i > was.i;
             document.querySelector('[data-tier-pass]').innerHTML = tierPassH(nv); document.querySelector('[data-tier-kv]').innerHTML = tierRows(nv);
             tg.disabled = true; if (ta) ta.disabled = true; tg.innerHTML = `${icon('check', 'sm')}${tc.req === 'Points' ? d + ' points credited' : 'Visit recorded'}`;
             if (up) { const b = document.querySelector('[data-tier-up]'); b.querySelector('[data-tier-up-t]').textContent = `Upgraded to ${now.name}`; b.querySelector('[data-tier-up-n]').textContent = now.name; b.hidden = false; }
@@ -217,7 +220,7 @@
           const gf = g.__gift, btn = document.querySelector('[data-gs-redeem]'), set = (s, h) => document.querySelector(s).innerHTML = h; let times = 0;
           gc.onclick = () => {
             if (btn.disabled) { g.toast('Already redeemed — this gift can only be redeemed once.', 'info'); return; } // single-use: a second redemption is blocked
-            times++; set('[data-gs-date]', 'Just now'); set('[data-gs-by]', g.GIFTS.me(ctx)); set('[data-gs-loc]', esc(D.locations[0]));
+            times++; logScan(ctx, `Gift redeemed · ${gf.name}`, 'stamp'); set('[data-gs-date]', 'Just now'); set('[data-gs-by]', g.GIFTS.me(ctx)); set('[data-gs-loc]', esc(D.locations[0]));
             ['[data-gs-wallet]', '[data-gs-log]'].forEach(s => { const e = document.querySelector(s); if (e) e.hidden = false; }); g.scanSuccess(btn.closest('.card'));
             if (gf.opts.multi) { set('[data-gs-callout]', callout('info', 'Gift redeemed', `Redeemed ${times} time${times === 1 ? '' : 's'} on this visit. Multiple redemption — it stays available until ${gf.exp}.`, 'checkCircle')); g.toast(`${gf.name} redeemed`); return; }
             mem.set('gifts-redeemed', { ...mem.get('gifts-redeemed', {}), [gf.id]: { date: g.GIFTS.fmtDate(g.GIFTS.TODAY), by: g.GIFTS.me(ctx), loc: D.locations[0] } });
@@ -228,7 +231,7 @@
         const rd = document.querySelector('[data-redeem-pts]'); if (rd) {
           let pick = cfg.rewards.findIndex(([, need]) => need <= bal);
           document.querySelector('[data-rw-pick]').addEventListener('typechange', e => { pick = +e.detail; document.querySelector('[data-rd-kv]').innerHTML = g.__rd.rdRows(cfg.rewards[pick]); });
-          rd.onclick = () => { const [n, need] = cfg.rewards[pick];
+          rd.onclick = () => { const [n, need] = cfg.rewards[pick]; logScan(ctx, `Points redeemed · −${need} pts · ${pp.name}`, 'points');
             document.querySelector('[data-pts-pass]').innerHTML = ptsPass(bal - need); document.querySelector('[data-rd-kv]').innerHTML = kv([['Customer', pname], ['Reward', n + ' · redeemed', true], ['Points deducted', '−' + need], ['New balance', (bal - need) + ' points', true]]);
             document.querySelectorAll('[data-rw-pick] .type-card').forEach(c => c.disabled = true); rd.disabled = true; rd.innerHTML = `${icon('check', 'sm')}Reward redeemed`;
             const log = document.querySelector('[data-rd-log]'); if (log) { log.href = ctx.nav(`${ctx.page('points-transactions')}?new=redeem&c=${pk}&r=${pick}`); log.hidden = false; } g.toast(`${n} redeemed — ${need} points deducted`); g.scanSuccess(document.querySelector('[data-pts-pass]')); };
@@ -243,11 +246,12 @@
   S.qrCodes = ctx => {
     const ps = mem.get('program-status', {}), items = [['Customer registration', 'Registers a new customer using your configured signup fields.', 'https://join.bonuca.invalid/register/biz_sample', 'Registration', 'Table', 'userPlus'],
       // Programs / campaigns published at runtime (demo memory 'program-status', published 'draft-programs') get their QR code here.
-      ...D.programs.filter(p => (ps[p.id] || p.status) === 'Active').map(p => [p.name, p.qrAction || (p.kind === 'membership' || p.kind === 'tier' ? 'Join membership' : 'Add wallet card'), p.url || `https://join.bonuca.invalid/program/join-prg_${p.id}`, 'Programs', 'Table', p.icon]),
+      ...D.programs.filter(p => (ps[p.id] || p.status) !== 'Draft').map(p => [p.name, p.qrAction || (p.kind === 'membership' || p.kind === 'tier' ? 'Join membership' : 'Add wallet card'), p.url || `https://join.bonuca.invalid/program/join-prg_${p.id}`, 'Programs', 'Table', p.icon, ps[p.id] || p.status]),
       ...mem.get('draft-programs', []).filter(d => d && d.name && d.status === 'Active').map(d => [esc(d.name), d.type === 'membership' || d.type === 'tier' ? 'Join membership' : 'Add wallet card', `https://join.bonuca.invalid/program/join-prg_${d.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, 'Programs', 'Table', { stamp: 'stamp', membership: 'crown', tier: 'layers', points: 'coins' }[d.type] || 'stamp']),
-      ...D.campaigns.filter(c => (ps[c.id] || c.status) === 'Active').map(c => [c.name, c.id === 'cuplid' ? 'Stamp card acquisition campaign' : 'One-time voucher campaign', c.url, 'Campaigns', 'Cup', c.id === 'cuplid' ? 'stamp' : 'ticket'])];
+      ...mem.get('campaigns-added', []).map(c => [esc(c.name), c.type.startsWith('Stamp') ? 'Stamp card acquisition campaign' : 'One-time voucher campaign', `https://join.bonuca.invalid/campaign/${c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, 'Campaigns', 'Cup', c.type.startsWith('Stamp') ? 'stamp' : 'ticket', 'Active']),
+      ...D.campaigns.filter(c => (ps[c.id] || c.status) !== 'Draft').map(c => [c.name, c.id === 'cuplid' ? 'Stamp card acquisition campaign' : 'One-time voucher campaign', c.url, 'Campaigns', 'Cup', c.id === 'cuplid' ? 'stamp' : 'ticket', ps[c.id] || c.status])];
     const n = grp => items.filter(i => i[3] === grp).length;
-    const cards = items.map(([t, s, url, grp, fmt, ic]) => `<section class="card reveal-up" data-group="${grp}"><header class="card-head split"><div class="row"><span class="feed-ic" style="background:var(--color-accent-soft);color:var(--color-accent)">${icon(ic, 'sm')}</span><div><div class="card-title">${t}</div><div class="card-sub">${s}</div></div></div>${grp === 'Registration' ? badge('Always on', 'outline') : status('Active')}</header><div class="card-body">${qrPanel({ url, format: fmt, formats: grp === 'Campaigns' ? U.CAMPAIGN_QR : undefined })}</div></section>`).join('');
+    const cards = items.map(([t, s, url, grp, fmt, ic, st]) => `<section class="card reveal-up" data-group="${grp}"><header class="card-head split"><div class="row"><span class="feed-ic" style="background:var(--color-accent-soft);color:var(--color-accent)">${icon(ic, 'sm')}</span><div><div class="card-title">${t}</div><div class="card-sub">${s}</div></div></div>${grp === 'Registration' ? badge('Always on', 'outline') : status(st || 'Active')}</header><div class="card-body">${qrPanel({ url, format: fmt, formats: grp === 'Campaigns' ? U.CAMPAIGN_QR : undefined })}</div></section>`).join('');
     return { nav: 'QR Scanner', title: 'Printable QR codes', html: `${pageHead({ eyebrow: crumb('QR Scanner', ctx.link('28-')) + 'Printable QR codes', title: 'Printable <span class="hl">QR codes</span>', sub: 'Depending on the program, scanning adds a wallet card, registers the customer, or joins a membership.' })}
       ${tabs([['All', null, items.length], ['Registration', null, 1], ['Programs', null, n('Programs')], ['Campaigns', null, n('Campaigns')]], 'All', 'data-qr-tabs')}<div class="grid g2" data-qr-grid>${cards}</div>`, after() {
         document.querySelector('[data-qr-tabs]').addEventListener('tab', e => document.querySelectorAll('[data-qr-grid] > section').forEach(s => s.hidden = !(e.detail === 'All' || s.dataset.group === e.detail)));
@@ -321,8 +325,9 @@
     // Employee: limited customer info only (client) — name, active programs, progress, available rewards.
     if (!ctx.can('customerDetails')) {
       const cid0 = custById(c0) ? c0 : ciCid(c0) || 'C-10001', ck = Object.hasOwn(D.custInfo, c0) ? c0 : Object.keys(D.custInfo).find(k => ciCid(k) === cid0) || '', cu = custById(ck ? ciCid(ck) : cid0);
-      const [cn, progs, rws0] = ck ? D.custInfo[ck] : [cu.name, cu.visits ? [['coffee', `${cu.visits % 10} / 10 stamps`, cu.visits % 10 * 10], ['club', `Current tier: ${cu.tier}`, T.at(cp.cfg, cu.visits).pct]] : [],
+      const [cn, progs0, rws0] = ck ? D.custInfo[ck] : [cu.name, cu.visits ? [['coffee', `${cu.visits % 10} / 10 stamps`, cu.visits % 10 * 10], ['club', `Current tier: ${cu.tier}`, T.at(cp.cfg, cu.visits).pct]] : [],
         [...D.rewards.filter(r => r[1] === cu.name && r[3] === 'Available').map(r => [esc(r[0]), r[2].toLowerCase(), rwIcon(r[2])]), ...[...mem.get('gifts-assigned', []), ...G.all(ctx).filter(x => !x.fresh)].map(giftNow).filter(x => x.cid === cu.id && x.status === 'Available').map(x => [esc(x.name), 'gift', 'gift'])]];
+      const sm = mem.get('stamps', {}), progs = progs0.map(pr => pr[0] === 'coffee' && ck && Object.hasOwn(sm, ck) ? ['coffee', `${sm[ck]} / 10 stamps`, sm[ck] * 10, pr[3]] : pr);
       const rws = rws0.filter(([, s]) => !(s === 'stamp card' && srDone(cu.id)));
       const programs = progs.map(([id, txt, pct, code], i) => { const p = D.programs.find(x => x.id === id), pts = p.kind === 'points';
         return `<div class="option-row" style="display:block${i ? ';margin-top:10px' : ''}"><div class="row between"><div class="row"><span class="feed-ic" style="background:${pts ? 'var(--color-highlight-soft);color:#9A7300' : 'var(--color-accent-soft);color:var(--color-accent)'}">${icon(p.icon, 'sm')}</span><div><b>${p.name}</b><small>${txt}</small></div></div>${pts ? (ctx.has('points-transactions') ? `<a class="link" href="${ctx.page('points-transactions')}">Transactions ${icon('arrowRight', 'sm')}</a>` : '') : code ? `<span class="mono faint" style="font-size:12px">Pass ${code}</span>` : ''}</div>${pct != null ? `<div class="mini-prog"><i style="--w:${pct}%"></i></div>` : ''}</div>`; }).join('') || '<p class="muted">No active programs yet.</p>';

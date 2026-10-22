@@ -74,7 +74,7 @@ const grantMulti = () => Object.defineProperty(window, 'DATA', { configurable: t
   });
 
   await check('Customer info is limited: name, active programs, progress, available rewards — no email/phone/notes/analytics', async () => {
-    for (const [c, name, must] of [['anna', 'Anna Schmidt', ['Coffee Card', '2 / 10 stamps', 'Coffee Rewards', '120 points', '1 Free Coffee']], ['leon', 'Leon Fischer', ['Coffee Card', '9 / 10 stamps']], ['vera', 'Vera Conti', ['Coffee Rewards', '237 points', 'Free Coffee']]]) {
+    for (const [c, name, must] of [['anna', 'Anna Schmidt', ['Coffee Card', '1 / 10 stamps', 'Coffee Rewards', '120 points', '1 Free Coffee']], ['leon', 'Leon Fischer', ['Coffee Card', '9 / 10 stamps']], ['vera', 'Vera Conti', ['Coffee Rewards', '237 points', 'Free Coffee']]]) {
       await p.goto(url(EMP + '03-customer-info.html', '?c=' + c)); await ready(p);
       const t = await txt(p, '#content');
       assert(t.includes(name) && t.includes('Active programs') && t.includes('Available rewards'), c + ' sections');
@@ -173,7 +173,7 @@ const grantMulti = () => Object.defineProperty(window, 'DATA', { configurable: t
   });
 
   await check('Accept invitation (Employee) still goes to login; manager/owner scanner flows keep their own pages', async () => {
-    await p.goto(url('common/pages/13-accept-invitation.html', '?role=Employee')); await ready(p);
+    await p.goto(url('common/pages/13-accept-invitation.html', '?role=Employee')); await ready(p); await p.evaluate(() => sessionStorage.clear()); // earlier scans persist stamps in demo memory
     assert((await txt(p, '[data-invite-role]')).includes('Employee'), 'role');
     await p.fill('input[name=pw]', 'Bonuca123'); await p.fill('input[name=pw2]', 'Bonuca123'); await p.click('button[type=submit]'); await ready(p);
     assert(p.url().includes('03-login'), 'accept → login');

@@ -167,7 +167,16 @@
     return recipients(t, x).map((c, i) => ({ ...base, id: 'new' + i, cid: c.id, customer: c.name, target, query: `${giftQuery(r)}&t=${t}&x=${encodeURIComponent(x)}` }));
   }
   const byId = id => { const m = Object.fromEntries(D.gifts.map(x => [x.id, x])); return Object.hasOwn(m, id || '') ? m[id] : null; };
-  const all = ctx => [...freshGifts(ctx), ...D.gifts];
+  // Gifts created this session stay in the lists: manual ones are stored by the customer profile ('gifts-assigned'), group gifts are stored here the first time their list is shown.
+  const all = ctx => {
+    const fr = freshGifts(ctx), mem = g.mem;
+    if (fr.length && fr[0].src === 'Group' && !mem.get('gifts-group-seen', []).includes(fr[0].query)) {
+      const old = mem.get('gifts-assigned', []); mem.set('gifts-group-seen', [...mem.get('gifts-group-seen', []), fr[0].query]);
+      mem.set('gifts-assigned', [...fr.map((x, i) => ({ ...x, fresh: false, id: 'gg' + old.length + '-' + i })), ...old]);
+    }
+    const done = mem.get('gifts-redeemed', {}); // a gift redeemed at the scanner shows as Redeemed here too
+    return [...fr, ...mem.get('gifts-assigned', []).filter(x => !fr.some(f => f.query === x.query && f.cid === x.cid)), ...D.gifts].map(x => !x.opts.multi && done[x.id] ? { ...x, status: 'Redeemed', red: done[x.id] } : x);
+  };
   const optRows = gf => [...(gf.opts.prog ? [['Program', esc(D.programs.find(p => p.id === gf.opts.prog).name)]] : []), ['Redemption', gf.opts.multi ? 'Multiple' : 'Single'], ['Minimum purchase amount', gf.opts.min ? gf.opts.min.toFixed(2) + ' ' + (gf.opts.cur || 'EUR') : 'None'], ['Valid locations', gf.opts.locs.map(esc).join(', ')], ['Combinable with other discounts', gf.opts.combine ? 'Yes' : 'No'], ['Product or category', gf.opts.product ? esc(gf.opts.product) : 'Any']];
   // Client's gift information, in the client's order.
   const giftKv = gf => kv([['Gift name', esc(gf.name), true], ['Description', esc(gf.desc) || '—'], ['Business', BIZ], ['Assigned customer', `${esc(gf.customer)} <span class="mono faint">${gf.cid}</span>`], ['Date created', gf.created], ['Activation date', gf.on], ['Expiration date', gf.exp], ['Status', `<span data-gd-status>${status(gf.status)}</span>`], ['Terms and conditions', esc(gf.terms) || '—'], ['Redemption date', gf.red ? gf.red.date : '—'], ['Employee who redeemed it', gf.red ? gf.red.by : '—'], ['Location where it was redeemed', gf.red ? esc(gf.red.loc) : '—'], ['Source', srcLabel(gf)], ...optRows(gf)]);
@@ -239,7 +248,7 @@
 
   S.gifts = ctx => {
     const q = new URLSearchParams(location.search), tab = Object.hasOwn(ORIGIN, q.get('tab') || '') ? q.get('tab') : 'manual';
-    const fresh = freshGifts(ctx), list = [...fresh, ...D.gifts];
+    const fresh = freshGifts(ctx), list = all(ctx);
     // A gift redeemed in the scanner (?redeemed=id) is shown with its redemption.
     const rd = byId(q.get('redeemed')), red = rd && rd.status === 'Available' ? { ...rd, red: { date: 'Just now', by: me(ctx), loc: D.locations[0] }, prevRed: rd.red, status: rd.opts.multi ? 'Available' : 'Redeemed', justRedeemed: true } : null;
     const gifts = red ? list.map(x => x.id === red.id ? red : x) : list;
