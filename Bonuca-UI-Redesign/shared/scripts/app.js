@@ -17,17 +17,19 @@
     ['34-qr-codes', 'qrCodes'], ['35-customers', 'customers'], ['36-customers-add-dialog', 'customers', { modal: 'add' }], ['37-customer-profile', 'customerProfile'], ['38-customer-signup-fields', 'signupFields'],
     ['39-employees', 'employees'], ['40-employees-invite-dialog', 'employees', { modal: 'invite' }],
     ['41-notifications-campaigns', 'notifications', { tab: 'Manual campaigns' }], ['42-notifications-new-campaign', 'notifications', { tab: 'Manual campaigns', modal: true }], ['43-notifications-winback', 'notifications', { tab: 'Win-back automation' }], ['44-notifications-ai-tools', 'notifications', { tab: 'AI tools' }],
-    ['45-rewards', 'rewards'], ['46-rewards-surprise', 'surprise'], ['47-analytics', 'analytics'], ['48-branding', 'branding'], ['49-subscription', 'subscription'],
+    ['45-rewards', 'rewards'], ['46-rewards-surprise', 'gifts'], ['47-analytics', 'analytics'], ['48-branding', 'branding'], ['49-subscription', 'subscription'],
     ['50-settings-business', 'settings', { sec: 'business' }], ['51-settings-address', 'settings', { sec: 'address' }], ['52-settings-hours', 'settings', { sec: 'hours' }], ['53-settings-logo', 'settings', { sec: 'logo' }], ['54-settings-brand-colors', 'settings', { sec: 'colors' }], ['55-settings-employees', 'settings', { sec: 'employees' }], ['56-settings-notifications', 'settings', { sec: 'notifications' }]
   ];
   const PAGES = {
     common: [['01-landing', 'landing'], ['02-landing-download-app', 'landing', { modal: true }], ['03-login', 'login'], ['04-register', 'register'], ['05-register-validation', 'register', { errors: true }], ['06-verify-email', 'verify'], ['07-onboarding-business-profile', 'onboarding1'], ['08-onboarding-plan-selection', 'onboarding2'], ['09-onboarding-first-program', 'onboarding3'],
       ['10-forgot-password', 'forgot'], ['11-forgot-password-sent', 'forgot', { sent: true }], ['12-reset-password', 'resetPassword'], ['13-accept-invitation', 'acceptInvite']],
     manager: [...shared, ['57-settings-wallet', 'settings', { sec: 'wallet' }], ['58-settings-language', 'settings', { sec: 'language' }], ['59-dashboard-dark-mode', 'dashboard', { theme: 'dark' }],
-      ['60-scanner-stamp-reward-ready', 'scanner', { state: 'rewardReady' }], ['61-scanner-points-redeem', 'scanner', { state: 'pointsRedeem' }], ['62-points-transactions', 'pointsLog']],
+      ['60-scanner-stamp-reward-ready', 'scanner', { state: 'rewardReady' }], ['61-scanner-points-redeem', 'scanner', { state: 'pointsRedeem' }], ['62-points-transactions', 'pointsLog'],
+      ['65-gift-assign-dialog', 'customerProfile', { modal: 'gift' }], ['66-gift-new-group', 'giftGroup'], ['67-gift-rules', 'giftRules'], ['68-scanner-gift', 'scanner', { state: 'gift' }]],
     owner: [...shared, ['57-settings-billing', 'settings', { sec: 'billing' }], ['58-settings-wallet', 'settings', { sec: 'wallet' }], ['59-settings-language', 'settings', { sec: 'language' }], ['60-dashboard-dark-mode', 'dashboard', { theme: 'dark' }],
       ['61-dashboard-preview-mode', 'dashboard', { preview: true }], ['62-scanner-stamp-reward-ready', 'scanner', { state: 'rewardReady' }],
-      ['63-scanner-points-redeem', 'scanner', { state: 'pointsRedeem' }], ['64-points-transactions', 'pointsLog']]
+      ['63-scanner-points-redeem', 'scanner', { state: 'pointsRedeem' }], ['64-points-transactions', 'pointsLog'],
+      ['67-gift-assign-dialog', 'customerProfile', { modal: 'gift' }], ['68-gift-new-group', 'giftGroup'], ['69-gift-rules', 'giftRules'], ['70-scanner-gift', 'scanner', { state: 'gift' }]]
   };
   // New screens get different numbers per role (R6), so link to them by name: page(role, 'scanner-stamp-reward-ready').
   const page = (role, name) => (PAGES[role].find(p => p[0].slice(3) === name) || [name])[0] + '.html';
