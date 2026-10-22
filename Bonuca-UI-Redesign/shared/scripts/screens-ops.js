@@ -237,40 +237,25 @@
   };
 
   /* ================= PRINTABLE QR CODES ================= */
-  // Print formats (client examples): the chosen format drives the preview, the PNG and the print view (PDF). Sizes are sensible defaults.
+  // Print formats (client examples): the chosen format drives the preview (PNG/PDF files come from core qrPanel). Sizes are sensible defaults.
   const FMT = { Table: ['Table tent', 'A6 · 105 × 148 mm', 105, 148], Counter: ['Counter display', 'A5 · 148 × 210 mm', 148, 210], Sticker: ['Round sticker', '80 mm round', 80, 80, 1], Flyer: ['Flyer', 'A5 · 148 × 210 mm', 148, 210], Window: ['Window decal', '200 × 200 mm', 200, 200],
     Poster: ['Poster', 'A3 · 297 × 420 mm', 297, 420], Cup: ['Cup sticker', '50 mm round', 50, 50, 1], Receipt: ['Receipt print', '80 mm roll · 72 × 90 mm', 72, 90], Advertisement: ['Advertisement', 'A4 · 210 × 297 mm', 210, 297] };
-  const slug = t => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  function qrPng(panel, title, fmt) {
-    const [label, , w, h, round] = FMT[fmt], W = 900, H = Math.round(W * h / w), cv = document.createElement('canvas'), c = cv.getContext('2d'), svg = panel.querySelector('.qr-box svg'), n = svg.viewBox.baseVal.width;
-    cv.width = W; cv.height = H; c.fillStyle = '#fff'; c.fillRect(0, 0, W, H);
-    if (round) { c.beginPath(); c.arc(W / 2, H / 2, W / 2 - 6, 0, 2 * Math.PI); c.lineWidth = 8; c.strokeStyle = '#0A0A0A'; c.stroke(); }
-    const s = Math.min(W, H) * (round ? .55 : .62), x0 = (W - s) / 2, y0 = round ? (H - s) / 2 : Math.max(H * .22, (H - s) / 2 - 40), m = s / n;
-    c.fillStyle = '#0A0A0A'; svg.querySelectorAll('rect').forEach(r => c.fillRect(x0 + r.getAttribute('x') * m, y0 + r.getAttribute('y') * m, Math.ceil(m), Math.ceil(m)));
-    if (!round) { c.textAlign = 'center'; c.font = '600 44px sans-serif'; c.fillText(title, W / 2, y0 - 50); c.font = '28px sans-serif'; c.fillStyle = '#555'; c.fillText('Scan with your phone camera', W / 2, y0 + s + 60); }
-    cv.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `${slug(title)}-${fmt.toLowerCase()}.png`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); g.toast(`PNG downloaded — ${label}`); }, 'image/png');
-  }
-  function qrPrint(panel, title, url, fmt) {
-    const [label, , w, h, round] = FMT[fmt], d = Math.min(w, h), win = window.open('', '_blank');
-    if (!win) { g.toast('Allow pop-ups to open the print view.', 'info'); return; }
-    win.document.write(`<!doctype html><title>${esc(title)} · ${label}</title><style>@page{size:${w}mm ${h}mm;margin:0}body{margin:0;font-family:system-ui,sans-serif}.sheet{width:${w}mm;height:${h}mm;box-sizing:border-box;padding:6mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4mm;text-align:center;${round ? 'border:1mm solid #0A0A0A;border-radius:50%;' : ''}}svg{width:${d * .6}mm;height:${d * .6}mm}h1{margin:0;font-size:${Math.max(3, d / 18)}mm}p{margin:0;color:#555;font-size:${Math.max(2, d / 40)}mm;word-break:break-all}</style><div class="sheet">${round ? '' : `<h1>${esc(title)}</h1>`}${panel.querySelector('.qr-box svg').outerHTML}${round ? '' : `<p>${esc(url)}</p>`}</div><script>onload=()=>setTimeout(()=>print(),150)<\/script>`);
-    win.document.close(); g.toast(`Print view opened — ${label} · save it as PDF`);
-  }
   S.qrCodes = ctx => {
-    const items = [['Customer registration', 'Registers a new customer using your configured signup fields.', 'https://join.bonuca.invalid/register/biz_sample', 'Registration', 'Table', 'userPlus'],
-      ...D.programs.filter(p => p.status === 'Active').map(p => [p.name, p.qrAction, p.url, 'Programs', 'Table', p.icon]),
-      ['Cup-lid Campaign', 'Stamp card acquisition campaign', D.campaigns[0].url, 'Campaigns', 'Cup', 'stamp'], ['Free Coffee Campaign', 'One-time voucher campaign', D.campaigns[1].url, 'Campaigns', 'Cup', 'ticket'], ['Weekend Brunch Voucher', 'One-time voucher campaign', D.campaigns[2].url, 'Campaigns', 'Cup', 'ticket']];
+    const ps = mem.get('program-status', {}), items = [['Customer registration', 'Registers a new customer using your configured signup fields.', 'https://join.bonuca.invalid/register/biz_sample', 'Registration', 'Table', 'userPlus'],
+      // Programs / campaigns published at runtime (demo memory 'program-status', published 'draft-programs') get their QR code here.
+      ...D.programs.filter(p => (ps[p.id] || p.status) === 'Active').map(p => [p.name, p.qrAction || (p.kind === 'membership' || p.kind === 'tier' ? 'Join membership' : 'Add wallet card'), p.url || `https://join.bonuca.invalid/program/join-prg_${p.id}`, 'Programs', 'Table', p.icon]),
+      ...mem.get('draft-programs', []).filter(d => d && d.name && d.status === 'Active').map(d => [esc(d.name), d.type === 'membership' || d.type === 'tier' ? 'Join membership' : 'Add wallet card', `https://join.bonuca.invalid/program/join-prg_${d.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, 'Programs', 'Table', { stamp: 'stamp', membership: 'crown', tier: 'layers', points: 'coins' }[d.type] || 'stamp']),
+      ...D.campaigns.filter(c => (ps[c.id] || c.status) === 'Active').map(c => [c.name, c.id === 'cuplid' ? 'Stamp card acquisition campaign' : 'One-time voucher campaign', c.url, 'Campaigns', 'Cup', c.id === 'cuplid' ? 'stamp' : 'ticket'])];
+    const n = grp => items.filter(i => i[3] === grp).length;
     const cards = items.map(([t, s, url, grp, fmt, ic]) => `<section class="card reveal-up" data-group="${grp}"><header class="card-head split"><div class="row"><span class="feed-ic" style="background:var(--color-accent-soft);color:var(--color-accent)">${icon(ic, 'sm')}</span><div><div class="card-title">${t}</div><div class="card-sub">${s}</div></div></div>${grp === 'Registration' ? badge('Always on', 'outline') : status('Active')}</header><div class="card-body">${qrPanel({ url, format: fmt, formats: grp === 'Campaigns' ? U.CAMPAIGN_QR : undefined })}</div></section>`).join('');
     return { nav: 'QR Scanner', title: 'Printable QR codes', html: `${pageHead({ eyebrow: crumb('QR Scanner', ctx.link('28-')) + 'Printable QR codes', title: 'Printable <span class="hl">QR codes</span>', sub: 'Depending on the program, scanning adds a wallet card, registers the customer, or joins a membership.' })}
-      ${tabs([['All', null, 8], ['Registration', null, 1], ['Programs', null, 4], ['Campaigns', null, 3]], 'All', 'data-qr-tabs')}<div class="grid g2" data-qr-grid>${cards}</div>`, after() {
+      ${tabs([['All', null, items.length], ['Registration', null, 1], ['Programs', null, n('Programs')], ['Campaigns', null, n('Campaigns')]], 'All', 'data-qr-tabs')}<div class="grid g2" data-qr-grid>${cards}</div>`, after() {
         document.querySelector('[data-qr-tabs]').addEventListener('tab', e => document.querySelectorAll('[data-qr-grid] > section').forEach(s => s.hidden = !(e.detail === 'All' || s.dataset.group === e.detail)));
         document.querySelectorAll('[data-qr-grid] > section').forEach(sec => {
-          const panel = sec.querySelector('.qr-panel'), box = panel.querySelector('.qr-box'), sel = panel.querySelector('select'), title = sec.querySelector('.card-title').textContent, url = panel.querySelector('[data-copy]').dataset.copy;
-          panel.querySelector('.dev-url').remove(); sel.insertAdjacentHTML('afterend', '<div class="hint" data-fmt-cap></div>');
+          const panel = sec.querySelector('.qr-panel'), box = panel.querySelector('.qr-box'), sel = panel.querySelector('select');
+          sel.insertAdjacentHTML('afterend', '<div class="hint" data-fmt-cap></div>');
           const upd = () => { const [l, size, w, h, round] = FMT[sel.value]; box.style.height = Math.round(150 * Math.min(h / w, 1.5)) + 'px'; box.style.borderRadius = round ? '50%' : ''; box.style.padding = round ? '28px' : ''; box.dataset.format = sel.value; panel.querySelector('[data-fmt-cap]').textContent = `${l} · ${size}`; };
           sel.addEventListener('change', upd); upd();
-          const [png, pdf] = panel.querySelectorAll('[data-toast]'); png.removeAttribute('data-toast'); pdf.removeAttribute('data-toast'); png.dataset.qrDl = 'png'; pdf.dataset.qrDl = 'pdf';
-          png.onclick = () => qrPng(panel, title, sel.value); pdf.onclick = () => qrPrint(panel, title, url, sel.value);
         });
       } };
   };
