@@ -105,7 +105,7 @@
   S.programs = ctx => {
     // Drafts saved from onboarding (09) or "Save as draft" (demo memory 'draft-programs') finish their setup in the matching new-program form.
     const KT = { stamp: [0, 'stamp', '06-'], membership: [1, 'crown', '07-'], tier: [2, 'layers', '08-'], points: [3, 'coins', '09-'] };
-    const drafts = g.mem.get('draft-programs', []).filter(d => d && d.name && KT[d.type]).map(d => ({ id: '', name: d.name, type: TYPES[KT[d.type][0]][0], status: 'Draft', c: TYPES[KT[d.type][0]][2], icon: KT[d.type][1], date: 'Draft · setup not finished', href: ctx.link(KT[d.type][2]) }));
+    const drafts = g.mem.get('draft-programs', []).filter(d => d && d.name && KT[d.type]).map(d => ({ id: '', name: d.name, type: TYPES[KT[d.type][0]][0], status: d.status === 'Active' ? 'Active' : 'Draft', c: TYPES[KT[d.type][0]][2], icon: KT[d.type][1], date: d.status === 'Active' ? 'Published this session' : 'Draft · setup not finished', href: ctx.link(KT[d.type][2]) }));
     const progs = [...PROGS().map(p => ({ ...p, href: ctx.link(DETAIL[p.id]) })), ...drafts], counts = { All: progs.length }; ['Active', 'Inactive', 'Draft'].forEach(s => counts[s] = progs.filter(p => p.status === s).length);
     const cards = progs.map(p => `<article class="card hover prog-card reveal-up" style="--c:${p.c}" data-status="${p.status}" data-href="${p.href}" tabindex="0">
       <div class="top"><span class="ti">${icon(p.icon, 'lg')}</span>${status(p.status)}</div>
@@ -274,7 +274,7 @@ ${ptsFields}
             V.t(b.querySelector('[data-tier-ben]'), b.querySelector('[data-tier-ben]').value.trim() ? '' : 'Rewards & Benefits are required.');
             if (v !== '' && +v >= 0) prev = [tnm(b), v]; }); }
           return V.ok(); };
-        const pb = $('[data-publish]'); if (pb) pb.onclick = () => { if (validate()) g.toast('Program published'); };
+        const pb = $('[data-publish]'); if (pb) pb.onclick = () => { if (!validate()) return; g.mem.set('draft-programs', [...g.mem.get('draft-programs', []), { name: nameIn.value.trim(), type: k, status: 'Active' }]); g.toast('Program published'); setTimeout(() => { location.href = ctx.nav(ctx.link('03-')); }, 700); };
         const db = $('[data-draft]'); if (db) db.onclick = () => { if (!validate(true)) return; g.mem.set('draft-programs', [...g.mem.get('draft-programs', []), { name: nameIn.value.trim(), type: k, status: 'Draft' }]); g.toast('Saved as draft'); };
         if (!edit) return;
         // Master fields (render on every issued pass): editing them on a live program shows the retroactive-update warning.
