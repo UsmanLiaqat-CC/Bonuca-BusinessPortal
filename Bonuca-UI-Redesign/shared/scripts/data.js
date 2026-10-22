@@ -14,7 +14,8 @@
       setup: [['Tiers', 'Member (0) → Silver (10) → Gold (25)'], ['Upgrade basis', 'visits'], ['Downgrade rule', 'Off'], ['Surprise rewards', 'Off']] },
     { id: 'points', name: 'Coffee Rewards', type: 'Points Program', kind: 'points', status: 'Active', date: 'Published Dec 5, 2025', icon: 'coins', c: '#C2410C', url: 'https://join.bonuca.invalid/program/join-prg_points', qrAction: 'Add wallet card',
       pass: { type: 'points', name: 'Coffee Rewards', balance: '120 pts', nextReward: 'Free Dessert', needed: '130', pct: 48 }, cap: 'Generic layout (no launch template)',
-      setup: [['Currency', 'EUR'], ['Ratio', '1 EUR = 10 pts'], ['Awarding', 'Manual entry'], ['Rewards', '100 pts = Free Coffee, 250 pts = Free Dessert, 500 pts = Free Burger'], ['Surprise rewards', 'On (5%)']] },
+      cfg: { currency: 'EUR', basis: 1, pts: 10, method: 'Manual', perVisit: 10, rounding: 'Round down', min: null, max: null, rewards: [['Free Coffee', 100], ['Free Dessert', 250], ['Free Burger', 500]], pointExpiry: null, rewardExpiry: null },
+      setup: [['Currency', 'EUR'], ['Earning rule', '1 EUR = 10 points'], ['Awarding method', 'Manual — employee enters the purchase amount'], ['Rounding', 'Round down'], ['Rewards', '100 points = Free Coffee, 250 points = Free Dessert, 500 points = Free Burger'], ['Surprise rewards', 'On (5%)']] },
     { id: 'lunch', name: 'Lunch Card', type: 'Stamp Card', kind: 'stamp', status: 'Draft', date: 'Created Dec 5, 2025', icon: 'stamp', c: '#B45309', url: '',
       pass: { type: 'stamp', name: 'Lunch Card', reward: 'Free Lunch Menu', total: 8, filled: 3, icon: 'star', bg: '#7A2E21' }, cap: 'Digital Stamp Card',
       multi: { on: false, max: 3 },
@@ -81,6 +82,19 @@
   /* [name, email, role, since, canManageEmployees (Managers, set by the Owner), canAwardMultipleStamps (Employees)] */
   const team = [['Sam Owner', 'owner@sample.dev', 'Owner', 'Dec 5, 2025'], ['Mia Manager', 'manager@sample.dev', 'Manager', 'Dec 5, 2025', true], ['Eli Employee', 'employee@sample.dev', 'Employee', 'Dec 5, 2025', false, false]];
   /* stamp-card holders the scanner can open: [name, customer ID, stamps already on the Coffee Card] */
+  /* points customers the scanner can open: [name, customer ID, current balance] */
+  const pointsScans = { vera: ['Vera Conti', 'C-10004', 237] };
+  /* points transaction log: [customer, program, currency, purchase amount, points, balance before, balance after, employee, location, date/time, status] */
+  const LOC = 'Sample Street 1, Berlin';
+  const pointsLog = [
+    ['Kemal Bianchi', 'Coffee Rewards', 'EUR', '10.10', '+101', 412, 513, 'Mia Manager', LOC, 'Oct 21, 2026, 02:28 PM', 'Completed'],
+    ['Sven Martin', 'Coffee Rewards', 'EUR', '17.30', '+173', 150, 323, 'Eli Employee', LOC, 'Oct 21, 2026, 02:09 PM', 'Completed'],
+    ['Kemal Bianchi', 'Coffee Rewards', 'EUR', '7.30', '+73', 339, 412, 'Sam Owner', LOC, 'Oct 21, 2026, 01:46 PM', 'Completed'],
+    ['David Ricci', 'Coffee Rewards', 'EUR', '3.70', '+37', 88, 125, 'Eli Employee', LOC, 'Oct 21, 2026, 01:42 PM', 'Completed'],
+    ['David Ricci', 'Coffee Rewards', 'EUR', '5.40', '+54', 34, 88, 'Mia Manager', LOC, 'Oct 21, 2026, 01:17 PM', 'Completed'],
+    ['Anna Schmidt', 'Coffee Rewards', 'EUR', '—', '−100 · Free Coffee', 220, 120, 'Mia Manager', LOC, 'Oct 20, 2026, 05:10 PM', 'Completed'],
+    ['Vera Conti', 'Coffee Rewards', 'EUR', '12.40', '+124', 113, 237, 'Eli Employee', LOC, 'Oct 18, 2026, 11:32 AM', 'Completed']
+  ];
   const stampScans = { anna: ['Anna Schmidt', 'C-10001', 1], leon: ['Leon Fischer', 'C-10009', 9] };
   const roles = [['Owner', 'Full access — billing/subscription, employees, customers, loyalty programs, analytics, scanner, business settings.', 'shield'], ['Manager', 'Customers, loyalty programs, rewards, analytics, scanner, limited settings, and employees if permitted.', 'badge'], ['Employee', 'Scanner, limited customer info, add stamps/points/visits, redeem rewards. No billing or subscription access.', 'scan']];
   const plans = {
@@ -88,5 +102,5 @@
     trial: ['All Pro features, temporarily', 'Unlimited customers', 'Unlimited programs', 'Unlimited locations', 'Unlimited employees'],
     pro: ['Unlimited customers', 'Unlimited programs', 'Unlimited locations', 'Unlimited employees', 'AI heatmap commentary']
   };
-  g.DATA = { programs, campaigns, customers, scansBase, rewards, winbackLog, stages, dash, analytics, team, roles, plans, stampScans };
+  g.DATA = { programs, campaigns, customers, scansBase, rewards, winbackLog, stages, dash, analytics, team, roles, plans, stampScans, pointsScans, pointsLog };
 })(window);

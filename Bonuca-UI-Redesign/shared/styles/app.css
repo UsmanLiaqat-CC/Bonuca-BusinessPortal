@@ -299,7 +299,7 @@ table.t{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
 
 /* ---------- modal ---------- */
 .backdrop{position:fixed;inset:0;z-index:var(--z-modal);background:rgba(8,10,25,.38);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:grid;place-items:start center;padding:110px 20px 40px;overflow:auto;animation:fade .25s var(--ease-out) both}
-.backdrop[hidden]{display:none}
+[hidden]{display:none!important} /* the hidden attribute must win over component display rules */
 .modal{width:100%;max-width:520px;background:var(--color-surface);border-radius:26px;box-shadow:var(--shadow-pop);animation:modalIn .42s var(--ease-spring) both;overflow:hidden}
 .modal.wide{max-width:720px}
 .modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:22px 24px 0}

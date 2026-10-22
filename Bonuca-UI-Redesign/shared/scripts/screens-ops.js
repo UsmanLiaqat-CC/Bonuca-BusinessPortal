@@ -18,13 +18,26 @@
   function custHead(name, sub) { return `<header class="card-head split"><div class="row"><span class="avatar round" style="width:48px;height:48px;font-size:16px">${U.initials(name)}</span><div><div class="card-title" style="font-size:20px">${name}</div><div class="card-sub">${sub}</div></div></div><button class="btn btn-text btn-sm" data-new-scan>${icon('rotate', 'sm')}New scan</button></header>`; }
   const offer = () => `<div class="offer-card"><span class="confetti">🎁</span><div class="row" style="margin-bottom:10px"><span class="feed-ic" style="background:#fff;color:#C2410C">${icon('gift', 'sm')}</span><b style="font-family:var(--font-display);font-size:17px">Welcome back offer</b>${badge('Win-back', 'amber')}</div>${kv([['Customer', 'Anna Schmidt'], ['Days inactive', '22'], ['Win-back reward', 'Free espresso shot', true], ['Redemption status', badge('Not redeemed', 'outline')]])}<button class="btn btn-ink btn-block" style="margin-top:12px" data-toast="Win-back reward redeemed">${icon('gift', 'sm')}Redeem Reward</button></div>`;
 
+  // Points for a purchase under a program's earning rule (client: rounding, optional minimum purchase and per-transaction cap).
+  const ROUND = { 'Round down': Math.floor, 'Round up': Math.ceil, 'Round to nearest': Math.round };
+  g.calcPoints = (amount, c) => {
+    if (!(amount > 0)) return { pts: 0 };
+    if (c.min && amount < c.min) return { pts: 0, below: true };
+    const pts = ROUND[c.rounding](Math.round(amount / c.basis * c.pts * 1e6) / 1e6);
+    return c.max && pts > c.max ? { pts: c.max, capped: true } : { pts };
+  };
+
   S.scanner = ctx => {
     const st = ctx.opts.state; let main = '';
     // Stamp card scans (Coffee Card): which customer (?c=) and how many stamps were just added (?n=).
     const q = new URLSearchParams(location.search), coffee = D.programs.find(p => p.id === 'coffee'), total = coffee.pass.total, reward = coffee.pass.reward;
-    const ck = D.stampScans[q.get('c')] ? q.get('c') : 'anna', [cname, cid, filled] = D.stampScans[ck], added = Math.max(1, parseInt(q.get('n'), 10) || 1);
+    // Reward-ready opened without params shows the client example: 9/10 + 2 stamps → new card 1/10.
+    const ready = st === 'rewardReady' && !q.has('c'), ck = ready ? 'leon' : Object.hasOwn(D.stampScans, q.get('c') || '') ? q.get('c') : 'anna', [cname, cid, filled] = D.stampScans[ck];
     // Multiple stamps only when the program allows it AND the user has permission (client: team permissions still apply).
     const maxPer = coffee.multi.on && ctx.can('multiStamp') ? (coffee.multi.max === 'Unlimited' ? Infinity : coffee.multi.max) : 1;
+    const added = Math.min(Math.max(1, parseInt(ready ? '2' : q.get('n'), 10) || 1), st === 'rewardReady' ? Infinity : maxPer);
+    // Extra stamps carry over to the new card; a very large multi-stamp scan can complete more than one card.
+    const earned = Math.floor((filled + added) / total), carry = (filled + added) % total;
     const stampPass = n => pass({ type: 'stamp', name: coffee.name, reward, total, filled: n }).replace('<div class="pass-qr">', '<div class="pass-qr" style="display:none">');
     if (st === 'idle') main = idlePanel();
     if (st === 'confirmed') main = `<div class="stack"><div class="card reveal-up" style="padding:20px 22px;border-color:color-mix(in srgb,var(--color-mint) 40%,transparent);background:linear-gradient(120deg,var(--color-mint-soft),var(--color-surface) 60%)"><div class="row" style="align-items:flex-start;gap:16px"><span class="success-burst">${icon('check', 'lg')}</span><div><b style="font-family:var(--font-display);font-size:20px;color:#13845B">Confirmed</b><p style="margin-top:2px;font-size:15px">${added > 1 ? added + ' stamps' : 'Stamp'} added <b>(${filled + added}/${total})</b>.</p><p class="hint" style="margin-top:6px">Wallet pass update: not sent — the Apple/Google Wallet integration is not connected in this environment.</p></div></div></div>${idlePanel()}</div>`;
@@ -35,17 +48,37 @@
       ${ck === 'anna' ? `<div><div class="label" style="margin-bottom:10px">${icon('gift', 'sm')} Available rewards</div><div class="option-row"><div class="row"><span class="feed-ic" style="background:var(--color-highlight-soft);color:#9A7300">${icon('coffee', 'sm')}</span><b>${reward}</b></div><button class="btn btn-ink btn-sm" data-toast="Reward redeemed">Redeem Reward</button></div></div>` : ''}</div></section>`;
     // Card completion: reward becomes available; redeeming is an explicit tap; extra stamps carry over to the new card.
     if (st === 'rewardReady') {
-      const carry = Math.max(0, filled + added - total);
       main = `<section class="card reveal-up">${custHead(cname, `${cid} · ${coffee.name} (Stamp Card)`)}<div class="card-body stack">
       ${callout('info', 'Reward ready', `The card is complete. ${reward} is now available.`, 'gift')}
-      <div class="grid" style="grid-template-columns:240px 1fr;gap:20px;align-items:center"><div data-stamp-pass>${stampPass(total)}</div><div>${kv([['Stamps added', '+' + added], ['Card', `${total} / ${total} · completed`], ['Reward', reward, true], ['Status', `<span data-rw-status>${badge('Available', 'green')}</span>`], ['New card', `${carry} / ${total}${carry ? ' · extra stamps carried over' : ''}`]])}
+      <div class="grid" style="grid-template-columns:240px 1fr;gap:20px;align-items:center"><div data-stamp-pass>${stampPass(total)}</div><div>${kv([['Stamps added', '+' + added], ['Card', `${total} / ${total} · completed`], ['Reward', earned > 1 ? `${earned} × ${reward}` : reward, true], ['Status', `<span data-rw-status>${badge('Available', 'green')}</span>`], ['New card', `${carry} / ${total}${carry ? ' · extra stamps carried over' : ''}`]])}
         <button class="btn btn-ink btn-lg btn-block" style="margin-top:16px" data-redeem-ready>${icon('gift', 'sm')}Redeem Reward</button></div></div></div></section>`;
     }
-    if (st === 'points') main = `<section class="card reveal-up">${custHead('Vera Conti', 'C-10004 · Coffee Rewards (Points Program)')}<div class="card-body stack">
-      ${field({ label: 'Purchase amount (EUR)', input: `<div class="input-wrap"><span style="position:absolute;left:18px;top:50%;transform:translateY(-50%);font:600 24px var(--font-display);color:var(--color-text-tertiary)">€</span><input class="input big-input focus" type="number" step="0.01" value="7.50" data-amount></div>` })}
-      <div class="balance-flow"><div class="b"><small>Current balance</small><b>1153 pts</b></div>${icon('plus')}<div class="b plus"><small>Points to be added</small><b data-add>+75</b></div>${icon('arrowRight')}<div class="b"><small>New balance</small><b data-new>1228 pts</b></div></div>
-      <div>${kv([['Customer', 'Vera Conti'], ['Amount entered', '<span data-amt>7.50</span> EUR'], ['Next reward', 'All rewards reached'], ['Points still needed', '—']])}</div>
-      <button class="btn btn-primary btn-lg btn-block" data-credit>${icon('coins', 'sm')}Credit <span data-cr>75</span> points</button></div></section>`;
+    // Points program: currency + earning rule come from the program — never chosen during the scan.
+    const pp = D.programs.find(p => p.id === 'points'), cfg = pp.cfg, pk = Object.hasOwn(D.pointsScans, q.get('c') || '') ? q.get('c') : 'vera', [pname, pid, bal] = D.pointsScans[pk];
+    const next = b => cfg.rewards.find(([, need]) => need > b);
+    const ptsPass = b => { const n = next(b), prev = [...cfg.rewards].reverse().find(([, need]) => need <= b); return pass({ type: 'points', name: pp.name, balance: b + ' pts', nextReward: n && n[0], needed: n && String(n[1] - b), pct: n ? Math.round((b - (prev ? prev[1] : 0)) / (n[1] - (prev ? prev[1] : 0)) * 100) : 100 }); };
+    // Client's manual-credit view, in the client's order.
+    const creditRows = (amount, r) => { const nb = bal + r.pts, n = next(nb); return kv([['Customer', pname], ['Program', pp.name], ['Currency', cfg.currency], ['Current balance', bal + ' points'], ['Purchase amount', cfg.method === 'Manual' ? `${(amount || 0).toFixed(2)} ${cfg.currency}` : 'Fixed points per visit'], ['New points', '+' + r.pts, true], ['New balance', nb + ' points', true], ['Next reward', n ? `${n[0]} at ${n[1]} points` : 'All rewards reached'], ['Points still required', n ? (n[1] - nb) + ' points' : '—']]); };
+    if (st === 'points') {
+      const manual = cfg.method === 'Manual', r0 = manual ? g.calcPoints(7.5, cfg) : { pts: cfg.perVisit };
+      main = `<section class="card reveal-up">${custHead(pname, `${pid} · ${pp.name} (Points Program)`)}<div class="card-body stack">
+      ${manual ? field({ label: `Purchase amount (${cfg.currency})`, input: `<div class="input-wrap"><input class="input big-input focus" type="number" min="0" step="0.01" value="7.50" aria-label="Purchase amount" data-amount></div>`, hint: `Earning rule: ${cfg.basis} ${cfg.currency} = ${cfg.pts} points · ${cfg.rounding.toLowerCase()}` }) : ''}
+      <div data-pt-kv>${creditRows(7.5, r0)}</div><p class="hint" data-pt-note hidden></p>
+      <div class="row wrap"><button class="btn btn-primary btn-lg" style="flex:1" data-credit>${icon('coins', 'sm')}Credit <span data-cr>${r0.pts}</span> points</button><a class="btn btn-ghost btn-lg" href="${ctx.page('scanner-points-redeem')}?c=${pk}">${icon('gift', 'sm')}Redeem points</a></div></div></section>`;
+    }
+    // Redeem points: employee picks an available reward; points are deducted only after the tap.
+    if (st === 'pointsRedeem') {
+      const avail = cfg.rewards.map((r, i) => [...r, i]).filter(([, need]) => need <= bal), first = avail[0];
+      const rdRows = r => kv([['Customer', pname], ['Current balance', bal + ' points'], ['Reward', r ? `${r[0]} · −${r[1]} points` : '—', true], ['New balance', r ? (bal - r[1]) + ' points' : '—', true]]);
+      main = `<section class="card reveal-up">${custHead(pname, `${pid} · ${pp.name} (Points Program)`)}<div class="card-body">
+      <div class="grid" style="grid-template-columns:240px 1fr;gap:20px;align-items:start"><div data-pts-pass>${ptsPass(bal)}</div><div class="stack">
+        <div class="label">${icon('gift', 'sm')} Choose a reward</div>
+        <div class="stack" style="gap:10px" data-rw-pick>${cfg.rewards.map(([n, need], i) => { const ok = need <= bal; return `<button class="type-card ${first && first[2] === i ? 'on' : ''}" ${ok ? `data-select="${i}"` : 'disabled style="opacity:.5;cursor:not-allowed"'}><b>${n}</b><small>${need} points${ok ? '' : ` · ${need - bal} more needed`}</small></button>`; }).join('')}</div>
+        <div data-rd-kv>${rdRows(first)}</div>
+        ${first ? `<button class="btn btn-ink btn-lg btn-block" data-redeem-pts>${icon('gift', 'sm')}Redeem reward</button>` : `<div class="lock-overlay">${icon('info')}No reward available yet.</div>`}
+        <a class="link" data-rd-log href="${ctx.page('points-transactions')}" hidden>View transaction log ${icon('arrowRight', 'sm')}</a></div></div></div></section>`;
+      g.__rd = { rdRows };
+    }
     if (st === 'tier') main = `<section class="card reveal-up">${custHead('Anna Schmidt', 'C-10002 · Rewards Club (Tier Program)')}<div class="card-body stack">${offer()}
       <div class="grid g3">${[['Current tier', 'Member', 'layers'], ['Benefits', 'Welcome drink', 'gift'], ['Next tier', '3 visits to Silver', 'trophy']].map(([k, v, i]) => `<div class="setup-item"><small>${icon(i, 'sm')} ${k}</small><b>${v}</b></div>`).join('')}</div>
       <div><div class="row between hint"><span>Member</span><span>Silver · 10 visits</span></div><div class="mini-prog"><i style="--w:70%"></i></div></div>
@@ -56,10 +89,10 @@
     const withAnna = ['confirmed', 'points', 'tier', 'membership'].includes(st);
     return { nav: 'QR Scanner', html: `${pageHead({ eyebrow: `${icon('qr', 'sm')} Scanner`, title: 'QR <span class="hl">Scanner</span>', sub: 'Scan a customer’s wallet pass, confirm the action, and the pass updates.', actions: `<a class="btn btn-ghost" href="${ctx.link('34-')}">${icon('qr', 'sm')}Printable QR codes</a>` })}
       <div class="grid" style="grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);align-items:start">${main}${feed(ctx, withAnna)}</div>`, after() {
-        const go = pre => location.href = ctx.link(pre);
+        const go = pre => location.href = ctx.nav(ctx.link(pre));
         const sc = document.querySelector('[data-scan]'); if (sc) sc.onclick = () => go('29-');
         const f = document.querySelector('[data-find]'); if (f) f.onclick = () => { const v = document.querySelector('[data-code]').value.trim(); if (/^BNC-/i.test(v)) go('29-'); else g.toast('Enter a pass code like BNC-DEMO1000'); };
-        const pk = document.querySelector('[data-pick]'); if (pk) pk.onchange = () => { const [pre, qs] = (['', '29-', '29-?c=leon', '31-', '32-', '33-'][pk.selectedIndex] || '28-').split('?'); location.href = ctx.link(pre) + (qs ? '?' + qs : ''); };
+        const pk = document.querySelector('[data-pick]'); if (pk) pk.onchange = () => { const [pre, qs] = (['', '29-', '29-?c=leon', '31-', '32-', '33-'][pk.selectedIndex] || '28-').split('?'); location.href = ctx.nav(ctx.link(pre) + (qs ? '?' + qs : '')); };
         document.querySelectorAll('[data-new-scan]').forEach(b => b.onclick = () => go('28-'));
         let qty = 1; const qi = document.querySelector('[data-qty-in]'), ql = document.querySelector('[data-qty-label]');
         const setQty = v => { qty = Math.max(1, Math.min(maxPer, parseInt(v, 10) || 1)); if (qi) qi.value = qty; ql.textContent = qty > 1 ? qty + ' stamps' : 'stamp'; };
@@ -67,14 +100,29 @@
         const as = document.querySelector('[data-add-stamp]'); if (as) as.onclick = () => {
           [...document.querySelectorAll('[data-stamp-pass] .stamp:not(.on)')].slice(0, qty).forEach(x => x.classList.add('on'));
           document.querySelector('[data-stamps]').textContent = Math.min(total, filled + qty); as.disabled = true;
-          const qs = `?c=${ck}&n=${qty}`; setTimeout(() => location.href = (filled + qty >= total ? ctx.page('scanner-stamp-reward-ready') : ctx.link('30-')) + qs, 650);
+          const qs = `?c=${ck}&n=${qty}`; setTimeout(() => location.href = ctx.nav((filled + qty >= total ? ctx.page('scanner-stamp-reward-ready') : ctx.link('30-')) + qs), 650);
         };
         const rr = document.querySelector('[data-redeem-ready]'); if (rr) rr.onclick = () => {
-          const carry = Math.max(0, filled + added - total);
           document.querySelector('[data-rw-status]').innerHTML = badge('Redeemed', 'blue'); document.querySelector('[data-stamp-pass]').innerHTML = stampPass(carry);
           rr.disabled = true; rr.innerHTML = `${icon('check', 'sm')}Reward redeemed`; g.toast(`Reward redeemed — new card ${carry}/${total}`);
         };
-        const am = document.querySelector('[data-amount]'); if (am) { const upd = () => { const a = parseFloat(am.value) || 0, p = Math.floor(a * 10); document.querySelector('[data-add]').textContent = '+' + p; document.querySelector('[data-new]').textContent = (1153 + p) + ' pts'; document.querySelector('[data-amt]').textContent = a.toFixed(2); document.querySelector('[data-cr]').textContent = p; }; am.oninput = upd; document.querySelector('[data-credit]').onclick = () => g.toast('Points credited'); }
+        const am = document.querySelector('[data-amount]'), cr = document.querySelector('[data-credit]');
+        if (cr) {
+          const calc = () => am ? g.calcPoints(parseFloat(am.value), cfg) : { pts: cfg.perVisit };
+          const upd = () => { const a = am ? parseFloat(am.value) || 0 : 0, r = calc(), note = document.querySelector('[data-pt-note]');
+            document.querySelector('[data-pt-kv]').innerHTML = creditRows(a, r); document.querySelector('[data-cr]').textContent = r.pts;
+            note.hidden = !(r.below || r.capped); note.textContent = r.below ? `Below the minimum purchase amount (${cfg.min} ${cfg.currency}) — no points.` : r.capped ? `Capped at the maximum of ${cfg.max} points per transaction.` : ''; cr.disabled = r.pts === 0; };
+          if (am) am.oninput = upd; upd();
+          cr.onclick = () => { const r = calc(); location.href = ctx.nav(`${ctx.page('points-transactions')}?new=credit&c=${pk}&a=${am ? parseFloat(am.value) || 0 : 0}&p=${r.pts}`); };
+        }
+        const rd = document.querySelector('[data-redeem-pts]'); if (rd) {
+          let pick = cfg.rewards.findIndex(([, need]) => need <= bal);
+          document.querySelector('[data-rw-pick]').addEventListener('typechange', e => { pick = +e.detail; document.querySelector('[data-rd-kv]').innerHTML = g.__rd.rdRows(cfg.rewards[pick]); });
+          rd.onclick = () => { const [n, need] = cfg.rewards[pick];
+            document.querySelector('[data-pts-pass]').innerHTML = ptsPass(bal - need); document.querySelector('[data-rd-kv]').innerHTML = kv([['Customer', pname], ['Reward', n + ' · redeemed', true], ['Points deducted', '−' + need], ['New balance', (bal - need) + ' points', true]]);
+            document.querySelectorAll('[data-rw-pick] .type-card').forEach(c => c.disabled = true); rd.disabled = true; rd.innerHTML = `${icon('check', 'sm')}Reward redeemed`;
+            const log = document.querySelector('[data-rd-log]'); log.href += `?new=redeem&c=${pk}&r=${pick}`; log.hidden = false; g.toast(`${n} redeemed — ${need} points deducted`); };
+        }
       } };
   };
 
@@ -123,11 +171,27 @@
       <div class="grid g3">${st.map(([l, v, i], n) => `<div class="card hover stat reveal-up ${n === 0 ? 'feature' : ''}"><div class="lbl">${l}<span class="ico">${icon(i, 'sm')}</span></div><div class="val">${v}</div></div>`).join('')}</div>
       <div class="grid g2" style="margin-top:18px">
         ${card({ title: 'Profile', icon: 'badge', cls: 'reveal-up', body: U.setup([['Email', 'anna.schmidt0@example.com'], ['Phone', '+49 151 5196093'], ['Birthday', '<span class="faint">—</span>'], ['Joined', 'Jan 6, 2026']]) })}
-        ${card({ title: 'Memberships', icon: 'wallet', sub: 'Programs, current tier and balances.', cls: 'reveal-up', body: `<div class="option-row" style="display:block"><div class="row between"><div class="row"><span class="feed-ic" style="background:var(--color-accent-soft);color:var(--color-accent)">${icon('stamp', 'sm')}</span><div><b>Coffee Card</b><small>2 / 10 stamps</small></div></div><span class="mono faint" style="font-size:12px">Pass BNC-DEMO1000</span></div><div class="mini-prog"><i style="--w:20%"></i></div></div>` })}
+        ${card({ title: 'Memberships', icon: 'wallet', sub: 'Programs, current tier and balances.', cls: 'reveal-up', body: `<div class="option-row" style="display:block"><div class="row between"><div class="row"><span class="feed-ic" style="background:var(--color-accent-soft);color:var(--color-accent)">${icon('stamp', 'sm')}</span><div><b>Coffee Card</b><small>2 / 10 stamps</small></div></div><span class="mono faint" style="font-size:12px">Pass BNC-DEMO1000</span></div><div class="mini-prog"><i style="--w:20%"></i></div></div><div class="option-row" style="display:block;margin-top:10px"><div class="row between"><div class="row"><span class="feed-ic" style="background:var(--color-highlight-soft);color:#9A7300">${icon('coins', 'sm')}</span><div><b>Coffee Rewards</b><small>120 points · next: Free Dessert at 250</small></div></div><a class="link" href="${ctx.page('points-transactions')}">Transactions ${icon('arrowRight', 'sm')}</a></div></div>` })}
         ${card({ title: 'Rewards', icon: 'gift', cls: 'reveal-up', body: `<div class="stack" style="gap:10px">${[['1 Free Coffee', 'stamp card', 'stamp'], ['1 Free Coffee', 'voucher', 'ticket']].map(([r, s, i]) => `<div class="option-row"><div class="row"><span class="feed-ic" style="background:var(--color-highlight-soft);color:#9A7300">${icon(i, 'sm')}</span><div><b>${r}</b><small>${s}</small></div></div>${status('Available')}</div>`).join('')}</div>` })}
         ${card({ title: 'Notes', icon: 'edit', cls: 'reveal-up', body: `<div class="stack" style="gap:12px">${textarea('Prefers oat milk.')}<div><button class="btn btn-primary btn-sm" data-toast="Notes saved">Save notes</button></div></div>` })}
       </div>
       <div style="margin-top:18px">${card({ title: 'Visit history', icon: 'clock', actions: badge('12 visits', 'outline'), cls: 'reveal-up', body: `<div class="timeline">${hist.map(h => `<div class="tl-item"><span><b style="font-weight:600">Stamp added</b> <span class="faint">· Coffee Card</span></span><span class="muted">${h}</span></div>`).join('')}</div>` })}</div>` };
+  };
+
+  /* ================= POINTS TRANSACTION LOG ================= */
+  // Client: every point credit is recorded with these columns. A row arriving via ?new= is the transaction just confirmed in the scanner.
+  S.pointsLog = ctx => {
+    const q = new URLSearchParams(location.search), pp = D.programs.find(p => p.id === 'points'), cfg = pp.cfg, me = ctx.owner ? 'Sam Owner' : 'Mia Manager';
+    const pk = Object.hasOwn(D.pointsScans, q.get('c') || '') ? q.get('c') : 'vera', [pname, , bal] = D.pointsScans[pk];
+    let fresh = null;
+    if (q.get('new') === 'credit') { const a = parseFloat(q.get('a')) || 0, p = Math.max(0, parseInt(q.get('p'), 10) || 0); fresh = [pname, pp.name, cfg.currency, a ? a.toFixed(2) : '—', '+' + p, bal, bal + p, me, 'Sample Street 1, Berlin', 'Just now', 'Completed']; }
+    if (q.get('new') === 'redeem') { const r = cfg.rewards[parseInt(q.get('r'), 10)]; if (r) fresh = [pname, pp.name, cfg.currency, '—', `−${r[1]} · ${r[0]}`, bal, bal - r[1], me, 'Sample Street 1, Berlin', 'Just now', 'Completed']; }
+    const rows = fresh ? [fresh, ...D.pointsLog] : D.pointsLog;
+    const head = ['Customer', 'Program', 'Currency', 'Purchase amount', 'Points awarded', 'Balance before', 'Balance after', 'Employee', 'Location', 'Date / time', 'Status'];
+    const table = `<div class="table-wrap"><table class="t"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map((r, i) => `<tr ${fresh && i === 0 ? 'data-fresh style="background:var(--color-mint-soft)"' : ''}><td><div class="person">${ini(r[0])}${esc(r[0])}</div></td><td>${r[1]}</td><td class="mono">${r[2]}</td><td class="num">${r[3]}</td><td class="num"><b>${r[4]}</b></td><td class="num">${r[5]}</td><td class="num">${r[6]}</td><td>${r[7]}</td><td class="muted">${r[8]}</td><td class="muted" style="white-space:nowrap">${r[9]}</td><td>${badge(r[10], 'green')}</td></tr>`).join('')}</tbody></table></div>`;
+    return { nav: 'Loyalty Programs', title: 'Points transactions', html: `${pageHead({ eyebrow: crumb('Loyalty Programs', ctx.link('03-')) + crumb(pp.name, ctx.link('13-')) + 'Transactions', title: 'Points <span class="hl">transactions</span>', sub: `${pp.name} · every credit and redemption, with who, where and when.` })}
+      ${fresh ? `<div style="margin-bottom:18px">${callout('info', 'Transaction saved', `${esc(pname)}: ${fresh[4]} points · new balance ${fresh[6]} points.`, 'checkCircle')}</div>` : ''}
+      ${card({ title: 'Transaction log', icon: 'file', actions: badge(rows.length + ' transactions', 'outline'), body: null, cls: 'reveal-up', attrs: 'style="overflow:hidden"' }).replace('</section>', table + '</section>')}` };
   };
 
   S.signupFields = ctx => {

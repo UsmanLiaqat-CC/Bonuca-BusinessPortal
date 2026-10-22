@@ -128,7 +128,7 @@
     } else if (p.type === 'tier') {
       mid = `<div class="pass-lbl">Current tier</div><div class="pass-val">${esc(p.tier || 'Member')}</div><div class="prog"><i style="--w:${p.pct || 40}%"></i></div><div class="pass-lbl">Next tier</div><div class="pass-val sm">${esc(p.next || '6 visits to Silver')}</div>`;
     } else if (p.type === 'points') {
-      mid = `<div class="pass-lbl">Balance</div><div class="pass-val">${esc(p.balance || '120 pts')}</div>${p.nextReward ? `<div class="prog"><i style="--w:${p.pct || 48}%"></i></div><div class="pass-cols"><div><div class="pass-lbl">Next reward</div><div class="pass-val sm">${esc(p.nextReward)}</div></div><div><div class="pass-lbl">Points needed</div><div class="pass-val sm">${esc(p.needed)}</div></div></div>` : `<div class="pass-lbl">Next reward</div><div class="pass-val sm">All rewards unlocked</div>`}`;
+      mid = `<div class="pass-lbl">Balance</div><div class="pass-val">${esc(p.balance || '120 pts')}</div>${p.nextReward ? `<div class="prog"><i style="--w:${p.pct || 48}%"></i></div><div class="pass-cols"><div><div class="pass-lbl">Next reward</div><div class="pass-val sm">${esc(p.nextReward)}</div></div><div><div class="pass-lbl">Points still required</div><div class="pass-val sm">${esc(p.needed)}</div></div></div>` : `<div class="pass-lbl">Next reward</div><div class="pass-val sm">All rewards unlocked</div>`}`;
     } else if (p.type === 'voucher') {
       mid = `<div class="pass-lbl">Voucher</div><div class="pass-val">${esc(p.reward)}</div><div class="pass-cols"><div><div class="pass-lbl">Valid from</div><div class="pass-val sm">${esc(p.from || '—')}</div></div><div><div class="pass-lbl">Valid to</div><div class="pass-val sm">${esc(p.to || '—')}</div></div></div>`;
     }
