@@ -184,7 +184,7 @@
   /* Preview Mode: write actions stay visible but locked; clicking one explains why (exact client wording). */
   function lockPreview() {
     document.getElementById('content').querySelectorAll('button, a.btn, input, select, textarea, .type-card[data-href]').forEach(el => {
-      if (el.closest('[data-preview-ok], .tabs, .seg, [data-ct], [data-pg], [data-rpg]') || el.matches('[data-close], [data-device]')) return;
+      if (el.closest('[data-preview-ok], .tabs, .seg, [data-ct], [data-pg], [data-rpg]') || el.matches('[data-close]:not([data-scan-ok]), [data-device]')) return;
       if (el.matches('input, select') && el.closest('.toolbar, .search')) return;
       if (el.matches('a.btn') && !el.matches('.btn-primary') && !/-new-|-edit|choose-type|dialog|invite/.test(el.getAttribute('href') || '')) return;
       el.dataset.previewLock = ''; el.setAttribute('aria-disabled', 'true');

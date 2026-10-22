@@ -144,7 +144,7 @@
         const go = (state, qs) => location.href = ctx.nav(ctx.scan(state) + (qs ? '?' + qs : ''));
         const sc = document.querySelector('[data-scan]'); if (sc) sc.onclick = () => go('stamp');
         const f = document.querySelector('[data-find]'); if (f) f.onclick = () => { const v = document.querySelector('[data-code]').value.trim(); if (/^BNC-/i.test(v)) go('stamp'); else g.toast('Enter a pass code like BNC-DEMO1000'); };
-        const pk = document.querySelector('[data-pick]'); if (pk) pk.onchange = () => { const to = picks[pk.selectedIndex - 1]; go(...(to ? to.slice(1) : ['idle'])); };
+        const pick = document.querySelector('[data-pick]'); if (pick) pick.onchange = () => { const to = picks[pick.selectedIndex - 1]; go(...(to ? to.slice(1) : ['idle'])); };
         document.querySelectorAll('[data-new-scan]').forEach(b => b.onclick = () => go('idle'));
         g.scanSuccess(document.querySelector('[data-scan-confirmed]'));
         let qty = 1; const qi = document.querySelector('[data-qty-in]'), ql = document.querySelector('[data-qty-label]');
@@ -198,7 +198,7 @@
           gc.onclick = () => {
             if (btn.disabled) { g.toast('Already redeemed — this gift can only be redeemed once.', 'info'); return; } // single-use: a second redemption is blocked
             times++; set('[data-gs-date]', 'Just now'); set('[data-gs-by]', g.GIFTS.me(ctx)); set('[data-gs-loc]', esc(D.locations[0]));
-            document.querySelector('[data-gs-wallet]').hidden = false; document.querySelector('[data-gs-log]').hidden = false;
+            ['[data-gs-wallet]', '[data-gs-log]'].forEach(s => { const e = document.querySelector(s); if (e) e.hidden = false; });
             if (gf.opts.multi) { set('[data-gs-callout]', callout('info', 'Gift redeemed', `Redeemed ${times} time${times === 1 ? '' : 's'} on this visit. Multiple redemption — it stays available until ${gf.exp}.`, 'checkCircle')); g.toast(`${gf.name} redeemed`); return; }
             set('[data-gs-status]', status('Redeemed')); set('[data-gs-callout]', callout('info', 'Gift redeemed', 'Status changed to Redeemed. This gift can only be redeemed once.', 'checkCircle'));
             btn.disabled = true; btn.removeAttribute('data-open'); btn.innerHTML = `${icon('check', 'sm')}Gift redeemed`; g.toast(`${gf.name} redeemed for ${gf.customer}`);
