@@ -24,10 +24,12 @@
     common: [['01-landing', 'landing'], ['02-landing-download-app', 'landing', { modal: true }], ['03-login', 'login'], ['04-register', 'register'], ['05-register-validation', 'register', { errors: true }], ['06-verify-email', 'verify'], ['07-onboarding-business-profile', 'onboarding1'], ['08-onboarding-plan-selection', 'onboarding2'], ['09-onboarding-first-program', 'onboarding3'],
       ['10-forgot-password', 'forgot'], ['11-forgot-password-sent', 'forgot', { sent: true }], ['12-reset-password', 'resetPassword'], ['13-accept-invitation', 'acceptInvite']],
     manager: [...shared, ['57-settings-wallet', 'settings', { sec: 'wallet' }], ['58-settings-language', 'settings', { sec: 'language' }], ['59-dashboard-dark-mode', 'dashboard', { theme: 'dark' }],
-      ['60-scanner-stamp-reward-ready', 'scanner', { state: 'rewardReady' }], ['61-scanner-points-redeem', 'scanner', { state: 'pointsRedeem' }], ['62-points-transactions', 'pointsLog']],
+      ['60-scanner-stamp-reward-ready', 'scanner', { state: 'rewardReady' }], ['61-scanner-points-redeem', 'scanner', { state: 'pointsRedeem' }], ['62-points-transactions', 'pointsLog'],
+      ['63-scanner-voucher', 'scanner', { state: 'voucher' }], ['64-scanner-winback', 'scanner', { state: 'winback' }]],
     owner: [...shared, ['57-settings-billing', 'settings', { sec: 'billing' }], ['58-settings-wallet', 'settings', { sec: 'wallet' }], ['59-settings-language', 'settings', { sec: 'language' }], ['60-dashboard-dark-mode', 'dashboard', { theme: 'dark' }],
       ['61-dashboard-preview-mode', 'dashboard', { preview: true }], ['62-scanner-stamp-reward-ready', 'scanner', { state: 'rewardReady' }],
-      ['63-scanner-points-redeem', 'scanner', { state: 'pointsRedeem' }], ['64-points-transactions', 'pointsLog']]
+      ['63-scanner-points-redeem', 'scanner', { state: 'pointsRedeem' }], ['64-points-transactions', 'pointsLog'],
+      ['65-scanner-voucher', 'scanner', { state: 'voucher' }], ['66-scanner-winback', 'scanner', { state: 'winback' }]]
   };
   // New screens get different numbers per role (R6), so link to them by name: page(role, 'scanner-stamp-reward-ready').
   const page = (role, name) => (PAGES[role].find(p => p[0].slice(3) === name) || [name])[0] + '.html';
@@ -181,7 +183,7 @@
       const tc = t.closest('.type-card[data-href]'); if (tc) { location.href = tc.dataset.href; }
       const tsel = t.closest('.type-card[data-select]'); if (tsel) { tsel.parentElement.querySelectorAll('.type-card').forEach(c => c.classList.toggle('on', c === tsel)); tsel.parentElement.dispatchEvent(new CustomEvent('typechange', { detail: tsel.dataset.select, bubbles: true })); }
       const rowLink = t.closest('[data-href]:not(.type-card)'); if (rowLink && !t.closest('a,button,input,select')) location.href = rowLink.dataset.href;
-      const dev = t.closest('[data-device]'); if (dev) { const col = dev.closest('.preview-col'); const android = dev.dataset.device === 'Android'; const ph = col.querySelector('[data-phone]'); ph.classList.toggle('android', android); const host = col.querySelector('[data-pass-host]'); if (host && g.__pass) { host.innerHTML = g.UI.pass({ ...g.__pass, android }); } const cap = col.querySelector('[data-cap]'); if (cap) cap.textContent = cap.textContent.replace(/ · (Apple|Google) Wallet/, android ? ' · Google Wallet' : ' · Apple Wallet'); }
+      const dev = t.closest('[data-device]'); if (dev) { const col = dev.closest('.preview-col'); const android = dev.dataset.device === 'Android'; const ph = col.querySelector('[data-phone]'); ph.classList.toggle('android', android); const host = col.querySelector('[data-pass-host]'); const hp = host && (host.dataset.passHost ? (g.__passes || {})[host.dataset.passHost] : g.__pass); if (hp) { host.innerHTML = g.UI.pass({ ...hp, android }); } const cap = col.querySelector('[data-cap]'); if (cap) cap.textContent = cap.textContent.replace(/ · (Apple|Google) Wallet/, android ? ' · Google Wallet' : ' · Apple Wallet'); }
       if (t.closest('[data-menu]')) document.body.classList.toggle('nav-open');
       else if (document.body.classList.contains('nav-open') && !t.closest('.sidebar')) document.body.classList.remove('nav-open');
     });

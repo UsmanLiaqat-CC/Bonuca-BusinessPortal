@@ -22,9 +22,9 @@
       setup: [['Stamps required', '8'], ['Reward', 'Free Lunch Menu'], ['Multiple stamps per scan', 'Off'], ['Surprise rewards', 'Off']] }
   ];
   const campaigns = [
-    { id: 'cuplid', name: 'Cup-lid Campaign', type: 'Stamp card acquisition', status: 'Active', created: 'Aug 22, 2026', url: 'https://join.bonuca.invalid/campaign/cmp-cuplid' },
-    { id: 'freecoffee', name: 'Free Coffee Campaign', type: 'One-time voucher', status: 'Active', created: 'Sep 11, 2026', url: 'https://join.bonuca.invalid/campaign/cmp-freecoffee' },
-    { id: 'brunch', name: 'Weekend Brunch Voucher', type: 'One-time voucher', status: 'Active', created: 'Sep 11, 2026', url: 'https://join.bonuca.invalid/campaign/cmp-brunch' }
+    { id: 'cuplid', name: 'Cup-lid Campaign', type: 'Stamp card acquisition', status: 'Active', created: 'Aug 22, 2026', url: 'https://join.bonuca.invalid/campaign/cmp-cuplid', program: 'coffee', start: 2, gift: 'Free coffee on your next visit', validity: 30 },
+    { id: 'freecoffee', name: 'Free Coffee Campaign', type: 'One-time voucher', status: 'Active', created: 'Sep 11, 2026', url: 'https://join.bonuca.invalid/campaign/cmp-freecoffee', reward: '1 Free Coffee', from: 'Sep 11, 2026', to: 'Dec 10, 2026' },
+    { id: 'brunch', name: 'Weekend Brunch Voucher', type: 'One-time voucher', status: 'Active', created: 'Sep 11, 2026', url: 'https://join.bonuca.invalid/campaign/cmp-brunch', reward: 'Free brunch drink', from: 'Sep 11, 2026', to: 'Nov 25, 2026' }
   ];
   const names = 'Anna Schmidt,Anna Schmidt,Zoe Dubois,Vera Conti,Umut Fischer,Kemal Fischer,Felix Bernard,Wim Kaya,Leon Fischer,Julia Bianchi,Leon Dubois,Sven Martin,Wim Rossi,Nina Schmidt,Umut Demir,Sven Martin,Nina Ricci,Vera Conti,Umut Martin,Emma Martin,Zoe Öztürk,Clara Schmidt,Nina Kaya,Oscar Ricci,Tara Bianchi,Umut Dubois,Lena Weber,David Ricci,Umut Demir,Luca Schmidt,Ivan Rossi,Elif Laurent,Anna Bianchi,Emma Ricci,Sven Dubois,Paula Ricci,Tara Ricci,Lena Conti,Kemal Bianchi,Anna Weber,Clara Schmidt,Ben Schmidt,Julia Yilmaz,Rosa Weber,Lena Schmidt,Sven Öztürk,Nina Weber,Elif Ricci,Oscar Demir,Umut Fischer,Lena Demir,Quentin Bernard,Luca Ricci,Clara Rossi,Mia Martin,Kemal Müller,Marco Ricci,Zoe Laurent,Mia Bianchi,Emma Öztürk,Paula Ricci,Yara Rossi,Julia Bernard,Julia Müller'.split(',');
   const noEmail = new Set([1, 7, 10, 12, 13, 16, 17, 20, 22, 23, 25, 26, 35, 37, 38, 39, 45, 49, 53, 56, 59]);
@@ -63,7 +63,8 @@
   [['Anna Schmidt', 'Available', 'Sep 27'], ['Leon Fischer', 'Redeemed', 'Sep 27'], ['Umut Demir', 'Available', 'Sep 25'], ['Vera Conti', 'Redeemed', 'Sep 25'], ['Anna Bianchi', 'Redeemed', 'Sep 25'], ['Clara Schmidt', 'Redeemed', 'Sep 25'], ['Lena Schmidt', 'Redeemed', 'Sep 25'], ['Oscar Demir', 'Available', 'Sep 25'], ['Quentin Bernard', 'Available', 'Sep 25'], ['Marco Ricci', 'Available', 'Sep 25']].forEach(([c, s, d]) => rewards.push(['1 Free Coffee', c, 'Stamp card · Coffee Card', s, d + ', 2026', '—']));
 
   const winbackLog = [[1, 61], [1, 57], [4, 56], [1, 53], [2, 51], [1, 46], [2, 44], [2, 42], [1, 39], [1, 34], [3, 33], [3, 29], [3, 28], [1, 25], [4, 16], [1, 9], [4, 8], [3, 5], [1, 4], [1, 1]];
-  const stages = [[14, 'Free espresso shot'], [30, '10% off your next visit'], [40, 'Free coffee'], [60, 'Free coffee and cake']];
+  /* win-back stages (client: 14, 30, 40 or 60 days): [days inactive, reward the notification creates, Wallet push message] */
+  const stages = [[14, 'Free espresso shot', 'We miss you! Visit us this week and enjoy a free espresso shot.'], [30, '10% off your next visit', 'We miss you! Visit us this week and enjoy 10% off your next visit.'], [40, 'Free coffee', 'We miss you! Visit us this week and enjoy a free coffee.'], [60, 'Free coffee and cake', 'We miss you! Visit us this week and enjoy a free coffee and cake.']];
 
   const dash = {
     growthLabels: ['09-22', '09-23', '09-24', '09-25', '09-26', '09-27', '09-28', '09-29', '09-30', '10-01', '10-02', '10-03', '10-04', '10-05', '10-06', '10-07', '10-08', '10-09', '10-10', '10-11', '10-12', '10-13', '10-14', '10-15', '10-16', '10-17', '10-18', '10-19', '10-20', '10-21'],
@@ -96,11 +97,15 @@
     ['Vera Conti', 'Coffee Rewards', 'EUR', '12.40', '+124', 113, 237, 'Eli Employee', LOC, 'Oct 18, 2026, 11:32 AM', 'Completed']
   ];
   const stampScans = { anna: ['Anna Schmidt', 'C-10001', 1], leon: ['Leon Fischer', 'C-10009', 9] };
+  /* Free Coffee Campaign vouchers the scanner can open: [name, customer ID, voucher status, redeemed on] */
+  const voucherScans = { anna: ['Anna Schmidt', 'C-10001', 'Available', ''], felix: ['Felix Bernard', 'C-10007', 'Redeemed', 'Oct 5, 2026'] };
+  /* win-back customers the scanner can open: [name, customer ID, days inactive, last visit, visit-history entries before the gap start at] */
+  const winbackScans = { kemal: ['Kemal Fischer', 'C-10006', 40, 'Sep 11, 2026', 4], anna: ['Anna Schmidt', 'C-10001', 22, 'Sep 29, 2026', 2] };
   const roles = [['Owner', 'Full access — billing/subscription, employees, customers, loyalty programs, analytics, scanner, business settings.', 'shield'], ['Manager', 'Customers, loyalty programs, rewards, analytics, scanner, limited settings, and employees if permitted.', 'badge'], ['Employee', 'Scanner, limited customer info, add stamps/points/visits, redeem rewards. No billing or subscription access.', 'scan']];
   const plans = {
     free: ['Up to 15 customers', 'Up to 1 programs', 'Up to 1 locations', 'Up to 1 employees'],
     trial: ['All Pro features, temporarily', 'Unlimited customers', 'Unlimited programs', 'Unlimited locations', 'Unlimited employees'],
     pro: ['Unlimited customers', 'Unlimited programs', 'Unlimited locations', 'Unlimited employees', 'AI heatmap commentary']
   };
-  g.DATA = { programs, campaigns, customers, scansBase, rewards, winbackLog, stages, dash, analytics, team, roles, plans, stampScans, pointsScans, pointsLog };
+  g.DATA = { programs, campaigns, customers, scansBase, rewards, winbackLog, stages, dash, analytics, team, roles, plans, stampScans, pointsScans, pointsLog, voucherScans, winbackScans };
 })(window);

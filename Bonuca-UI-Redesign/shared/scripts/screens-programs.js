@@ -160,19 +160,41 @@
   };
 
   /* ================= CAMPAIGN FORM ================= */
+  // Client: starting stamps 0 / 1 / 2 / 3 / custom; optional welcome gift (presets or custom) issued as a separate voucher pass.
+  const STARTS = [['0', 'Start with 0 stamps'], ['1', 'Start with 1 stamp'], ['2', 'Start with 2 stamps'], ['3', 'Start with 3 stamps'], ['Custom', 'Custom number of starting stamps']];
+  const GIFTS = ['Free coffee on your next visit', 'Free croissant', 'Free dessert', '20% discount', 'Custom reward'];
+  const stampCard = (id, start) => { const p = P(id), pp = p ? p.pass : { reward: 'Reward', total: 10 }; return { type: 'stamp', name: p ? p.name : 'Stamp card', reward: pp.reward, total: pp.total, filled: Math.max(0, Math.min(start, pp.total - 1)), icon: pp.icon, bg: pp.bg }; };
+  const giftVoucher = (reward, days) => ({ type: 'voucher', name: 'Welcome gift', reward: reward || 'Reward name', from: 'Day of scan', to: days > 0 ? `${days} days later` : '—' });
+  const twoPasses = gift => `<div class="stack"><div data-preview-card>${phonePreview(g.__passes.card, 'Pass 1 · Digital Stamp Card', { key: 'card' })}</div><div data-gift-preview ${gift ? '' : 'hidden'}>${phonePreview(g.__passes.gift, 'Pass 2 · Welcome gift voucher', { key: 'gift' })}</div></div>`;
+  const redraw = key => { const h = document.querySelector(`[data-pass-host="${key}"]`); if (h) h.innerHTML = pass({ ...g.__passes[key], android: h.closest('[data-phone]').classList.contains('android') }); };
+
   S.campaignForm = ctx => {
     if (ctx.opts.kind === 'acq') {
       const gift = !!ctx.opts.gift;
+      g.__passes = { card: stampCard('', 0), gift: giftVoucher(GIFTS[0], 0) };
+      const starts = `<div class="choice-chips" data-start-chips>${STARTS.map(([v, l]) => `<button class="chip ${v === '0' ? 'on' : ''}" data-start="${v}">${l}</button>`).join('')}</div><input class="input" type="number" min="0" placeholder="e.g. 4" aria-label="Custom number of starting stamps" data-start-custom style="max-width:140px;margin-top:10px" hidden>`;
+      const presets = `<div class="choice-chips" data-gift-chips>${GIFTS.map((v, i) => `<button class="chip ${i ? '' : 'on'}" data-gift="${v}">${v}</button>`).join('')}</div>`;
       const body = `<div class="form-grid">
         ${field({ label: 'Campaign Name', required: true, input: input({ ph: 'e.g. Cup-lid Campaign' }), hint: 'Internal label, e.g. “Cup-lid Campaign”.' })}
-        ${field({ label: 'Linked Stamp Card Program', required: true, input: select(['Select…', 'Coffee Card', 'Lunch Card'], 'Select…'), hint: 'Which stamp card this campaign issues.' })}
-        ${field({ label: 'Starting Stamps', required: true, input: select(['0', '1', '2', '3', '4', '5'], '0'), hint: 'Stamps the new card already has when issued.' })}<div></div>
-        <div class="full reveal" style="${gift ? 'border-color:color-mix(in srgb,var(--color-accent) 30%,transparent);background:var(--color-accent-softer)' : ''}"><div class="row between"><div class="row"><span class="feed-ic" style="background:var(--color-highlight-soft);color:#9A7300">${icon('gift', 'sm')}</span><div><b>Welcome Gift</b> <span class="opt">(optional)</span><div class="hint">If on, reveals Reward Name, Description, Validity Period and Redemption Conditions.</div></div></div>${U.toggle(gift, 'data-reveal="#giftBody"')}</div>
-          <div class="reveal-body" id="giftBody" ${gift ? '' : 'hidden'}>${field({ label: 'Reward Name', required: true, input: input({ ph: 'e.g. Free cookie' }) })}${field({ label: 'Validity Period (days)', optional: true, input: input({ type: 'number', ph: '30' }) })}<div style="grid-column:1/-1">${field({ label: 'Description', optional: true, input: textarea() })}</div><div style="grid-column:1/-1">${field({ label: 'Redemption Conditions', optional: true, input: textarea() })}</div></div></div>
+        ${field({ label: 'Linked Stamp Card Program', required: true, input: select(['Select…', 'Coffee Card', 'Lunch Card'], 'Select…', 'data-camp-prog'), hint: 'Which stamp card this campaign issues.' })}
+        <div class="full">${field({ label: 'Starting Stamps', required: true, input: starts, hint: 'Every new customer who scans this campaign QR gets a stamp card that already has these stamps, e.g. “Scan this QR code and start your coffee card with 2 free stamps.”' })}</div>
+        <div class="full reveal" style="${gift ? 'border-color:color-mix(in srgb,var(--color-accent) 30%,transparent);background:var(--color-accent-softer)' : ''}"><div class="row between"><div class="row"><span class="feed-ic" style="background:var(--color-highlight-soft);color:#9A7300">${icon('gift', 'sm')}</span><div><b>Welcome Gift</b> <span class="opt">(optional)</span><div class="hint">An instant welcome reward, issued together with the stamp card as a separate voucher in Apple Wallet or Google Wallet and redeemed on the next visit.</div></div></div>${U.toggle(gift, 'data-reveal="#giftBody" data-gift-toggle')}</div>
+          <div class="reveal-body" id="giftBody" ${gift ? '' : 'hidden'}><div style="grid-column:1/-1">${field({ label: 'Welcome gift', required: true, input: presets })}</div>${field({ label: 'Reward Name', required: true, input: input({ value: GIFTS[0], ph: 'e.g. Free coffee on your next visit', attrs: 'data-gift-name' }) })}${field({ label: 'Validity Period (days)', optional: true, input: input({ type: 'number', ph: '30', attrs: 'min="1" data-gift-days' }) })}<div style="grid-column:1/-1">${field({ label: 'Description', optional: true, input: textarea() })}</div><div style="grid-column:1/-1">${field({ label: 'Redemption Conditions', optional: true, input: textarea() })}</div></div></div>
       </div>`;
       return { nav: 'Loyalty Programs', title: 'New campaign', html: `${pageHead({ eyebrow: crumb('Loyalty Programs', ctx.link('03-')) + 'New campaign', title: 'New <span class="hl">campaign</span>' })}
-        <div class="stack">${card({ title: 'Stamp card acquisition campaign', icon: 'stamp', sub: 'A special join QR layered on top of an existing Stamp Card program.', body, cls: 'reveal-up' })}
-        <div class="row reveal-up"><button class="btn btn-primary btn-lg" data-toast="Campaign published — QR generated">${icon('qr', 'sm')}Publish &amp; generate QR</button><button class="btn btn-ghost btn-lg" data-toast="Saved as draft">Save as draft</button></div></div>` };
+        <div class="layout-preview"><div class="stack">${card({ title: 'Stamp card acquisition campaign', icon: 'stamp', sub: 'A special join QR layered on top of an existing Stamp Card program.', body, cls: 'reveal-up' })}
+        <div class="row reveal-up"><button class="btn btn-primary btn-lg" data-toast="Campaign published — QR generated">${icon('qr', 'sm')}Publish &amp; generate QR</button><button class="btn btn-ghost btn-lg" data-toast="Saved as draft">Save as draft</button></div></div>
+        ${twoPasses(gift)}</div>`, after() {
+          const $ = s => document.querySelector(s), prog = $('[data-camp-prog]'), custom = $('[data-start-custom]'), name = $('[data-gift-name]'), days = $('[data-gift-days]');
+          let start = '0';
+          const upCard = () => { const p = D.programs.find(x => x.name === prog.value), n = start === 'Custom' ? parseInt(custom.value, 10) || 0 : +start; custom.max = ((p ? p.pass.total : 10) - 1); g.__passes.card = stampCard(p ? p.id : '', n); redraw('card'); };
+          const gv = () => { g.__passes.gift = giftVoucher(name.value.trim(), parseInt(days.value, 10)); redraw('gift'); };
+          document.querySelectorAll('[data-start-chips] .chip').forEach(c => c.addEventListener('click', () => { start = c.dataset.start; custom.hidden = start !== 'Custom'; upCard(); }));
+          prog.addEventListener('change', upCard); custom.addEventListener('input', upCard);
+          document.querySelectorAll('[data-gift-chips] .chip').forEach(c => c.addEventListener('click', () => { const cu = c.dataset.gift === 'Custom reward'; name.value = cu ? '' : c.dataset.gift; if (cu) name.focus(); gv(); }));
+          name.addEventListener('input', gv); days.addEventListener('input', gv);
+          $('[data-gift-toggle]').addEventListener('change', e => { $('[data-gift-preview]').hidden = !e.target.checked; });
+        } };
     }
     const pv = { type: 'voucher', name: 'Campaign name', reward: 'Voucher reward', logo: false }; g.__pass = pv;
     const body = `<div class="form-grid">
@@ -193,11 +215,26 @@
   S.campaignDetail = ctx => {
     const c = D.campaigns.find(x => x.id === ctx.opts.id), acq = c.id === 'cuplid';
     const life = card({ title: 'Lifecycle', icon: 'zap', actions: status('Active'), body: activeToggle('campaign'), cls: 'reveal-up' });
-    const qrc = card({ title: 'Campaign QR code', icon: 'qr', sub: 'System-generated on publish. Download for print.', body: qrPanel({ url: c.url, format: 'Cup' }), cls: 'reveal-up' });
-    const st = card({ title: 'Setup', icon: 'sliders', body: setup(acq ? [['Linked stamp card', 'Coffee Card'], ['Starting stamps', '2'], ['Welcome gift', 'Free cookie · valid 30 days']] : [['Voucher reward', '1 Free Coffee'], ['Valid from', 'Sep 11, 2026'], ['Valid to', 'Dec 10, 2026']], 3), cls: 'reveal-up' });
-    const pv = { type: 'voucher', name: 'Free Coffee Campaign', reward: '1 Free Coffee', from: 'Sep 11, 2026', to: 'Dec 10, 2026' }; g.__pass = pv;
+    // One-time voucher QR (client): printed on posters, flyers, cups, receipts or advertisements.
+    const qrc = card({ title: 'Campaign QR code', icon: 'qr', sub: 'System-generated on publish. Download for print.', body: acq ? qrPanel({ url: c.url, format: 'Cup' }) : qrPanel({ url: c.url, format: 'Cup', formats: ['Poster', 'Flyer', 'Cup', 'Receipt', 'Advertisement'] }), cls: 'reveal-up' });
     const head = pageHead({ eyebrow: crumb('Loyalty Programs', ctx.link('03-')) + c.name, title: c.name, sub: `<span class="row" style="gap:8px">${badge(acq ? 'Stamp card acquisition campaign' : 'One-time voucher campaign', 'outline')}<span>Created ${c.created}</span></span>`, actions: `<button class="btn btn-primary">${icon('edit', 'sm')}Edit</button>` });
-    return { nav: 'Loyalty Programs', title: c.name, html: acq ? `${head}<div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);align-items:start">${life}${qrc}</div><div style="margin-top:18px">${st}</div>` : `${head}<div class="layout-preview"><div class="stack">${life}${qrc}${st}</div><div class="sticky">${phonePreview(pv, 'Generic layout (no launch template)')}</div></div>` };
+    if (acq) {
+      // Customer receives two Wallet passes: the stamp card with its starting stamps + a separate welcome-gift voucher.
+      const p = P(c.program); g.__passes = { card: stampCard(c.program, c.start), gift: giftVoucher(c.gift, c.validity) };
+      const st = card({ title: 'Setup', icon: 'sliders', body: setup([['Linked stamp card', p.name], ['Starting stamps', String(c.start)], ['Welcome gift', `${c.gift} · valid ${c.validity} days`], ['Customer receives', `1. ${p.name} with ${c.start} stamps · 2. Welcome gift voucher`]]), cls: 'reveal-up' });
+      // P5.4 ❓ default pending client confirmation: an existing card holder gets no duplicate card.
+      const dup = card({ title: 'Customer already has this card', icon: 'info', body: callout('info', '“You already have this card”', `A customer who already holds the ${p.name} and scans this campaign QR gets no duplicate card and sees this message.`), cls: 'reveal-up', attrs: 'data-dup-card' });
+      return { nav: 'Loyalty Programs', title: c.name, html: `${head}<div class="layout-preview"><div class="stack">${life}${qrc}${st}${dup}</div>${twoPasses(true)}</div>` };
+    }
+    // Each customer claims and redeems once; a redeemed voucher becomes invalid and shows Redeemed in the Wallet.
+    const claims = D.rewards.filter(r => r[2] === 'Voucher · ' + c.name), nRed = claims.filter(r => r[3] === 'Redeemed').length;
+    const st = card({ title: 'Setup', icon: 'sliders', body: setup([['Voucher reward', c.reward], ['Valid from', c.from], ['Valid to', c.to], ['Per customer', 'Claim once · redeem once']]), cls: 'reveal-up' });
+    const cl = card({ title: 'Claims', icon: 'users', sub: 'After redemption the voucher is invalid, marked Redeemed in the Wallet and cannot be used again.', actions: `${badge(claims.length + ' claimed', 'outline')}${badge(nRed + ' redeemed', 'blue')}`, body: null, cls: 'reveal-up', attrs: 'style="overflow:hidden" data-claims' }).replace('</section>', `<div class="table-wrap"><table class="t"><thead><tr><th>Customer</th><th>Claimed</th><th>Status</th></tr></thead><tbody>${claims.map(r => `<tr><td><div class="person">${U.ini(r[1])}${U.esc(r[1])}</div></td><td class="muted">${r[4]}</td><td>${status(r[3])}</td></tr>`).join('')}</tbody></table></div></section>`);
+    const pv = { type: 'voucher', name: c.name, reward: c.reward, from: c.from, to: c.to, status: 'Available' }; g.__pass = pv;
+    const seg = `<div class="seg" data-v-state>${['Available', 'Redeemed'].map((s, i) => `<button class="${i ? '' : 'on'}" data-vs="${s}">${s}</button>`).join('')}</div>`;
+    return { nav: 'Loyalty Programs', title: c.name, html: `${head}<div class="layout-preview"><div class="stack">${life}${qrc}${st}${cl}</div><div class="sticky stack" style="align-items:center">${seg}${phonePreview(pv, 'Generic layout (no launch template)')}</div></div>`, after() {
+        document.querySelectorAll('[data-vs]').forEach(b => b.addEventListener('click', () => { pv.status = b.dataset.vs; const h = document.querySelector('[data-pass-host]'); h.innerHTML = pass({ ...pv, android: h.closest('[data-phone]').classList.contains('android') }); }));
+      } };
   };
 
   /* ================= WALLET CARDS ================= */
