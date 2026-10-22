@@ -427,14 +427,6 @@ table.t{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
 .j-node{width:60px;height:60px;border-radius:20px;display:grid;place-items:center;background:var(--color-surface);border:1px solid var(--color-border-strong);font-family:var(--font-display);font-weight:700;font-size:18px;position:relative;z-index:1;box-shadow:var(--shadow-card)}
 .j-node small{position:absolute;bottom:-8px;font-size:10px;font-weight:700;background:var(--color-ink);color:var(--color-text-inverse);padding:1px 7px;border-radius:9px;letter-spacing:.03em}
 .j-card{padding:14px;border-radius:18px;border:1px solid var(--color-border);background:var(--color-surface-muted);display:flex;flex-direction:column;gap:10px}
-.podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:14px;align-items:end;padding:8px 22px 0}
-.pod{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
-.pod .av{width:54px;height:54px;font-size:16px}
-.pod .blk{width:100%;border-radius:18px 18px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:14px 8px;gap:2px;font-weight:600;background:var(--color-surface-sunken)}
-.pod .blk b{font-family:var(--font-display);font-size:28px;letter-spacing:-.03em}
-.pod.p1 .blk{height:150px;background:linear-gradient(180deg,#FFE58A,#FFD43B);color:#3D2E00}
-.pod.p2 .blk{height:118px}
-.pod.p3 .blk{height:96px}
 .medal{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:#3D2E00;background:#FFD43B;box-shadow:0 4px 10px -4px rgba(180,130,0,.8)}
 .medal.s{background:#D9DCE3;color:#333}
 .medal.b{background:#E7B48A;color:#4A2A10}
@@ -578,7 +570,6 @@ table.t{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
   .balance-flow{grid-template-columns:1fr}
   .hours-row{grid-template-columns:1fr 1fr}
   .hours-row .times{grid-column:1/-1}
-  .podium{padding:8px 4px 0}
 }
 @media (max-width:520px){
   .public-top{padding:16px}

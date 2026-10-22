@@ -1,6 +1,6 @@
 /* Common (public / auth / onboarding) screens */
 (function (g) {
-  const U = g.UI, { icon, field, input, select, check, colorIn, upload, callout, pass, modal } = U;
+  const U = g.UI, { icon, field, input, select, check, colorIn, upload, callout, pass, modal, kv, badge } = U;
   const S = g.SCREENS = g.SCREENS || {};
   const amb = `<div class="ambient"><i></i><i></i><i></i><div class="lines"></div></div>`;
   const COUNTRIES = ['Select…', 'Germany', 'Austria', 'Switzerland', 'Türkiye', 'France', 'Italy'];
@@ -44,6 +44,7 @@
         <div class="reveal-up"><div class="eyebrow">${icon('shield', 'sm')} Business Portal</div><h1 class="page-title">Log in to <span class="hl">Bonuca</span></h1><p class="page-sub">Welcome back. Log in to manage your programs, customers and team.</p></div>
         ${field({ label: 'Email Address', required: true, input: `<div class="input-wrap">${icon('mail')}<input class="input" type="email" placeholder="you@business.com" data-email></div>` })}
         ${field({ label: 'Password', required: true, input: `<div class="input-wrap">${icon('lock')}<input class="input" type="password" placeholder="••••••••" data-pw><span class="trail"><button type="button" class="icon-btn" data-peek aria-label="Show password">${icon('eye', 'sm')}</button></span></div>` })}
+        <div style="text-align:right;margin-top:-6px"><a class="link underline-hl" style="color:var(--color-text-primary);font-size:13.5px" href="10-forgot-password.html">Forgot password?</a></div>
         <button class="btn btn-primary btn-lg btn-block" type="submit">Log In ${icon('arrowRight', 'sm')}</button>
         <div class="callout dev dev-accounts" style="display:block">
           <b style="display:flex;gap:8px;align-items:center;margin-bottom:6px">${icon('zap', 'sm')}Development sample accounts</b>
@@ -54,6 +55,9 @@
     </div>
   </section>
 </div><div class="toast-zone"></div>`, after() {
+    const q = new URLSearchParams(location.search);
+    if (q.has('reset')) g.toast('Password updated. Log in with your new password.');
+    if (q.has('invited')) g.toast('Invitation accepted. Log in with your new password.');
     document.querySelector('[data-peek]').onclick = () => { const p = document.querySelector('[data-pw]'); p.type = p.type === 'password' ? 'text' : 'password'; };
     document.querySelectorAll('[data-use]').forEach(b => b.onclick = () => { document.querySelector('[data-email]').value = b.dataset.use; document.querySelector('[data-pw]').value = 'password1'; b.closest('form').dataset.go = b.dataset.go; });
     document.querySelector('[data-login]').onsubmit = e => { e.preventDefault(); const go = e.target.dataset.go; if (go) location.href = go; else g.toast(document.querySelector('[data-email]').value ? 'Employee accounts use the Bonuca app' : 'Enter your email and password'); };
@@ -108,6 +112,59 @@
     document.querySelector('[data-verify]').onclick = () => { const code = boxes.map(b => b.value).join(''); if (code === '495875') location.href = '07-onboarding-business-profile.html'; else { boxes.forEach(b => { b.style.animation = 'none'; b.offsetHeight; b.style.animation = 'shake .42s'; }); g.toast(code.length < 6 ? 'Enter all 6 digits' : 'That code is not correct'); } };
   } });
 
+  /* ---------- password recovery & invitation ---------- */
+  const PW_RULE = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/, PW_MSG = 'Use at least 8 characters, including a letter and a number.';
+  const pwField = (label, name) => field({ label, required: true, input: `<div class="input-wrap">${icon('lock')}${input({ type: 'password', attrs: `name="${name}" autocomplete="new-password"` })}</div>`, hint: name === 'pw' ? PW_MSG : '' });
+  const backToLogin = `<p class="muted" style="text-align:center;margin-top:18px"><a class="link underline-hl" style="color:var(--color-text-primary)" href="03-login.html">Back to Log In</a></p>`;
+  function setErr(el, msg) {
+    const fd = el.closest('.field'); fd.querySelectorAll('.error-msg').forEach(x => x.remove()); fd.classList.toggle('has-error', !!msg);
+    fd.querySelectorAll('.hint').forEach(h => h.hidden = !!msg);
+    if (msg) fd.insertAdjacentHTML('beforeend', `<div class="error-msg">${icon('info', 'sm')}${msg}</div>`);
+    return !msg;
+  }
+  // Validates new password + confirmation; returns true when both are valid.
+  function checkPasswords(f) {
+    const a = setErr(f.elements.pw, PW_RULE.test(f.elements.pw.value) ? '' : PW_MSG);
+    const b = setErr(f.elements.pw2, f.elements.pw2.value && f.elements.pw2.value === f.elements.pw.value ? '' : 'Passwords do not match.');
+    return a && b;
+  }
+
+  S.forgot = ctx => {
+    if (ctx.opts.sent) return { title: 'Check your email', html: authFrame('Check your <span class="hl">email</span>', 'If an account exists for that email address, we sent a link to reset your password.', `<div class="stack">
+      ${callout('dev', 'Development — email not sent', `No email service is connected, so no message was delivered. <a class="link" href="12-reset-password.html">Open reset link ${icon('arrowRight', 'sm')}</a>`)}
+      <a class="btn btn-primary btn-lg btn-block" href="03-login.html">Back to Log In</a>
+      <button class="btn btn-text btn-block" data-toast="A new reset link was generated">${icon('rotate', 'sm')}Resend link</button>
+    </div>`, { eyebrow: `${icon('mail', 'sm')} Forgot password` }) };
+    return { title: 'Forgot password', html: authFrame('Forgot your <span class="hl">password</span>?', 'Enter your account email and we’ll send you a link to reset your password.', `<form class="stack" novalidate data-forgot>
+      ${field({ label: 'Email Address', required: true, input: `<div class="input-wrap">${icon('mail')}${input({ type: 'email', attrs: 'name="email" autocomplete="email"', ph: 'you@business.com' })}</div>` })}
+      <button class="btn btn-primary btn-lg btn-block" type="submit">Send reset link ${icon('arrowRight', 'sm')}</button>
+    </form>`, { eyebrow: `${icon('lock', 'sm')} Forgot password`, after: backToLogin }), after() {
+      const f = document.querySelector('[data-forgot]');
+      f.onsubmit = e => { e.preventDefault(); if (setErr(f.elements.email, /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.elements.email.value) ? '' : 'Enter a valid email address.')) location.href = '11-forgot-password-sent.html'; };
+    } };
+  };
+
+  S.resetPassword = () => ({ title: 'Reset password', html: authFrame('Set a new <span class="hl">password</span>', 'Choose a new password for your Bonuca account.', `<form class="stack" novalidate data-reset>
+      ${pwField('New password', 'pw')}${pwField('Confirm new password', 'pw2')}
+      <button class="btn btn-primary btn-lg btn-block" type="submit">Reset password ${icon('arrowRight', 'sm')}</button>
+    </form>`, { eyebrow: `${icon('lock', 'sm')} Forgot password`, after: backToLogin }), after() {
+    const f = document.querySelector('[data-reset]');
+    f.onsubmit = e => { e.preventDefault(); if (checkPasswords(f)) location.href = '03-login.html?reset=1'; };
+  } });
+
+  S.acceptInvite = () => {
+    // ❓ Default demo invitation is for an Employee; ?role=Manager shows a Manager invitation.
+    const role = new URLSearchParams(location.search).get('role') === 'Manager' ? 'Manager' : 'Employee';
+    return { title: 'Accept invitation', html: authFrame('Accept your <span class="hl">invitation</span>', 'Create your own password to join the business on Bonuca.', `<form class="stack" novalidate data-accept>
+      <div>${kv([['Business', 'Sample Business (development)'], ['Role', `<span data-invite-role>${badge(role, role === 'Manager' ? 'blue' : '')}</span>`]])}</div>
+      ${pwField('Password', 'pw')}${pwField('Confirm password', 'pw2')}
+      <button class="btn btn-primary btn-lg btn-block" type="submit">Accept ${icon('arrowRight', 'sm')}</button>
+    </form>`, { eyebrow: `${icon('userPlus', 'sm')} Invitation` }), after() {
+      const f = document.querySelector('[data-accept]');
+      f.onsubmit = e => { e.preventDefault(); if (checkPasswords(f)) location.href = '03-login.html?invited=1'; };
+    } };
+  };
+
   const stepper = n => `<div class="stepper reveal-up">${['Business', 'Plan', 'First program'].map((l, i) => `<div class="s ${i + 1 < n ? 'done' : i + 1 === n ? 'cur' : ''}"><span class="n">${i + 1 < n ? icon('check', 'sm') : i + 1}</span>${l}</div>${i < 2 ? '<span class="sep"></span>' : ''}`).join('')}<span class="faint" style="margin-left:auto;font-size:13px;font-weight:600">Step ${n} of 3</span></div>`;
   const bars = n => `<div class="prog-steps" style="margin-bottom:22px">${[1, 2, 3].map(i => `<span class="st ${i <= n ? 'done' : ''}"><i style="animation-delay:${i * 120}ms"></i></span>`).join('')}</div>`;
 
@@ -128,7 +185,7 @@
     ${g.planCard('Free Trial', '14 days, then reverts to Free (or Preview) — no data is deleted', g.DATA.plans.trial, `<a class="btn btn-primary btn-block" href="09-onboarding-first-program.html">Start Free Trial ${icon('arrowRight', 'sm')}</a>`, { cls: 'current' })}
     ${g.planCard('Pro Plan', 'Pricing not configured yet <span class="faint">(set by Bonuca)</span>', g.DATA.plans.pro, `<button class="btn btn-ghost btn-block is-locked" disabled>${icon('lock', 'sm')}Choose Pro — Stripe checkout</button>`, { cls: 'ink' })}
   </div><div style="margin-top:18px">${callout('info', 'Paid plans on the web use Stripe checkout', 'Stripe is not connected in this environment, so paid checkout cannot be completed here. Mobile purchases use the App Store / Google Play inside the Bonuca app.')}</div>
-  <div class="divider"></div><div class="row between wrap"><div><b>Skip for now</b><div class="hint">Explore every tab with demo data in Preview Mode.</div></div><a class="btn btn-text" href="09-onboarding-first-program.html">Skip for now ${icon('arrowRight', 'sm')}</a></div>`, { w: 1000, stepper: stepper(2), eyebrow: `${icon('card', 'sm')} Onboarding` }) });
+  <div class="divider"></div><div class="row between wrap"><div><b>Skip for now</b><div class="hint">Explore every tab with demo data in Preview Mode.</div></div><a class="btn btn-text" href="../../owner/pages/61-dashboard-preview-mode.html">Skip for now ${icon('arrowRight', 'sm')}</a></div>`, { w: 1000, stepper: stepper(2), eyebrow: `${icon('card', 'sm')} Onboarding` }) });
 
   S.onboarding3 = () => {
     const types = [['Stamp Card', 'stamp', '#1747F8', 'Collect stamps, earn a reward'], ['Membership Card', 'crown', '#7C3AED', 'A standing perk for members'], ['Tier Program', 'layers', '#0F9D6E', 'Levels unlocked by visits'], ['Points Program', 'coins', '#C2410C', 'Earn points per purchase']];

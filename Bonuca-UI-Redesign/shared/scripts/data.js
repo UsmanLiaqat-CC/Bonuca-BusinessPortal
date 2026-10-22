@@ -76,7 +76,8 @@
     weeksL: ['08-10', '08-17', '08-24', '08-31', '09-07', '09-14', '09-21', '09-28', '10-05', '10-12', '10-19'], weeks: [3, 1, 1, 0, 0, 5, 3, 1, 3, 3, 5],
     top: [['Tara Ricci', 18], ['Nina Schmidt', 17], ['Lena Weber', 16], ['Oscar Demir', 15], ['Umut Demir', 14]]
   };
-  const team = [['Sam Owner', 'owner@sample.dev', 'Owner', 'Dec 5, 2025'], ['Mia Manager', 'manager@sample.dev', 'Manager', 'Dec 5, 2025'], ['Eli Employee', 'employee@sample.dev', 'Employee', 'Dec 5, 2025']];
+  /* [name, email, role, since, canManageEmployees] — the last flag applies to Managers only and is set by the Owner. */
+  const team = [['Sam Owner', 'owner@sample.dev', 'Owner', 'Dec 5, 2025'], ['Mia Manager', 'manager@sample.dev', 'Manager', 'Dec 5, 2025', true], ['Eli Employee', 'employee@sample.dev', 'Employee', 'Dec 5, 2025']];
   const roles = [['Owner', 'Full access — billing/subscription, employees, customers, loyalty programs, analytics, scanner, business settings.', 'shield'], ['Manager', 'Customers, loyalty programs, rewards, analytics, scanner, limited settings, and employees if permitted.', 'badge'], ['Employee', 'Scanner, limited customer info, add stamps/points/visits, redeem rewards. No billing or subscription access.', 'scan']];
   const plans = {
     free: ['Up to 15 customers', 'Up to 1 programs', 'Up to 1 locations', 'Up to 1 employees'],

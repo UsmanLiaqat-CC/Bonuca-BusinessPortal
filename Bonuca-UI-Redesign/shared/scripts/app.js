@@ -21,9 +21,11 @@
     ['50-settings-business', 'settings', { sec: 'business' }], ['51-settings-address', 'settings', { sec: 'address' }], ['52-settings-hours', 'settings', { sec: 'hours' }], ['53-settings-logo', 'settings', { sec: 'logo' }], ['54-settings-brand-colors', 'settings', { sec: 'colors' }], ['55-settings-employees', 'settings', { sec: 'employees' }], ['56-settings-notifications', 'settings', { sec: 'notifications' }]
   ];
   const PAGES = {
-    common: [['01-landing', 'landing'], ['02-landing-download-app', 'landing', { modal: true }], ['03-login', 'login'], ['04-register', 'register'], ['05-register-validation', 'register', { errors: true }], ['06-verify-email', 'verify'], ['07-onboarding-business-profile', 'onboarding1'], ['08-onboarding-plan-selection', 'onboarding2'], ['09-onboarding-first-program', 'onboarding3']],
+    common: [['01-landing', 'landing'], ['02-landing-download-app', 'landing', { modal: true }], ['03-login', 'login'], ['04-register', 'register'], ['05-register-validation', 'register', { errors: true }], ['06-verify-email', 'verify'], ['07-onboarding-business-profile', 'onboarding1'], ['08-onboarding-plan-selection', 'onboarding2'], ['09-onboarding-first-program', 'onboarding3'],
+      ['10-forgot-password', 'forgot'], ['11-forgot-password-sent', 'forgot', { sent: true }], ['12-reset-password', 'resetPassword'], ['13-accept-invitation', 'acceptInvite']],
     manager: [...shared, ['57-settings-wallet', 'settings', { sec: 'wallet' }], ['58-settings-language', 'settings', { sec: 'language' }], ['59-dashboard-dark-mode', 'dashboard', { theme: 'dark' }]],
-    owner: [...shared, ['57-settings-billing', 'settings', { sec: 'billing' }], ['58-settings-wallet', 'settings', { sec: 'wallet' }], ['59-settings-language', 'settings', { sec: 'language' }], ['60-dashboard-dark-mode', 'dashboard', { theme: 'dark' }]]
+    owner: [...shared, ['57-settings-billing', 'settings', { sec: 'billing' }], ['58-settings-wallet', 'settings', { sec: 'wallet' }], ['59-settings-language', 'settings', { sec: 'language' }], ['60-dashboard-dark-mode', 'dashboard', { theme: 'dark' }],
+      ['61-dashboard-preview-mode', 'dashboard', { preview: true }]]
   };
   g.PAGES = PAGES;
 
@@ -34,9 +36,28 @@
   const link = (role, prefix) => (PAGES[role].find(p => p[0].startsWith(prefix)) || [prefix])[0] + '.html';
   g.link = link;
 
+  /* ---------- role access (client spec: Owner full · Manager no billing, employees if permitted) ---------- */
+  const ACCESS = {
+    billing: role => role === 'owner',
+    team: role => role === 'owner' || g.DATA.team.some(([, , r, , canManage]) => r === 'Manager' && canManage)
+  };
+  const can = (role, key) => !ACCESS[key] || ACCESS[key](role);
+  g.can = can;
+
+  /* ---------- access states carried in the URL: ?preview (no plan selected) · ?override[=YYYY-MM-DD] (Super Admin) ---------- */
+  const PREVIEW_MSG = 'Select a free trial, free plan, or paid plan to use this feature.';
+  g.PREVIEW_MSG = PREVIEW_MSG;
+  function accessState(role, opts) {
+    const q = new URLSearchParams(location.search), o = q.get('override');
+    const d = /^\d{4}-\d{2}-\d{2}$/.test(o || '') ? new Date(o + 'T00:00:00') : null;
+    const end = d && !isNaN(d) ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    const preview = role === 'owner' && (!!opts.preview || q.get('preview') === '1'), override = role === 'owner' && !preview && q.has('override');
+    return { preview, override, overrideEnd: end, query: preview ? 'preview=1' : override ? 'override=' + encodeURIComponent(o || '') : '' };
+  }
+
   const NAV = [
-    ['Dashboard', 'dashboard', '01-'], ['Loyalty Programs', 'stamp', '03-'], ['Wallet Cards', 'wallet', '22-'], ['QR Scanner', 'qr', '28-'], ['Customers', 'users', '35-'], ['Employees', 'badge', '39-'],
-    ['Notifications', 'bell', '41-'], ['Rewards', 'gift', '45-'], ['Analytics', 'chart', '47-'], ['Branding', 'palette', '48-'], ['Subscription & Billing', 'card', '49-'], ['Settings', 'settings', '50-']
+    ['Dashboard', 'dashboard', '01-'], ['Loyalty Programs', 'stamp', '03-'], ['Wallet Cards', 'wallet', '22-'], ['QR Scanner', 'qr', '28-'], ['Customers', 'users', '35-'], ['Employees', 'badge', '39-', 'team'],
+    ['Notifications', 'bell', '41-'], ['Rewards', 'gift', '45-'], ['Analytics', 'chart', '47-'], ['Branding', 'palette', '48-'], ['Subscription & Billing', 'card', '49-', 'billing'], ['Settings', 'settings', '50-']
   ];
   const groups = { 0: 'Overview', 3: 'Operations', 6: 'Engagement', 9: 'Business' };
 
@@ -47,22 +68,26 @@
   g.SHELL_BITS = { themeSeg, lang };
 
   function shell(ctx, nav, inner) {
-    const r = ROLE[ctx.role];
-    const navHtml = NAV.map(([label, ic, pre], i) => `${groups[i] ? `<div class="nav-label">${groups[i]}</div>` : ''}<a href="${link(ctx.role, pre)}" class="${label === nav ? 'active' : ''}">${icon(ic)}${label}</a>`).join('');
+    const r = ROLE[ctx.role], st = ctx.state, plans = can(ctx.role, 'billing');
+    const navHtml = NAV.map((n, i) => [...n, groups[i]]).filter(([, , , key]) => can(ctx.role, key)).map(([label, ic, pre, , grp]) => `${grp ? `<div class="nav-label">${grp}</div>` : ''}<a href="${link(ctx.role, pre)}" class="${label === nav ? 'active' : ''}">${icon(ic)}${label}</a>`).join('');
+    const planCard = st.preview ? `<div class="trial-card"><b>Preview Mode</b><span>No plan selected · demo data.</span><br><a href="${link(ctx.role, '49-')}">View plans ${icon('arrowRight', 'sm')}</a></div>`
+      : st.override ? `<div class="trial-card"><b>Managed by Bonuca</b><span>${st.overrideEnd ? 'Until ' + st.overrideEnd + '.' : 'No end date.'}</span></div>`
+      : `<div class="trial-card"><span class="ring">${g.UI.ring(4 / 14, 40, 4, 'var(--color-highlight)', 'rgba(127,127,140,.3)', '10')}</span><b>Free Trial</b><span>10 days left.</span>${plans ? `<br><a href="${link(ctx.role, '49-')}">View plans ${icon('arrowRight', 'sm')}</a>` : ''}</div>`;
+    const pill = st.preview ? `Preview Mode — <b>demo data</b>` : st.override ? `Plan managed by Bonuca${st.overrideEnd ? ` — <b>until ${st.overrideEnd}</b>` : ''}` : `Free Trial — <b>10 days left.</b>`;
     return `<div class="ambient"><i></i><i></i><i></i><div class="lines"></div></div>
 <div class="app">
   <aside class="sidebar" aria-label="Primary">
     <a class="brand" href="${link(ctx.role, '01-')}"><span class="brand-mark">B</span><span><div class="brand-name">Bonuca</div><div class="brand-sub">Business Portal</div></span></a>
     <nav class="nav">${navHtml}</nav>
     <div class="side-foot">
-      <div class="trial-card"><span class="ring">${g.UI.ring(4 / 14, 40, 4, 'var(--color-highlight)', 'rgba(127,127,140,.3)', '10')}</span><b>Free Trial</b><span>10 days left.</span><br><a href="${link(ctx.role, '49-')}">View plans ${icon('arrowRight', 'sm')}</a></div>
+      ${planCard}
     </div>
   </aside>
   <div class="main">
     <header class="topbar">
       <button class="icon-btn menu-btn" data-menu aria-label="Open navigation">${icon('menu')}</button>
       <div class="biz"><span class="avatar">S</span><div><b>Sample Business (development)</b><small>${r.user} <span class="role-chip ${r.isOwner ? 'owner' : ''}">${r.label}</span></small></div></div>
-      <div class="top-actions"><span class="trial-pill">${icon('info', 'sm')}<span>Free Trial — <b>10 days left.</b></span></span>${lang()}${themeSeg()}<a class="btn btn-text btn-sm" href="../../common/pages/03-login.html">${icon('logout', 'sm')}Log out</a></div>
+      <div class="top-actions"><span class="trial-pill">${icon('info', 'sm')}<span>${pill}</span></span>${lang()}${themeSeg()}<a class="btn btn-text btn-sm" href="../../common/pages/03-login.html">${icon('logout', 'sm')}Log out</a></div>
     </header>
     <main class="content" id="content">${inner}</main>
   </div>
@@ -92,9 +117,9 @@
   }
   g.placeThumb = placeThumb;
 
-  function toast(msg) {
+  function toast(msg, ic = 'checkCircle') {
     const z = document.querySelector('.toast-zone') || document.body.appendChild(Object.assign(document.createElement('div'), { className: 'toast-zone' }));
-    const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = icon('checkCircle') + esc(msg); z.appendChild(t);
+    const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = icon(ic) + esc(msg); z.appendChild(t);
     setTimeout(() => { t.style.transition = 'opacity .3s'; t.style.opacity = 0; setTimeout(() => t.remove(), 300); }, 2600);
   }
   g.toast = toast;
@@ -116,7 +141,23 @@
   g.openModal = openModal;
 
   /* ---------- global interactions ---------- */
+  /* Preview Mode: write actions stay visible but locked; clicking one explains why (exact client wording). */
+  function lockPreview() {
+    document.getElementById('content').querySelectorAll('button, a.btn, input, select, textarea, .type-card[data-href]').forEach(el => {
+      if (el.closest('[data-preview-ok], .tabs, .seg, [data-ct], [data-pg], [data-rpg]') || el.matches('[data-close], [data-device]')) return;
+      if (el.matches('input, select') && el.closest('.toolbar, .search')) return;
+      if (el.matches('a.btn') && !el.matches('.btn-primary') && !/-new-|-edit|choose-type|dialog|invite/.test(el.getAttribute('href') || '')) return;
+      el.dataset.previewLock = ''; el.setAttribute('aria-disabled', 'true');
+      if (el.matches('.btn')) el.classList.add('is-locked');
+      if (el.matches('input:not([type=checkbox]):not([type=radio]), textarea')) el.readOnly = true;
+      if (el.matches('input[type=range], input[type=file]')) el.tabIndex = -1; // readOnly does not stop keyboard changes on these
+      const lab = el.matches('input') && el.closest('label'); if (lab) lab.dataset.previewLock = '';
+    });
+  }
+
   function wire() {
+    document.addEventListener('click', e => { if (!e.target.closest('[data-preview-lock]')) return; e.preventDefault(); e.stopPropagation(); toast(PREVIEW_MSG, 'lock'); }, true);
+    ['mousedown', 'keydown'].forEach(t => document.addEventListener(t, e => { if (e.target.closest && e.target.closest('select[data-preview-lock]') && e.key !== 'Tab') { e.preventDefault(); if (t === 'keydown') toast(PREVIEW_MSG, 'lock'); } }, true));
     document.addEventListener('click', e => {
       const t = e.target;
       const btn = t.closest('.btn'); if (btn && !reduced()) { const r = btn.getBoundingClientRect(), s = document.createElement('span'); const d = Math.max(r.width, r.height); s.className = 'ripple'; s.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`; btn.appendChild(s); setTimeout(() => s.remove(), 600); }
@@ -157,15 +198,25 @@
   function render() {
     const body = document.body, role = body.dataset.role, file = body.dataset.page;
     const entry = PAGES[role].find(p => p[0] === file); if (!entry) { body.innerHTML = '<p style="padding:40px">Unknown page ' + esc(file) + '</p>'; return; }
-    const [, screen, opts = {}] = entry; const ctx = { role, file, opts, owner: role === 'owner', link: pre => link(role, pre) };
+    const [, screen, opts = {}] = entry;
+    const state = role === 'common' ? {} : accessState(role, opts);
+    const ctx = { role, file, opts, owner: role === 'owner', link: pre => link(role, pre), state, can: key => can(role, key) };
     const out = S[screen](ctx);
     document.title = `${out.title || out.nav} · Bonuca`;
-    body.innerHTML = role === 'common' ? out.html : shell(ctx, out.nav, out.html);
+    let inner = out.html;
+    if (state.preview) inner = `<div class="reveal-up" style="margin-bottom:18px" data-preview-banner>${g.UI.callout('info', 'Preview Mode — demo data', `${PREVIEW_MSG} <a class="link" data-preview-ok href="${link(role, '49-')}">View plans ${icon('arrowRight', 'sm')}</a>`)}</div>` + inner;
+    if (state.override && (screen === 'dashboard' || screen === 'subscription' || opts.sec === 'billing')) inner = `<div class="reveal-up" style="margin-bottom:18px" data-override-banner>${g.UI.callout('info', 'Your plan is currently managed by Bonuca', state.overrideEnd ? `Until ${state.overrideEnd}.` : '', 'shield')}</div>` + inner;
+    body.innerHTML = role === 'common' ? inner : shell(ctx, out.nav, inner);
+    if (state.query) document.querySelectorAll('.app a[href], .app [data-href]').forEach(a => {
+      const attr = a.hasAttribute('data-href') ? 'data-href' : 'href', h = a.getAttribute(attr);
+      if (!a.hasAttribute('data-no-state') && /^\d{2}-[\w-]+\.html$/.test(h)) a.setAttribute(attr, h + '?' + state.query);
+    });
     const saved = store.get('bonuca-theme');
     applyTheme(opts.theme || (body.dataset.export ? 'system' : saved) || 'system');
     if (opts.theme) document.querySelectorAll('[data-theme-set]').forEach(b => b.classList.toggle('on', b.dataset.themeSet === opts.theme));
     document.querySelectorAll('.seg, .tabs').forEach(placeThumb);
     countUp(); out.after && out.after(ctx);
+    if (state.preview) lockPreview();
     document.querySelectorAll('.reveal-up').forEach((el, i) => el.style.setProperty('--i', i));
     document.fonts && document.fonts.ready.then(() => document.querySelectorAll('.seg, .tabs').forEach(placeThumb));
     addEventListener('resize', () => document.querySelectorAll('.seg, .tabs').forEach(placeThumb));
