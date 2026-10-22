@@ -7,11 +7,15 @@
       multi: { on: true, max: 3 },
       setup: [['Stamps required', '10'], ['Reward', '1 Free Coffee'], ['Multiple stamps per scan', 'On · max 3'], ['Surprise rewards', 'Off']] },
     { id: 'vip', name: 'VIP Member', type: 'Membership Card', kind: 'membership', status: 'Active', date: 'Published Dec 5, 2025', icon: 'crown', c: '#7C3AED', url: 'https://join.bonuca.invalid/program/join-prg_vip', qrAction: 'Join membership',
-      pass: { type: 'membership', name: 'VIP Member', benefit: '10% off every visit', since: 'Jan 15, 2026', bg: '#1B1B1F' }, cap: 'Membership Card',
-      setup: [['Benefit', '10% off every visit'], ['Benefit type', 'percent discount'], ['Validity', 'renews annually'], ['Surprise rewards', 'Off']] },
+      pass: { type: 'membership', name: 'VIP Member', benefit: '10% Discount', since: 'Jan 15, 2026', bg: '#1B1B1F' }, cap: 'Membership Card',
+      setup: [['Benefit', '10% Discount'], ['Member benefits', 'Permanent'], ['Surprise rewards', 'Off']] },
     { id: 'club', name: 'Rewards Club', type: 'Tier Program', kind: 'tier', status: 'Active', date: 'Published Dec 5, 2025', icon: 'layers', c: '#0F9D6E', url: 'https://join.bonuca.invalid/program/join-prg_club', qrAction: 'Join membership',
       pass: { type: 'tier', name: 'Rewards Club', tier: 'Member', next: '6 visits to Silver', pct: 40, bg: '#3A3F55' }, cap: 'Tier Program Pass',
-      setup: [['Tiers', 'Member (0) → Silver (10) → Gold (25)'], ['Upgrade basis', 'visits'], ['Downgrade rule', 'Off'], ['Surprise rewards', 'Off']] },
+      // Client defaults: Member (default) · Silver – 10 visits · Gold – 25 visits · Platinum – 50 visits. tiers: [name, required value, wallet colour, rewards & benefits]
+      // req = upgrade requirement (Visits / Points / Total spending); currency + points rule are used only for Total spending / Points (same rules as the Points Program).
+      cfg: { req: 'Visits', currency: 'EUR', method: 'Fixed points per visit', perVisit: 10, basis: 1, pts: 10, rounding: 'Round down', min: null, max: null,
+        tiers: [['Member', 0, '#3A3F55', 'Welcome drink'], ['Silver', 10, '#8A8FA3', 'Free coffee upgrade'], ['Gold', 25, '#B8902E', '10% off every visit'], ['Platinum', 50, '#5E6A7D', 'Free birthday dinner']] },
+      setup: [['Surprise rewards', 'Off']] },
     { id: 'points', name: 'Coffee Rewards', type: 'Points Program', kind: 'points', status: 'Active', date: 'Published Dec 5, 2025', icon: 'coins', c: '#C2410C', url: 'https://join.bonuca.invalid/program/join-prg_points', qrAction: 'Add wallet card',
       pass: { type: 'points', name: 'Coffee Rewards', balance: '120 pts', nextReward: 'Free Dessert', needed: '130', pct: 48 }, cap: 'Generic layout (no launch template)',
       cfg: { currency: 'EUR', basis: 1, pts: 10, method: 'Manual', perVisit: 10, rounding: 'Round down', min: null, max: null, rewards: [['Free Coffee', 100], ['Free Dessert', 250], ['Free Burger', 500]], pointExpiry: null, rewardExpiry: null },
@@ -95,6 +99,10 @@
     ['Anna Schmidt', 'Coffee Rewards', 'EUR', '—', '−100 · Free Coffee', 220, 120, 'Mia Manager', LOC, 'Oct 20, 2026, 05:10 PM', 'Completed'],
     ['Vera Conti', 'Coffee Rewards', 'EUR', '12.40', '+124', 113, 237, 'Eli Employee', LOC, 'Oct 18, 2026, 11:32 AM', 'Completed']
   ];
+  /* tier customers the scanner can open: [name, customer ID, current value in the program's upgrade requirement] — kemal is one visit from Silver, umut one from Gold */
+  const tierScans = { anna: ['Anna Schmidt', 'C-10001', 4], kemal: ['Kemal Bianchi', 'C-10039', 9], umut: ['Umut Martin', 'C-10019', 24] };
+  /* membership customers the scanner can open: [name, customer ID, visits, last visit, member since] */
+  const memberScans = { anna: ['Anna Schmidt', 'C-10001', 12, 'Oct 21, 2026', 'Jan 15, 2026'] };
   const stampScans = { anna: ['Anna Schmidt', 'C-10001', 1], leon: ['Leon Fischer', 'C-10009', 9] };
   const roles = [['Owner', 'Full access — billing/subscription, employees, customers, loyalty programs, analytics, scanner, business settings.', 'shield'], ['Manager', 'Customers, loyalty programs, rewards, analytics, scanner, limited settings, and employees if permitted.', 'badge'], ['Employee', 'Scanner, limited customer info, add stamps/points/visits, redeem rewards. No billing or subscription access.', 'scan']];
   const plans = {
@@ -102,5 +110,5 @@
     trial: ['All Pro features, temporarily', 'Unlimited customers', 'Unlimited programs', 'Unlimited locations', 'Unlimited employees'],
     pro: ['Unlimited customers', 'Unlimited programs', 'Unlimited locations', 'Unlimited employees', 'AI heatmap commentary']
   };
-  g.DATA = { programs, campaigns, customers, scansBase, rewards, winbackLog, stages, dash, analytics, team, roles, plans, stampScans, pointsScans, pointsLog };
+  g.DATA = { programs, campaigns, customers, scansBase, rewards, winbackLog, stages, dash, analytics, team, roles, plans, stampScans, pointsScans, pointsLog, tierScans, memberScans };
 })(window);
