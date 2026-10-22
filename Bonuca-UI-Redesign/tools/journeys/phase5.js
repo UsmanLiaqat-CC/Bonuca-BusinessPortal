@@ -17,7 +17,10 @@ const stampsOn = p => p.locator('[data-pass-host="card"] .stamp.on').count();
 
   await check('P5.1 Starting stamps 0 / 1 / 2 / 3 / Custom — preset and custom both reflect on the issued card', async () => {
     for (const r of ['manager', 'owner']) {
-      await p.goto(url(`${r}/pages/17-campaign-new-acquisition.html`)); await ready(p);
+      // Lunch Card is a Draft (not linkable) until published — publish it in demo memory first.
+      await p.goto(url(`${r}/pages/17-campaign-new-acquisition.html`)); await p.evaluate(() => sessionStorage.removeItem('bonuca-program-status')); await p.reload(); await ready(p);
+      assert(!(await p.locator('[data-camp-prog] option').allInnerTexts()).includes('Lunch Card'), 'draft program offered');
+      await p.evaluate(() => sessionStorage.setItem('bonuca-program-status', JSON.stringify({ lunch: 'Active' }))); await p.reload(); await ready(p);
       const chips = await p.locator('[data-start-chips] .chip').allInnerTexts();
       assert(chips.join('|') === 'Start with 0 stamps|Start with 1 stamp|Start with 2 stamps|Start with 3 stamps|Custom number of starting stamps', 'chips ' + chips);
       assert(await stampsOn(p) === 0, 'default 0');

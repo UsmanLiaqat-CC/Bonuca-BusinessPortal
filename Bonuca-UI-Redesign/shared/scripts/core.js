@@ -83,15 +83,33 @@
   const ini = (n, extra = '') => { const [fg, bg] = PAL[hash(n) % PAL.length]; return `<span class="ini ${extra}" style="--fg:${fg};--bg:${bg}">${initials(n)}</span>`; };
 
   /* deterministic fake QR (finder patterns + seeded modules) */
-  function qr(seed = 'bonuca', size = 25) {
+  function qrCells(seed = 'bonuca', size = 25) {
     let s = hash(seed) || 1; const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
     const cells = [];
     const finder = (x, y) => { for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) { const e = i === 0 || i === 6 || j === 0 || j === 6, c = i >= 2 && i <= 4 && j >= 2 && j <= 4; if (e || c) cells.push([x + i, y + j]); } };
     finder(0, 0); finder(size - 7, 0); finder(0, size - 7);
     const inF = (x, y) => (x < 8 && y < 8) || (x > size - 9 && y < 8) || (x < 8 && y > size - 9);
     for (let x = 0; x < size; x++) for (let y = 0; y < size; y++) if (!inF(x, y) && rnd() > .52) cells.push([x, y]);
-    return `<svg viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">${cells.map(([x, y]) => `<rect x="${x}" y="${y}" width="1" height="1" fill="#0A0A0A"/>`).join('')}</svg>`;
+    return cells;
   }
+  const qr = (seed = 'bonuca', size = 25) => `<svg viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">${qrCells(seed, size).map(([x, y]) => `<rect x="${x}" y="${y}" width="1" height="1" fill="#0A0A0A"/>`).join('')}</svg>`;
+  /* QR download (prototype): a real PNG (canvas) or a one-page PDF of the same code, saved by the browser. */
+  const saveFile = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); };
+  function qrFile(kind, seed, url, fmt) {
+    const size = 25, cells = qrCells(seed, size), base = 'bonuca-qr-' + (url.split('/').pop() || 'code').replace(/[^\w-]+/g, '') + '-' + fmt.toLowerCase();
+    if (kind === 'png') {
+      const m = 24, c = document.createElement('canvas'); c.width = c.height = (size + 8) * m; const x = c.getContext('2d');
+      x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.fillStyle = '#0A0A0A'; cells.forEach(([i, j]) => x.fillRect((i + 4) * m, (j + 4) * m, m, m));
+      return c.toBlob(b => saveFile(b, base + '.png'), 'image/png');
+    }
+    const m = 12, X = (595 - size * m) / 2, Y = 420, t = s => String(s).replace(/[^\x20-\x7E]/g, '').replace(/[\\()]/g, '\\$&');
+    const stream = '0.04 0.04 0.04 rg\n' + cells.map(([i, j]) => `${X + i * m} ${Y + (size - 1 - j) * m} ${m} ${m} re`).join('\n') + `\nf\nBT /F1 11 Tf ${X} ${Y - 30} Td (${t(url)}) Tj ET\nBT /F1 11 Tf ${X} ${Y - 48} Td (Print format: ${t(fmt)}) Tj ET`;
+    const objs = ['<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>', '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>', `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'];
+    let pdf = '%PDF-1.4\n'; const off = objs.map((o, i) => { const at = pdf.length; pdf += `${i + 1} 0 obj\n${o}\nendobj\n`; return at; });
+    const xref = pdf.length; pdf += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${off.map(o => String(o).padStart(10, '0') + ' 00000 n \n').join('')}trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+    saveFile(new Blob([pdf], { type: 'application/pdf' }), base + '.pdf');
+  }
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-qr-dl]'); if (!b || b.closest('[data-preview-lock]')) return; const sel = b.closest('.qr-panel').querySelector('select'); qrFile(b.dataset.qrDl, b.dataset.qrSeed, b.dataset.qrUrl, sel ? sel.value : 'Table'); });
 
   const req = '<span class="req">*</span>';
   const opt = (t = 'optional') => `<span class="opt">(${t})</span>`;
@@ -116,35 +134,54 @@
 
   /* ---------- wallet pass ---------- */
   const STAMP_ICONS = { coffee: 'coffee', star: 'star', heart: 'heart', scissors: 'scissors', cookie: 'cookie', check: 'check' };
+  const img = v => typeof v === 'string' && /^(data:image\/|blob:|https?:)/.test(v) ? v.replace(/'/g, '%27') : '';
+  // Business branding (Branding / Settings, demo memory) is the default for every business pass: logo, secondary colour as the pass
+  // background (same gradient as the Branding preview), primary colour as the progress accent. Wallet apps use their own font.
+  const brand = () => (g.mem && document.body && document.body.dataset.role !== 'common' && g.mem.get('branding', null)) || {};
+  const hex = v => /^#[0-9a-f]{6}$/i.test(v || '');
+  const brandBg = (b = brand()) => hex(b.accent) ? `linear-gradient(150deg,${b.accent},#000)` : '';
   function pass(p) {
-    const bg = p.bg ? `--bgp:${p.bg};` : '';
-    const logo = p.logo === false ? `<div class="pass-logo ph">${esc((p.name || 'P')[0])}</div>` : `<div class="pass-logo">☕</div>`;
+    const b = brand(), bgv = p.bg || brandBg(b);
+    const st = `${bgv ? `--bgp:${bgv};` : ''}${p.fg ? `--fg:${p.fg};` : ''}${hex(b.color) ? `--color-accent:${b.color};` : ''}`;
+    const lg = p.logo === false ? '' : img(p.logo) || img(b.logo);
+    const logo = lg ? `<div class="pass-logo" style="background:#fff center/cover no-repeat url('${lg}')"></div>` : p.logo === false ? `<div class="pass-logo ph">${esc((p.name || 'P')[0])}</div>` : `<div class="pass-logo">☕</div>`;
+    const androidHead = p.android ? `<div class="pass-top">${logo}<span style="font-size:12px;opacity:.75;margin-right:auto">${esc(p.name)}</span></div><div class="pass-val" style="font-size:22px;margin-top:12px">${esc(p.name)}</div>` : `<div class="pass-top">${logo}<div class="pass-name" data-bind="name">${esc(p.name)}</div></div>`;
+    // Back of the pass: Terms & Conditions (programs) or description + redemption conditions (vouchers).
+    if (p.face === 'back') {
+      const rows = (p.type === 'voucher' ? [['Description', p.desc], ['Redemption conditions', p.cond]] : [['Terms & Conditions', p.terms]]).map(([l, v]) => `<div class="pass-lbl">${l}</div><div class="pass-val sm" style="white-space:pre-wrap;font-family:var(--font-body);font-weight:500">${v ? esc(v) : '<span style="opacity:.6">None entered</span>'}</div>`).join('');
+      return `<div class="pass pass-back" data-pass-back style="${st}">${androidHead}${rows}<div class="pass-lbl">Issued by</div><div class="pass-val sm">Sample Business</div></div>`;
+    }
+    const hero = img(p.hero) ? `<div class="pass-hero" style="margin:12px -16px 0;height:84px;background:center/cover no-repeat url('${img(p.hero)}')"></div>` : '';
     let mid = '';
     if (p.type === 'stamp') {
-      const n = p.total || 10, f = p.filled || 0, ic = STAMP_ICONS[p.icon || 'coffee'];
-      mid = `<div class="pass-lbl">Reward</div><div class="pass-val">${esc(p.reward)}</div><div class="stamps">${Array.from({ length: n }, (_, i) => `<span class="stamp ${i < f ? 'on' : ''}" style="animation-delay:${i * 70}ms">${icon(ic)}</span>`).join('')}</div><div class="pass-lbl">Progress</div><div class="pass-val sm">${n - f} stamp${n - f === 1 ? '' : 's'} to go</div>`;
+      const n = p.total || 10, f = Math.min(p.filled || 0, n), ic = STAMP_ICONS[p.icon || 'coffee'], si = img(p.stampImg);
+      const glyph = si ? `<img src="${si}" alt="" style="width:62%;height:62%;object-fit:contain;border-radius:50%">` : icon(ic);
+      mid = `<div class="pass-lbl">Reward</div><div class="pass-val" data-bind="reward">${esc(p.reward)}</div><div class="stamps">${Array.from({ length: n }, (_, i) => `<span class="stamp ${i < f ? 'on' : ''}" style="animation-delay:${i * 70}ms">${glyph}</span>`).join('')}</div><div class="pass-lbl">Progress</div><div class="pass-val sm">${n - f} stamp${n - f === 1 ? '' : 's'} to go</div>`;
     } else if (p.type === 'membership') {
       mid = `<div class="pass-lbl">Benefit</div><div class="pass-val" data-bind="benefit">${esc(p.benefit)}</div><div class="pass-lbl">Member since</div><div class="pass-val sm">${esc(p.since || 'Jan 15, 2026')}</div>`;
     } else if (p.type === 'tier') {
       mid = `<div class="pass-lbl">Current tier</div><div class="pass-val">${esc(p.tier || 'Member')}</div><div class="prog"><i style="--w:${p.pct ?? 40}%"></i></div><div class="pass-lbl">Next tier</div><div class="pass-val sm">${esc(p.next || '6 visits to Silver')}</div>`;
     } else if (p.type === 'points') {
-      mid = `<div class="pass-lbl">Balance</div><div class="pass-val">${esc(p.balance || '120 pts')}</div>${p.nextReward ? `<div class="prog"><i style="--w:${p.pct || 48}%"></i></div><div class="pass-cols"><div><div class="pass-lbl">Next reward</div><div class="pass-val sm">${esc(p.nextReward)}</div></div><div><div class="pass-lbl">Points still required</div><div class="pass-val sm">${esc(p.needed)}</div></div></div>` : `<div class="pass-lbl">Next reward</div><div class="pass-val sm">All rewards unlocked</div>`}`;
+      mid = `<div class="pass-lbl">Balance</div><div class="pass-val">${esc(p.balance || '120 pts')}</div>${p.nextReward ? `<div class="prog"><i style="--w:${p.pct || 0}%"></i></div><div class="pass-cols"><div><div class="pass-lbl">Next reward</div><div class="pass-val sm">${esc(p.nextReward)}</div></div><div><div class="pass-lbl">Points still required</div><div class="pass-val sm">${esc(p.needed)}</div></div></div>` : `<div class="pass-lbl">Next reward</div><div class="pass-val sm">All rewards unlocked</div>`}`;
     } else if (p.type === 'voucher') {
-      mid = `<div class="pass-lbl">Voucher</div><div class="pass-val">${esc(p.reward)}</div><div class="pass-cols"><div><div class="pass-lbl">Valid from</div><div class="pass-val sm">${esc(p.from || '—')}</div></div><div><div class="pass-lbl">Valid to</div><div class="pass-val sm">${esc(p.to || '—')}</div></div></div>${p.status ? `<div class="pass-lbl">Status</div><div class="pass-val sm" data-pass-status>${p.status === 'Redeemed' ? 'Redeemed · no longer valid' : esc(p.status)}</div>` : ''}`;
+      mid = `<div class="pass-lbl">Voucher</div><div class="pass-val">${esc(p.reward)}</div>${p.desc ? `<div class="pass-val sm" style="opacity:.85;margin-top:4px">${esc(p.desc)}</div>` : ''}<div class="pass-cols"><div><div class="pass-lbl">Valid from</div><div class="pass-val sm">${esc(p.from || '—')}</div></div><div><div class="pass-lbl">Valid to</div><div class="pass-val sm">${esc(p.to || '—')}</div></div></div>${p.status ? `<div class="pass-lbl">Status</div><div class="pass-val sm" data-pass-status>${p.status === 'Redeemed' ? 'Redeemed · no longer valid' : esc(p.status)}</div>` : ''}`;
     }
     // A redeemed voucher is invalid: no scannable QR remains on the pass.
     const qrBlock = p.type === 'voucher' && p.status === 'Redeemed' ? '' : `<div class="pass-qr">${qr(p.name + (p.type || ''), 21)}</div>`;
-    const androidHead = p.android ? `<div class="pass-top">${logo}<span style="font-size:12px;opacity:.75;margin-right:auto">${esc(p.name)}</span></div><div class="pass-val" style="font-size:22px;margin-top:12px">${esc(p.name)}</div>` : `<div class="pass-top">${logo}<div class="pass-name" data-bind="name">${esc(p.name)}</div></div>`;
-    return `<div class="pass" style="${bg}${p.fg ? `--fg:${p.fg}` : ''}">${androidHead}${mid}${qrBlock}</div>`;
+    return `<div class="pass" style="${st}">${androidHead}${hero}${mid}${qrBlock}</div>`;
   }
+  // Re-render a live preview from its state (g.__pass, or g.__passes[key]); keeps the device and the shown face.
+  const repaint = (key = '') => document.querySelectorAll(`[data-pass-host="${key}"]`).forEach(h => { const p = key ? (g.__passes || {})[key] : g.__pass; if (p) h.innerHTML = pass({ ...p, android: h.closest('[data-phone]').classList.contains('android') }); });
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-face]'); if (!b) return; const h = b.closest('.preview-col').querySelector('[data-pass-host]'), k = h.dataset.passHost, p = k ? (g.__passes || {})[k] : g.__pass; if (p) { p.face = b.dataset.face; repaint(k); } });
   function phonePreview(p, caption, opts = {}) {
     const android = !!opts.android;
-    return `<div class="preview-col"><div class="seg" data-seg="device">${['iPhone', 'Android'].map(d => `<button class="${(d === 'Android') === android ? 'on' : ''}" data-device="${d}">${icon(d === 'iPhone' ? 'apple' : 'phone', 'sm')}${d}</button>`).join('')}</div><div class="phone ${android ? 'android' : ''}" data-phone><div class="phone-screen" data-pass-host="${esc(opts.key || '')}">${pass({ ...p, android })}</div></div><div class="phone-cap" data-cap>${caption}${android ? ' · Google Wallet' : ' · Apple Wallet'} (approximate)</div></div>`;
+    const face = opts.back ? `<div class="seg" data-seg="face">${['Front', 'Back'].map(f => `<button class="${(f === 'Back') === (p.face === 'back') ? 'on' : ''}" data-face="${f.toLowerCase()}">${f}</button>`).join('')}</div>` : '';
+    return `<div class="preview-col"><div class="row wrap" style="justify-content:center;gap:8px"><div class="seg" data-seg="device">${['iPhone', 'Android'].map(d => `<button class="${(d === 'Android') === android ? 'on' : ''}" data-device="${d}">${icon(d === 'iPhone' ? 'apple' : 'phone', 'sm')}${d}</button>`).join('')}</div>${face}</div><div class="phone ${android ? 'android' : ''}" data-phone><div class="phone-screen" data-pass-host="${esc(opts.key || '')}">${pass({ ...p, android })}</div></div><div class="phone-cap" data-cap>${caption}${android ? ' · Google Wallet' : ' · Apple Wallet'} (approximate)</div></div>`;
   }
   // Print formats (client): program/registration QR — table, counter, sticker, flyer, window; campaign QR — posters, flyers, cups, receipts, advertisements.
   const QR_FORMATS = ['Table', 'Counter', 'Sticker', 'Flyer', 'Window'], CAMPAIGN_QR = ['Poster', 'Flyer', 'Cup', 'Receipt', 'Advertisement'];
   function qrPanel({ url, format = 'Table', seed, link, formats = QR_FORMATS }) {
-    return `<div class="qr-panel"><div class="qr-box">${qr(seed || url, 25)}</div><div class="qr-meta"><div class="url-line">${icon('globe', 'sm')}<span>${esc(url)}</span><button class="icon-btn" style="width:28px;height:28px;margin-left:auto" data-copy="${esc(url)}" title="Copy">${icon('file', 'sm')}</button></div><div class="dev-url">${icon('zap', 'sm')}Development URL — set VITE_JOIN_BASE_URL to the customer join site before printing.</div><div class="row wrap"><div class="field" style="flex:1;min-width:200px"><label class="label">Print format</label>${select(formats, format)}</div></div><div class="row"><button class="btn btn-ghost btn-sm" data-toast="PNG downloaded">${icon('download', 'sm')}PNG</button><button class="btn btn-ghost btn-sm" data-toast="PDF downloaded">${icon('file', 'sm')}PDF</button>${link ? `<a class="link" style="margin-left:auto" href="${link}">All printable QR codes ${icon('arrowRight', 'sm')}</a>` : ''}</div></div></div>`;
+    return `<div class="qr-panel"><div class="qr-box">${qr(seed || url, 25)}</div><div class="qr-meta"><div class="url-line">${icon('globe', 'sm')}<span>${esc(url)}</span><button class="icon-btn" style="width:28px;height:28px;margin-left:auto" data-copy="${esc(url)}" title="Copy">${icon('file', 'sm')}</button></div><div class="dev-url">${icon('zap', 'sm')}Development URL — set VITE_JOIN_BASE_URL to the customer join site before printing.</div><div class="row wrap"><div class="field" style="flex:1;min-width:200px"><label class="label">Print format</label>${select(formats, format)}</div></div><div class="row"><button class="btn btn-ghost btn-sm" data-toast="PNG downloaded" data-qr-dl="png" data-qr-seed="${esc(seed || url)}" data-qr-url="${esc(url)}">${icon('download', 'sm')}PNG</button><button class="btn btn-ghost btn-sm" data-toast="PDF downloaded" data-qr-dl="pdf" data-qr-seed="${esc(seed || url)}" data-qr-url="${esc(url)}">${icon('file', 'sm')}PDF</button>${link ? `<a class="link" style="margin-left:auto" href="${link}">All printable QR codes ${icon('arrowRight', 'sm')}</a>` : ''}</div></div></div>`;
   }
 
   /* ---------- charts (SVG) ---------- */
@@ -207,5 +244,5 @@
   const pageHead = ({ eyebrow, title, sub, actions = '' }) => `<header class="page-head reveal-up"><div>${eyebrow ? `<div class="eyebrow">${eyebrow}</div>` : ''}<h1 class="page-title">${title}</h1>${sub ? `<p class="page-sub">${sub}</p>` : ''}</div>${actions ? `<div class="head-actions">${actions}</div>` : ''}</header>`;
   const crumb = (label, href) => `<a href="${href}">${label}</a>${icon('chevronRight')}`;
 
-  g.UI = { icon, esc, ini, initials, qr, field, input, select, textarea, toggle, check, colorIn, upload, optionRow, badge, status, card, callout, pass, phonePreview, qrPanel, CAMPAIGN_QR, barChart, hBarChart, lineChart, donut, chartTableToggle, ring, tabs, modal, kv, setup, pageHead, crumb, req, opt };
+  g.UI = { icon, esc, ini, initials, qr, qrCells, repaint, brandBg, field, input, select, textarea, toggle, check, colorIn, upload, optionRow, badge, status, card, callout, pass, phonePreview, qrPanel, CAMPAIGN_QR, barChart, hBarChart, lineChart, donut, chartTableToggle, ring, tabs, modal, kv, setup, pageHead, crumb, req, opt };
 })(window);

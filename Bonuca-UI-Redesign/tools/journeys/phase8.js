@@ -20,7 +20,7 @@ const MO = [['manager', ''], ['owner', '']];
   const p = watch(await ctx.newPage());
 
   await check('P8.1 Dashboard: client stats + Customer Growth / Daily Scans / Monthly Growth / Top Programs (01, 02, dark)', async () => {
-    const STATS = ['Total Members', 'New Members Today', 'New This Week', 'New This Month', 'Total Scans', 'Active Programs', 'Wallet Cards', 'Membership Distribution', 'Visits', 'Returning Customers'];
+    const STATS = ['Total Members', 'New Members Today', 'New Members This Week', 'New Members This Month', 'Total Scans', 'Active Programs', 'Wallet Cards', 'Membership Distribution', 'Visits', 'Returning Customers'];
     const CHARTS = ['Customer Growth', 'Daily Scans', 'Monthly Growth', 'Top Programs'];
     for (const [f, dark] of [['manager/pages/01-dashboard.html'], ['manager/pages/02-dashboard-table-view.html'], ['owner/pages/01-dashboard.html'], ['manager/pages/59-dashboard-dark-mode.html', 1], ['owner/pages/60-dashboard-dark-mode.html', 1]]) {
       await p.goto(url(f)); await ready(p);
