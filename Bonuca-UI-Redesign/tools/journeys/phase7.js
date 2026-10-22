@@ -96,7 +96,7 @@ const grantMulti = () => Object.defineProperty(window, 'DATA', { configurable: t
   await check('Recent scans: time, customer, action; Account: name, role, business, language, Logout', async () => {
     await p.goto(url(EMP + '04-recent-scans.html')); await ready(p);
     const rows = await p.locator('.scan-feed .list-row').allInnerTexts();
-    assert(rows.length >= 10 && /Kemal Bianchi/.test(rows[0]) && /Points credited/.test(rows[0]) && /02:28 PM/.test(rows[0]), 'rows ' + rows[0]);
+    assert(rows.length === 5 && /Umut Martin/.test(rows[0]) && /02:24 PM/.test(rows[0]) && !rows.some(r => /Kemal Bianchi/.test(r)), 'own scans only ' + rows[0]);
     await p.goto(url(EMP + '05-account.html')); await ready(p);
     const t = await txt(p, '#content');
     for (const f of ['Name Eli Employee', 'Role Employee', 'Business Sample Business (development)', 'Language']) assert(t.includes(f), 'missing ' + f);
@@ -141,8 +141,10 @@ const grantMulti = () => Object.defineProperty(window, 'DATA', { configurable: t
     for (const [label, file] of [['Anna Schmidt — Rewards Club (Tier Program)', '10-scan-tier'], ['Anna Schmidt — VIP Member (Membership Card)', '11-scan-membership']]) {
       await home(); await pick(label); inEmp(); assert(p.url().includes(file), file);
       await p.click('text=Record visit'); assert((await p.locator('.toast').allInnerTexts()).some(x => x.includes('Visit recorded')), file + ' visit');
-      await p.click('.offer-card [data-scan-ok]'); assert((await p.locator('.toast').allInnerTexts()).some(x => x.includes('Reward redeemed · visit recorded')), file + ' win-back');
+      assert(await p.locator('.offer-card').count() === 0, file + ' no win-back for an active customer');
     }
+    await home(); await pick('Kemal Fischer — VIP Member (Membership Card, inactive 40 days)'); inEmp();
+    await p.click('.offer-card [data-scan-ok]'); assert((await p.locator('.toast').allInnerTexts()).some(x => x.includes('Reward redeemed · visit recorded')), 'membership win-back');
     // New scan returns to the scanner home
     await p.click('[data-new-scan]'); await ready(p); assert(p.url().includes('01-scanner-home'), 'new scan');
   });

@@ -105,7 +105,7 @@ const stampsOn = p => p.locator('[data-pass-host="card"] .stamp.on').count();
 
   await check('P5.8 Win-back scan exactly: Customer · Inactive for · Active reward · Status → Redeem Reward resets inactive days to 0 (scan + profile)', async () => {
     for (const [r, n] of [['manager', '64'], ['owner', '66']]) {
-      await p.goto(url(`${r}/pages/${n}-scanner-winback.html`)); await ready(p);
+      await p.evaluate(() => sessionStorage.clear()); await p.goto(url(`${r}/pages/${n}-scanner-winback.html`)); await ready(p);
       const kv = await txt(p, '[data-wb-kv]');
       assert(kv === 'Customer Kemal Fischer Inactive for 40 days Active reward Free coffee Status Not redeemed', 'kv ' + kv);
       assert(await p.locator('[data-wb-profile]').isHidden(), 'profile link before redeem');
@@ -118,14 +118,18 @@ const stampsOn = p => p.locator('[data-pass-host="card"] .stamp.on').count();
       const t = await txt(p, '#content');
       assert(t.includes('Kemal Fischer') && t.includes('Inactive for 0 days') && t.includes('Visit recorded') && (await txt(p, '[data-last-visit]')) === 'Oct 21, 2026', 'profile after ' + t.slice(0, 400));
       assert((await txt(p, '[data-rewards]')).includes('Free coffee win-back Redeemed'), 'reward redeemed on profile');
+      await p.goto(url(`${r}/pages/${n}-scanner-winback.html`)); await ready(p);
+      assert((await txt(p, '[data-wb-kv]')).includes('Status Redeemed') && await p.locator('[data-wb-redeem]').isDisabled(), 're-scan stays redeemed');
     }
-    await p.goto(url('manager/pages/37-customer-profile.html', '?c=kemal')); await ready(p);
+    await p.evaluate(() => sessionStorage.clear()); await p.goto(url('manager/pages/37-customer-profile.html', '?c=kemal')); await ready(p);
     assert((await txt(p, '[data-inactive-days]')) === '40' && (await txt(p, '[data-last-visit]')) === 'Sep 11, 2026', 'profile before redeem');
     await p.goto(url('manager/pages/37-customer-profile.html')); await ready(p);
     const d = await txt(p, '#content'); assert(d.includes('Anna Schmidt') && d.includes('12 visits') && !d.includes('Inactive for'), 'default profile changed');
     await p.goto(url('owner/pages/32-scanner-tier.html')); await ready(p);
-    assert((await txt(p, '[data-wb-kv]')).includes('Inactive for 22 days'), '32 offer uses client labels');
-    await p.click('[data-wb-redeem]'); assert((await txt(p, '[data-wb-kv]')).includes('Inactive for 0 days'), '32 offer redeem');
+    assert(await p.locator('[data-wb-kv]').count() === 0, 'no win-back offer for an active customer');
+    await p.goto(url('owner/pages/33-scanner-membership.html', '?c=kemal')); await ready(p);
+    assert((await txt(p, '[data-wb-kv]')).includes('Inactive for 40 days') && (await txt(p, '[data-m-last]')) === 'Sep 11, 2026', '33 offer uses client labels');
+    await p.click('[data-wb-redeem]'); assert((await txt(p, '[data-wb-kv]')).includes('Inactive for 0 days') && (await txt(p, '[data-m-visits]')) === '6', '33 offer redeem records the visit');
   });
 
   await check('P5.9 Win-back config 14 / 30 / 40 / 60 days — each stage has a message + reward', async () => {
@@ -157,7 +161,7 @@ const stampsOn = p => p.locator('[data-pass-host="card"] .stamp.on').count();
 
   await check('Preview Mode locks voucher + win-back redeem with the exact message', async () => {
     for (const f of ['65-scanner-voucher', '66-scanner-winback']) {
-      await p.goto(url(`owner/pages/${f}.html`, '?preview=1')); await ready(p);
+      await p.evaluate(() => sessionStorage.clear()); await p.goto(url(`owner/pages/${f}.html`, '?preview=1')); await ready(p);
       const btn = f.includes('voucher') ? '[data-redeem-voucher]' : '[data-wb-redeem]';
       await p.click(btn, { force: true }); assert((await txt(p, '.toast-zone')).includes('Select a free trial, free plan, or paid plan to use this feature.'), 'toast');
       assert(!(await txt(p, '#content')).includes('Status Redeemed'), f + ' redeemed in preview');

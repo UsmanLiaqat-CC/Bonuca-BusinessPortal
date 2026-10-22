@@ -45,18 +45,19 @@
   });
   customers[0].phone = '+49 151 5196093';
 
+  /* [customer, action, time, kind, scanned by] */
   const scansBase = [
-    ['Kemal Bianchi', 'Points credited · +101 pts · Coffee Rewards', '02:28 PM', 'points'],
-    ['Umut Martin', 'Visit · Rewards Club', '02:24 PM', 'visit'],
-    ['Kemal Bianchi', 'Visit · Rewards Club', '02:22 PM', 'visit'],
-    ['Sven Martin', 'Points credited · +173 pts · Coffee Rewards', '02:09 PM', 'points'],
-    ['Ben Schmidt', 'Visit · VIP Member', '01:53 PM', 'visit'],
-    ['Kemal Bianchi', 'Points credited · +73 pts · Coffee Rewards', '01:46 PM', 'points'],
-    ['Ben Schmidt', 'Visit · VIP Member', '01:43 PM', 'visit'],
-    ['David Ricci', 'Points credited · +37 pts · Coffee Rewards', '01:42 PM', 'points'],
-    ['Nina Schmidt', 'Visit · VIP Member', '01:37 PM', 'visit'],
-    ['Umut Martin', 'Visit · Rewards Club', '01:35 PM', 'visit'],
-    ['David Ricci', 'Points credited · +54 pts · Coffee Rewards', '01:17 PM', 'points']
+    ['Kemal Bianchi', 'Points credited · +101 pts · Coffee Rewards', '02:28 PM', 'points', 'Mia Manager'],
+    ['Umut Martin', 'Visit · Rewards Club', '02:24 PM', 'visit', 'Eli Employee'],
+    ['Kemal Bianchi', 'Visit · Rewards Club', '02:22 PM', 'visit', 'Sam Owner'],
+    ['Sven Martin', 'Points credited · +173 pts · Coffee Rewards', '02:09 PM', 'points', 'Eli Employee'],
+    ['Ben Schmidt', 'Visit · VIP Member', '01:53 PM', 'visit', 'Eli Employee'],
+    ['Kemal Bianchi', 'Points credited · +73 pts · Coffee Rewards', '01:46 PM', 'points', 'Sam Owner'],
+    ['Ben Schmidt', 'Visit · VIP Member', '01:43 PM', 'visit', 'Mia Manager'],
+    ['David Ricci', 'Points credited · +37 pts · Coffee Rewards', '01:42 PM', 'points', 'Eli Employee'],
+    ['Nina Schmidt', 'Visit · VIP Member', '01:37 PM', 'visit', 'Eli Employee'],
+    ['Umut Martin', 'Visit · Rewards Club', '01:35 PM', 'visit', 'Mia Manager'],
+    ['David Ricci', 'Points credited · +54 pts · Coffee Rewards', '01:17 PM', 'points', 'Mia Manager']
   ];
 
   /* rewards: 78 total = 42 available / 29 redeemed / 7 pending / 0 expired */
@@ -107,7 +108,7 @@
   /* tier customers the scanner can open: [name, customer ID, current value in the program's upgrade requirement] — kemal is one visit from Silver, umut one from Gold */
   const tierScans = { anna: ['Anna Schmidt', 'C-10001', 4], kemal: ['Kemal Bianchi', 'C-10039', 9], umut: ['Umut Martin', 'C-10019', 24] };
   /* membership customers the scanner can open: [name, customer ID, visits, last visit, member since] */
-  const memberScans = { anna: ['Anna Schmidt', 'C-10001', 12, 'Oct 21, 2026', 'Jan 15, 2026'] };
+  const memberScans = { anna: ['Anna Schmidt', 'C-10001', 12, 'Oct 21, 2026', 'Jan 15, 2026'], kemal: ['Kemal Fischer', 'C-10006', 5, 'Sep 11, 2026', 'Mar 2, 2026'] };
   /* customer info shown after a scan: [name, active programs [program id, progress, progress %, pass code], available rewards [reward, source, icon]] */
   const custInfo = {
     anna: ['Anna Schmidt', [['coffee', '2 / 10 stamps', 20, 'BNC-DEMO1000'], ['points', '120 points · next: Free Dessert at 250']], [['1 Free Coffee', 'stamp card', 'stamp'], ['1 Free Coffee', 'voucher', 'ticket']]],
@@ -118,7 +119,7 @@
   /* Free Coffee Campaign vouchers the scanner can open: [name, customer ID, voucher status, redeemed on] */
   const voucherScans = { anna: ['Anna Schmidt', 'C-10001', 'Available', ''], felix: ['Felix Bernard', 'C-10007', 'Redeemed', 'Oct 5, 2026'] };
   /* win-back customers the scanner can open: [name, customer ID, days inactive, last visit, visit-history entries before the gap start at] */
-  const winbackScans = { kemal: ['Kemal Fischer', 'C-10006', 40, 'Sep 11, 2026', 4], anna: ['Anna Schmidt', 'C-10001', 22, 'Sep 29, 2026', 2] };
+  const winbackScans = { kemal: ['Kemal Fischer', 'C-10006', 40, 'Sep 11, 2026', 4] };
   /* gifts (client: manual · group · automatic rules). Every gift has the client's fields; demo "today" = Oct 21, 2026. */
   const giftOpts = (o = {}) => ({ multi: false, min: null, locs: [LOC], combine: false, product: null, ...o });
   const C = id => customers.find(c => c.id === id);

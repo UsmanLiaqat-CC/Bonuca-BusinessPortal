@@ -160,7 +160,7 @@
     const q = new URLSearchParams(location.search), kind = q.get('new'), r = readGift(q); if (!r || !['gift', 'group'].includes(kind)) return [];
     const base = { name: r.name, desc: r.desc, terms: r.terms, src: kind === 'gift' ? 'Manual' : 'Group', by: me(ctx), created: fmtDate(TODAY), on: fmtDate(r.on), exp: r.exp ? fmtDate(r.exp) : '—', status: r.on > TODAY ? 'Scheduled' : 'Available', red: null, opts: r.opts, fresh: true, query: giftQuery(r) };
     // The customer whose profile was open: ?c= (scanner key, e.g. kemal) or a customer ID; Anna Schmidt by default.
-    if (kind === 'gift') { const c = q.get('c') || '', ws = Object.hasOwn(D.winbackScans, c) ? D.winbackScans[c] : null, cu = D.customers.find(x => x.id === (ws ? ws[1] : c)) || D.customers.find(x => x.id === 'C-10001') || { id: 'C-10001', name: 'Anna Schmidt' };
+    if (kind === 'gift') { const c = q.get('c') || '', ws = Object.hasOwn(D.winbackScans, c) ? D.winbackScans[c] : null, cu = [...g.mem.get('customers-added', []), ...D.customers].find(x => x.id === (ws ? ws[1] : c)) || D.customers.find(x => x.id === 'C-10001') || { id: 'C-10001', name: 'Anna Schmidt' };
       return [{ ...base, id: 'new', cid: cu.id, customer: ws ? ws[0] : cu.name, query: `${giftQuery(r)}${c && cu.id !== 'C-10001' ? '&c=' + encodeURIComponent(ws ? c : cu.id) : ''}` }]; }
     const t = q.get('t'); if (!TARGETS.some(([k]) => k === t)) return [];
     const x = targetX(t, q.get('x')), target = targetLabel(t, x);

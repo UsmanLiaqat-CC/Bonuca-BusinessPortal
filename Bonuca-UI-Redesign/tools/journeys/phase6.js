@@ -94,7 +94,7 @@ const file = (r, k) => fs.readdirSync(path.join(root, r, 'pages')).find(f => f.s
 
   await check('P6.7 Scan never redeems without confirm; second redeem blocked if single-use', async () => {
     for (const r of ['manager', 'owner']) {
-      await p.goto(url(`${r}/pages/28-scanner.html`)); await ready(p);
+      await p.evaluate(() => sessionStorage.clear()); await p.goto(url(`${r}/pages/28-scanner.html`)); await ready(p);
       await p.selectOption('[data-pick]', { label: 'Anna Schmidt — Gift (Free coffee)' }); await p.waitForURL(new RegExp(file(r, 'scan'))); await ready(p);
       assert((await txt(p, '#content')).includes('Customer has an available gift'), 'notice');
       assert((await txt(p, '[data-gs-status]')) === 'Available' && (await txt(p, '[data-gs-date]')) === '—', 'not redeemed by the scan');
@@ -111,7 +111,9 @@ const file = (r, k) => fs.readdirSync(path.join(root, r, 'pages')).find(f => f.s
     }
     await p.goto(url(`manager/pages/${file('manager', 'scan')}`, '?g=g3')); await ready(p);
     assert((await txt(p, '#content')).includes('Already redeemed') && await p.locator('[data-gs-redeem]').isDisabled(), 'redeemed single-use gift blocked');
-    await p.goto(url('manager/pages/29-scanner-stamp-card.html')); await ready(p);
+    await p.goto(url(`manager/pages/${file('manager', 'scan')}`)); await ready(p);
+    assert((await txt(p, '[data-gs-status]')) === 'Redeemed' && await p.locator('[data-gs-redeem]').isDisabled(), 're-scan stays redeemed');
+    await p.evaluate(() => sessionStorage.clear()); await p.goto(url('manager/pages/29-scanner-stamp-card.html')); await ready(p);
     assert((await txt(p, '#content')).includes('Customer has an available gift'), 'stamp scan shows the gift');
     await p.goto(url(`manager/pages/${file('manager', 'scan')}`, '?g=constructor')); await ready(p);
     assert((await txt(p, '#content')).includes('Free coffee'), 'bad ?g= falls back');

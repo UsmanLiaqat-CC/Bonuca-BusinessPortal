@@ -35,7 +35,7 @@ const MO = [['manager', ''], ['owner', '']];
     for (const [r] of MO) {
       await p.goto(url(`${r}/pages/38-customer-signup-fields.html`)); await ready(p);
       const rows = await p.locator('#content .option-row').evaluateAll(els => els.map(e => [e.querySelector('b').textContent, e.querySelector('.seg .on').textContent, e.querySelectorAll('.seg button').length]));
-      assert(JSON.stringify(rows) === JSON.stringify([['Name', 'Required', 2], ['Email', 'Optional', 2], ['Phone Number', 'Optional', 2], ['Birthday', 'Optional', 2]]), r + ' ' + JSON.stringify(rows));
+      assert(JSON.stringify(rows) === JSON.stringify([['Name', 'Required', 1], ['Email', 'Optional', 3], ['Phone Number', 'Optional', 3], ['Birthday', 'Optional', 3]]), r + ' ' + JSON.stringify(rows));
       await p.locator('#content .option-row').nth(1).locator('.seg button', { hasText: 'Required' }).click();
       assert((await txt(p, '#content .option-row:nth-child(2) .seg .on')) === 'Required', 'toggle');
     }
@@ -99,7 +99,7 @@ const MO = [['manager', ''], ['owner', '']];
     for (const [r] of MO) {
       await p.goto(url(`${r}/pages/34-qr-codes.html`)); await ready(p);
       for (const s of await p.locator('[data-group="Registration"], [data-group="Programs"]').all()) assert(JSON.stringify(await s.locator('select').evaluate(el => [...el.options].map(o => o.text))) === JSON.stringify(['Table', 'Counter', 'Sticker', 'Flyer', 'Window']), r + ' formats');
-      assert(await p.locator('[data-group="Programs"]').count() === 4 && await p.locator('#content [data-toast="PNG downloaded"]').count() === 8, r + ' cards');
+      assert(await p.locator('[data-group="Programs"]').count() === 4 && await p.locator('#content [data-qr-dl="png"]').count() === 8, r + ' cards');
     }
     await p.goto(url('manager/pages/10-program-detail-coffee.html')); await ready(p);
     assert((await opts(p, '.qr-panel select')).join() === 'Table,Counter,Sticker,Flyer,Window', 'program detail');
