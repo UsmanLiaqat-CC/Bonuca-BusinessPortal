@@ -176,7 +176,6 @@ All data is **sample data** (in `shared/scripts/data.js`) and matches the values
 | Top bar | Mia Manager · Manager chip | Sam Owner · Owner chip |
 | Employees › "Managers may manage employees" | Disabled, with lock note "Your role does not have access" | Editable |
 | Invite modal › Role | Manager option locked (Employees only) | Can invite Manager or Employee |
-| Notifications › AI tools | Locked (Owner-only notice, disabled buttons) | Enabled |
 | Subscription & Billing | Plan buttons locked; invoices hidden | Plan buttons active; Invoices / Payment history / Billing info cards |
 | Settings menu | No "Billing" item (screens 57–58 = Wallet, Language) | Has "Billing" (57) → Wallet (58) → Language (59) |
 | Dark-mode dashboard | `59-dashboard-dark-mode` | `60-dashboard-dark-mode` |
@@ -209,7 +208,7 @@ Original screenshot name → HTML file (the same name with `.html`).
 | 11 | program-detail-vip | 41 | notifications-campaigns |
 | 12 | program-detail-club | 42 | notifications-new-campaign (modal) |
 | 13 | program-detail-points | 43 | notifications-winback |
-| 14 | program-detail-lunch (draft) | 44 | notifications-ai-tools |
+| 14 | program-detail-lunch (draft) | 44 | notifications-ai-tools (removed from MVP nav — E1) |
 | 15 | program-edit | 45 | rewards |
 | 16 | program-edit-master-field-warning (modal) | 46 | rewards-surprise |
 | 17 | campaign-new-acquisition | 47 | analytics |
@@ -264,4 +263,4 @@ To **add a new screen**, add one line to `PAGES` in `shared/scripts/app.js` (for
 - This is a front-end prototype. Logins, saving, sending, Stripe, the Apple/Google Wallet push and the camera scanner are not connected, and the same "not connected" notices as in the originals are shown.
 - QR codes are decorative patterns, not scannable codes. Use a real QR library in production.
 - Opening the files straight from disk (`file://`) works. Theme memory (`localStorage`) may not persist in some browsers' file mode, so use a local server for that.
-- "Option B — Start from Scratch", Pro-plan exclusivity and the AI tools are shown exactly as "pending confirmation" in the originals. No new behaviour was invented.
+- AI Campaigns (Notifications › AI tools) is a client Future Feature: removed from the MVP navigation; `44-notifications-ai-tools` is kept (no renumbering) and only says so. The only AI in the MVP is the Pro-only AI commentary on the Analytics heatmap (locked in Preview Mode and with `?plan=free`).

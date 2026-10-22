@@ -251,7 +251,7 @@ ${ptsFields}
     const c = D.campaigns.find(x => x.id === ctx.opts.id), acq = c.id === 'cuplid';
     const life = card({ title: 'Lifecycle', icon: 'zap', actions: status('Active'), body: activeToggle('campaign'), cls: 'reveal-up' });
     // One-time voucher QR (client): printed on posters, flyers, cups, receipts or advertisements.
-    const qrc = card({ title: 'Campaign QR code', icon: 'qr', sub: 'System-generated on publish. Download for print.', body: acq ? qrPanel({ url: c.url, format: 'Cup' }) : qrPanel({ url: c.url, format: 'Cup', formats: ['Poster', 'Flyer', 'Cup', 'Receipt', 'Advertisement'] }), cls: 'reveal-up' });
+    const qrc = card({ title: 'Campaign QR code', icon: 'qr', sub: 'System-generated on publish. Download for print.', body: qrPanel({ url: c.url, format: 'Cup', formats: U.CAMPAIGN_QR }), cls: 'reveal-up' });
     const head = pageHead({ eyebrow: crumb('Loyalty Programs', ctx.link('03-')) + c.name, title: c.name, sub: `<span class="row" style="gap:8px">${badge(acq ? 'Stamp card acquisition campaign' : 'One-time voucher campaign', 'outline')}<span>Created ${c.created}</span></span>`, actions: `<button class="btn btn-primary">${icon('edit', 'sm')}Edit</button>` });
     if (acq) {
       // Customer receives two Wallet passes: the stamp card with its starting stamps + a separate welcome-gift voucher.

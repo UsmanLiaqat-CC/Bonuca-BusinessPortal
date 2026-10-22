@@ -141,7 +141,9 @@
     const android = !!opts.android;
     return `<div class="preview-col"><div class="seg" data-seg="device">${['iPhone', 'Android'].map(d => `<button class="${(d === 'Android') === android ? 'on' : ''}" data-device="${d}">${icon(d === 'iPhone' ? 'apple' : 'phone', 'sm')}${d}</button>`).join('')}</div><div class="phone ${android ? 'android' : ''}" data-phone><div class="phone-screen" data-pass-host="${esc(opts.key || '')}">${pass({ ...p, android })}</div></div><div class="phone-cap" data-cap>${caption}${android ? ' · Google Wallet' : ' · Apple Wallet'} (approximate)</div></div>`;
   }
-  function qrPanel({ url, format = 'Table', seed, link, formats = ['Table', 'Cup', 'Window', 'Counter', 'Flyer'] }) {
+  // Print formats (client): program/registration QR — table, counter, sticker, flyer, window; campaign QR — posters, flyers, cups, receipts, advertisements.
+  const QR_FORMATS = ['Table', 'Counter', 'Sticker', 'Flyer', 'Window'], CAMPAIGN_QR = ['Poster', 'Flyer', 'Cup', 'Receipt', 'Advertisement'];
+  function qrPanel({ url, format = 'Table', seed, link, formats = QR_FORMATS }) {
     return `<div class="qr-panel"><div class="qr-box">${qr(seed || url, 25)}</div><div class="qr-meta"><div class="url-line">${icon('globe', 'sm')}<span>${esc(url)}</span><button class="icon-btn" style="width:28px;height:28px;margin-left:auto" data-copy="${esc(url)}" title="Copy">${icon('file', 'sm')}</button></div><div class="dev-url">${icon('zap', 'sm')}Development URL — set VITE_JOIN_BASE_URL to the customer join site before printing.</div><div class="row wrap"><div class="field" style="flex:1;min-width:200px"><label class="label">Print format</label>${select(formats, format)}</div></div><div class="row"><button class="btn btn-ghost btn-sm" data-toast="PNG downloaded">${icon('download', 'sm')}PNG</button><button class="btn btn-ghost btn-sm" data-toast="PDF downloaded">${icon('file', 'sm')}PDF</button>${link ? `<a class="link" style="margin-left:auto" href="${link}">All printable QR codes ${icon('arrowRight', 'sm')}</a>` : ''}</div></div></div>`;
   }
 
@@ -205,5 +207,5 @@
   const pageHead = ({ eyebrow, title, sub, actions = '' }) => `<header class="page-head reveal-up"><div>${eyebrow ? `<div class="eyebrow">${eyebrow}</div>` : ''}<h1 class="page-title">${title}</h1>${sub ? `<p class="page-sub">${sub}</p>` : ''}</div>${actions ? `<div class="head-actions">${actions}</div>` : ''}</header>`;
   const crumb = (label, href) => `<a href="${href}">${label}</a>${icon('chevronRight')}`;
 
-  g.UI = { icon, esc, ini, initials, qr, field, input, select, textarea, toggle, check, colorIn, upload, optionRow, badge, status, card, callout, pass, phonePreview, qrPanel, barChart, hBarChart, lineChart, donut, chartTableToggle, ring, tabs, modal, kv, setup, pageHead, crumb, req, opt };
+  g.UI = { icon, esc, ini, initials, qr, field, input, select, textarea, toggle, check, colorIn, upload, optionRow, badge, status, card, callout, pass, phonePreview, qrPanel, CAMPAIGN_QR, barChart, hBarChart, lineChart, donut, chartTableToggle, ring, tabs, modal, kv, setup, pageHead, crumb, req, opt };
 })(window);
