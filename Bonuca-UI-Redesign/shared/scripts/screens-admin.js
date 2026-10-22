@@ -1,6 +1,6 @@
-/* Notifications, Rewards, Surprise rewards, Analytics, Branding, Subscription, Settings */
+/* Notifications, Rewards, Gifts, Analytics, Branding, Subscription, Settings */
 (function (g) {
-  const U = g.UI, D = g.DATA, { icon, field, input, select, textarea, toggle, check, colorIn, upload, optionRow, badge, status, card, callout, pageHead, crumb, modal, tabs, ini, esc } = U;
+  const U = g.UI, D = g.DATA, { icon, field, input, select, textarea, toggle, check, colorIn, upload, optionRow, badge, status, card, callout, pageHead, crumb, modal, tabs, ini, esc, kv } = U;
   const S = g.SCREENS = g.SCREENS || {};
 
   /* ================= NOTIFICATIONS ================= */
@@ -41,16 +41,19 @@
 
   /* ================= REWARDS ================= */
   S.rewards = ctx => {
-    const counts = { All: 78, Available: 42, Redeemed: 29, Pending: 7, Expired: 0 }, PER = 20;
-    const srcIc = s => s.startsWith('Win') ? ['repeat', 'var(--color-highlight-soft)', '#9A7300'] : s.startsWith('Points') ? ['coins', 'var(--color-accent-soft)', 'var(--color-accent)'] : s.startsWith('Voucher') ? ['ticket', 'rgba(124,58,237,.12)', '#7C3AED'] : ['stamp', 'var(--color-mint-soft)', '#13845B'];
-    return { nav: 'Rewards', html: `${pageHead({ eyebrow: `${icon('gift', 'sm')} Engagement`, title: '<span class="hl">Rewards</span>', sub: 'Every reward issued to customers — from stamp cards, points, vouchers and win-back automation.' })}
-      ${tabs([['Rewards', ctx.link('45-')], ['Surprise rewards', ctx.link('46-')]], 'Rewards')}
-      <div class="grid g4" style="margin-bottom:18px">${[['Available', 42, 'gift', 'green'], ['Redeemed', 29, 'checkCircle', 'blue'], ['Pending', 7, 'hourglass', 'amber'], ['Expired', 0, 'clock', 'red']].map(([l, v, i]) => `<div class="card hover stat reveal-up"><div class="lbl">${l}<span class="ico">${icon(i, 'sm')}</span></div><div class="val" data-count="${v}">${v}</div><div class="stat bar" style="padding:0;margin-top:10px"><i style="--w:${Math.round(v / 78 * 100)}%"></i></div></div>`).join('')}</div>
+    // Gifts are rewards too (client statuses Scheduled · Available · Redeemed · Expired · Cancelled); a gift just assigned arrives via ?new=.
+    const giftRows = g.GIFTS.all(ctx).map(x => [x.name, x.customer, 'Gift · ' + g.GIFTS.srcLabel(x), x.status, x.created, x.exp, x.fresh]);
+    const all = [...giftRows, ...D.rewards], PER = 20, n = s => all.filter(r => r[3] === s).length;
+    const counts = Object.fromEntries(['All', 'Scheduled', 'Available', 'Redeemed', 'Pending', 'Expired', 'Cancelled'].map(k => [k, k === 'All' ? all.length : n(k)]));
+    const srcIc = s => s.startsWith('Gift') ? ['gift', 'rgba(190,24,93,.12)', '#BE185D'] : s.startsWith('Win') ? ['repeat', 'var(--color-highlight-soft)', '#9A7300'] : s.startsWith('Points') ? ['coins', 'var(--color-accent-soft)', 'var(--color-accent)'] : s.startsWith('Voucher') ? ['ticket', 'rgba(124,58,237,.12)', '#7C3AED'] : ['stamp', 'var(--color-mint-soft)', '#13845B'];
+    return { nav: 'Rewards', html: `${pageHead({ eyebrow: `${icon('gift', 'sm')} Engagement`, title: '<span class="hl">Rewards</span>', sub: 'Every reward issued to customers — from stamp cards, points, vouchers, win-back automation and gifts.' })}
+      ${tabs([['Rewards', ctx.link('45-')], ['Gifts', ctx.link('46-')]], 'Rewards')}
+      <div class="grid g4" style="margin-bottom:18px">${[['Available', 'gift'], ['Redeemed', 'checkCircle'], ['Pending', 'hourglass'], ['Expired', 'clock']].map(([l, i]) => `<div class="card hover stat reveal-up"><div class="lbl">${l}<span class="ico">${icon(i, 'sm')}</span></div><div class="val" data-count="${counts[l]}">${counts[l]}</div><div class="stat bar" style="padding:0;margin-top:10px"><i style="--w:${Math.round(counts[l] / all.length * 100)}%"></i></div></div>`).join('')}</div>
       <section class="card reveal-up" style="overflow:hidden"><div class="toolbar">${tabs(Object.entries(counts).map(([k, v]) => [k, null, v]), 'All', 'data-rtabs style="margin:0"')}<span class="hint" data-rinfo></span></div>
       <div class="table-wrap"><table class="t"><thead><tr><th>Reward</th><th>Customer</th><th>Source</th><th>State</th><th>Issued</th><th>Expires</th></tr></thead><tbody data-rrows></tbody></table></div><div class="pager"><span data-rp></span><div class="pg" data-rpg></div></div></section>`, after() {
         let f = 'All', page = 1; const draw = () => {
-          const list = D.rewards.filter(r => f === 'All' || r[3] === f), pages = Math.max(1, Math.ceil(list.length / PER)); page = Math.min(page, pages);
-          document.querySelector('[data-rrows]').innerHTML = list.slice((page - 1) * PER, page * PER).map((r, i) => { const [a, b, c] = srcIc(r[2]); return `<tr style="animation:fadeUp .4s ${i * 15}ms both"><td><b style="font-weight:600">${esc(r[0])}</b></td><td><div class="person" style="font-weight:500">${ini(r[1])}${esc(r[1])}</div></td><td><span class="row" style="gap:8px"><span class="feed-ic" style="width:26px;height:26px;border-radius:8px;background:${b};color:${c}">${icon(a, 'sm')}</span><span class="muted">${esc(r[2])}</span></span></td><td>${status(r[3])}</td><td class="muted">${r[4]}</td><td class="${r[5] === '—' ? 'faint' : 'muted'}">${r[5]}</td></tr>`; }).join('') || `<tr><td colspan="6"><div class="empty"><div class="ill">${icon('gift', 'lg')}</div><b style="color:var(--color-text-primary)">No ${f.toLowerCase()} rewards</b></div></td></tr>`;
+          const list = all.filter(r => f === 'All' || r[3] === f), pages = Math.max(1, Math.ceil(list.length / PER)); page = Math.min(page, pages);
+          document.querySelector('[data-rrows]').innerHTML = list.slice((page - 1) * PER, page * PER).map((r, i) => { const [a, b, c] = srcIc(r[2]); return `<tr ${r[6] ? 'data-fresh style="background:var(--color-mint-soft)"' : `style="animation:fadeUp .4s ${i * 15}ms both"`}><td><b style="font-weight:600">${esc(r[0])}</b></td><td><div class="person" style="font-weight:500">${ini(r[1])}${esc(r[1])}</div></td><td><span class="row" style="gap:8px"><span class="feed-ic" style="width:26px;height:26px;border-radius:8px;background:${b};color:${c}">${icon(a, 'sm')}</span><span class="muted">${esc(r[2])}</span></span></td><td>${status(r[3])}</td><td class="muted">${r[4]}</td><td class="${r[5] === '—' ? 'faint' : 'muted'}">${r[5]}</td></tr>`; }).join('') || `<tr><td colspan="6"><div class="empty"><div class="ill">${icon('gift', 'lg')}</div><b style="color:var(--color-text-primary)">No ${f.toLowerCase()} rewards</b></div></td></tr>`;
           document.querySelector('[data-rinfo]').textContent = `${list.length} rewards`; document.querySelector('[data-rp]').textContent = `Page ${page} of ${pages}`;
           document.querySelector('[data-rpg]').innerHTML = Array.from({ length: pages }, (_, i) => `<button data-p="${i + 1}" class="${i + 1 === page ? 'on' : ''}">${i + 1}</button>`).join('');
         };
@@ -60,25 +63,202 @@
       } };
   };
 
-  S.surprise = ctx => {
-    const progs = D.programs.map(p => [p.name, p.status, p.id === 'points', p.id === 'points' ? ['Free cookie', 'Free espresso shot'] : []]);
-    const cards = progs.map(([n, s, on, pool], i) => `<section class="card reveal-up" data-sp><header class="card-head split"><div class="card-title">${icon(D.programs[i].icon)}${n}</div>${status(s)}</header><div class="card-body stack">
-      ${optionRow('Surprise rewards', 'Random, unannounced rewards after a confirmed scan. Customers never see a schedule.', on, 'data-sp-on')}
-      <div data-sp-body style="transition:opacity .25s;${on ? '' : 'opacity:.55'}" class="stack">
-        <div>${field({ label: 'Probability per scan', input: `<div class="prob-display"><b data-pv>5%</b><span class="muted" data-pt>about 1 in 20 scans</span></div><input type="range" class="range" min="1" max="50" value="5" style="--p:8%" data-range>` })}</div>
-        <div>${field({ label: 'Reward pool', input: `<div class="row wrap" style="gap:8px" data-pool>${pool.length ? pool.map(c => `<span class="pool-chip">${icon('gift', 'sm')}${c}<button aria-label="Remove">${icon('x', 'sm')}</button></span>`).join('') : '<span class="faint" data-empty>No rewards in the pool.</span>'}</div>` })}
-        <div class="row" style="margin-top:10px"><input class="input" placeholder="e.g. Free cookie" data-pool-in><button class="btn btn-ghost" data-pool-add>${icon('plus', 'sm')}Add</button></div></div>
-        <div><button class="btn btn-primary" data-toast="Surprise rewards saved">Save</button></div></div></div></section>`).join('');
-    return { nav: 'Rewards', title: 'Surprise rewards', html: `${pageHead({ eyebrow: `${icon('gift', 'sm')} Engagement`, title: '<span class="hl">Rewards</span>', sub: 'Every reward issued to customers — from stamp cards, points, vouchers and win-back automation.' })}${tabs([['Rewards', ctx.link('45-')], ['Surprise rewards', ctx.link('46-')]], 'Surprise rewards')}<div class="grid g2" style="align-items:start">${cards}</div>`, after() {
-      document.querySelectorAll('[data-sp]').forEach(c => {
-        const r = c.querySelector('[data-range]'); r.oninput = () => { const v = +r.value; c.querySelector('[data-pv]').textContent = v + '%'; c.querySelector('[data-pt]').textContent = `about 1 in ${Math.round(100 / v)} scans`; r.style.setProperty('--p', ((v - 1) / 49 * 100) + '%'); };
-        c.querySelector('[data-sp-on]').onchange = e => c.querySelector('[data-sp-body]').style.opacity = e.target.checked ? 1 : .55;
-        const pool = c.querySelector('[data-pool]'), inp = c.querySelector('[data-pool-in]');
-        const add = () => { const v = inp.value.trim(); if (!v) return; pool.querySelector('[data-empty]')?.remove(); pool.insertAdjacentHTML('beforeend', `<span class="pool-chip">${icon('gift', 'sm')}${esc(v)}<button aria-label="Remove">${icon('x', 'sm')}</button></span>`); inp.value = ''; };
-        c.querySelector('[data-pool-add]').onclick = add; inp.onkeydown = e => { if (e.key === 'Enter') add(); };
-        pool.onclick = e => { const b = e.target.closest('button'); if (b) { b.parentElement.remove(); if (!pool.children.length) pool.innerHTML = '<span class="faint" data-empty>No rewards in the pool.</span>'; } };
-      });
-    } };
+  /* ================= GIFTS (client: manual gift · group gift · simple automatic rules — replaces random rewards, E2) ================= */
+  const TODAY = '2026-10-21', BIZ = 'Sample Business (development)', TERMS = 'Valid once. Not exchangeable for cash.';
+  const fmtDate = iso => new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  // Client's manual gift examples, in the client's order (+ Custom).
+  const PRESETS = { coffee: ['Free coffee', 'Your next coffee is on us.'], dessert: ['Free dessert', 'A dessert of your choice with your next order.'], discount: ['20% discount', '20% off your next order.'], stamp: ['One additional stamp', 'An extra stamp on your Coffee Card.'], points: ['100 bonus points', '100 bonus points on your Coffee Rewards card.'], upgrade: ['Free product upgrade', 'Upgrade any drink to a large at no extra cost.'], birthday: ['Birthday gift', 'Happy birthday! A small gift from us.'], custom: ['Custom', ''] };
+  const me = ctx => ({ owner: 'Sam Owner', manager: 'Mia Manager', employee: 'Eli Employee' }[ctx.role]);
+  const notifyNote = () => callout('warn', 'Customer notification not connected', 'The gift is assigned and shown on the customer’s account, but app, email and wallet notifications are not delivered in this environment.');
+  // Client's group targets. ❓ "Most active" = top 10 by visits; "New" = joined in the last 30 days (defaults, flagged).
+  const TARGETS = [['all', 'All customers', 'users'], ['active', 'Most active customers', 'flame', 'Top 10 customers by number of visits.'], ['visits', 'Customers with at least X visits', 'footprints'], ['inactive', 'Customers who have not visited for X days', 'hourglass'], ['new', 'New customers', 'userPlus', 'Joined in the last 30 days.'], ['tier', 'Customers in a specific membership tier', 'layers']];
+  const TIER_NAMES = () => D.clubTiers.map(([n]) => n);
+  const targetX = (t, v) => t === 'tier' ? (TIER_NAMES().includes(v) ? v : 'Gold') : t === 'visits' || t === 'inactive' ? Math.min(999, Math.max(1, parseInt(v, 10) || (t === 'visits' ? 5 : 30))) : '';
+  const targetLabel = (t, x) => ({ all: 'All customers', active: 'Most active customers', visits: `At least ${x} visits`, inactive: `Not visited for ${x} days`, new: 'New customers', tier: `${x} tier` }[t]);
+  function recipients(t, x) {
+    const C = D.customers, now = Date.parse(fmtDate(TODAY));
+    if (t === 'active') return [...C].sort((a, b) => b.visits - a.visits).slice(0, 10);
+    if (t === 'visits') return C.filter(c => c.visits >= x);
+    if (t === 'inactive') return C.filter(c => c.daysSince >= x);
+    if (t === 'new') return C.filter(c => (now - Date.parse(c.joined)) / 864e5 <= 30);
+    if (t === 'tier') return C.filter(c => c.tier === x);
+    return C;
+  }
+  const srcLabel = gf => gf.src === 'Group' ? 'Group · ' + gf.target : gf.src === 'Rule' ? 'Rule · ' + gf.by.replace('Automatic rule · ', '') : 'Manual';
+  // Values typed in a form travel in the URL; only whitelisted keys and plain-text values are ever read back.
+  const safe = (v, max) => { v = (v || '').trim(); return v && v.length <= max && /^[\p{L}\p{N} %.,:;'’!?()+/—–\-]+$/u.test(v) ? v : ''; };
+  const iso = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') && !isNaN(new Date(v + 'T00:00:00')) ? v : '';
+  function readGift(q) {
+    const key = q.get('gift') || ''; if (!Object.hasOwn(PRESETS, key)) return null;
+    const on = iso(q.get('on')) || TODAY, exp = iso(q.get('exp')), min = parseFloat(q.get('min'));
+    return { key, name: safe(q.get('n'), 40) || (key === 'custom' ? 'Custom gift' : PRESETS[key][0]), desc: safe(q.get('d'), 120), terms: safe(q.get('tc'), 120), on, exp,
+      opts: { multi: q.get('m') === '1', min: min > 0 && min < 1e6 ? Math.round(min * 100) / 100 : null, locs: D.locations, combine: q.get('cb') === '1', product: safe(q.get('pr'), 40) || null } };
+  }
+  // Re-serialises a validated gift (never the raw query) for links to other screens.
+  const giftQuery = r => { const p = new URLSearchParams({ gift: r.key, n: r.name, on: r.on }); [['d', r.desc], ['tc', r.terms], ['exp', r.exp], ['m', r.opts.multi && '1'], ['min', r.opts.min], ['cb', r.opts.combine && '1'], ['pr', r.opts.product]].forEach(([k, v]) => v && p.set(k, v)); return p.toString(); };
+  // The gift(s) just assigned (?new=gift from a customer profile · ?new=group from the group screen).
+  function freshGifts(ctx) {
+    const q = new URLSearchParams(location.search), kind = q.get('new'), r = readGift(q); if (!r || !['gift', 'group'].includes(kind)) return [];
+    const base = { name: r.name, desc: r.desc, terms: r.terms, src: kind === 'gift' ? 'Manual' : 'Group', by: me(ctx), created: fmtDate(TODAY), on: fmtDate(r.on), exp: r.exp ? fmtDate(r.exp) : '—', status: r.on > TODAY ? 'Scheduled' : 'Available', red: null, opts: r.opts, fresh: true, query: giftQuery(r) };
+    if (kind === 'gift') return [{ ...base, id: 'new', cid: 'C-10001', customer: 'Anna Schmidt' }];
+    const t = q.get('t'); if (!TARGETS.some(([k]) => k === t)) return [];
+    const x = targetX(t, q.get('x')), target = targetLabel(t, x);
+    return recipients(t, x).map((c, i) => ({ ...base, id: 'new' + i, cid: c.id, customer: c.name, target, query: `${giftQuery(r)}&t=${t}&x=${encodeURIComponent(x)}` }));
+  }
+  const byId = id => { const m = Object.fromEntries(D.gifts.map(x => [x.id, x])); return Object.hasOwn(m, id || '') ? m[id] : null; };
+  const all = ctx => [...freshGifts(ctx), ...D.gifts];
+  const optRows = gf => [['Redemption', gf.opts.multi ? 'Multiple' : 'Single'], ['Minimum purchase amount', gf.opts.min ? gf.opts.min.toFixed(2) + ' EUR' : 'None'], ['Valid locations', gf.opts.locs.map(esc).join(', ')], ['Combinable with other discounts', gf.opts.combine ? 'Yes' : 'No'], ['Product or category', gf.opts.product ? esc(gf.opts.product) : 'Any']];
+  // Client's gift information, in the client's order.
+  const giftKv = gf => kv([['Gift name', esc(gf.name), true], ['Description', esc(gf.desc) || '—'], ['Business', BIZ], ['Assigned customer', `${esc(gf.customer)} <span class="mono faint">${gf.cid}</span>`], ['Date created', gf.created], ['Activation date', gf.on], ['Expiration date', gf.exp], ['Status', `<span data-gd-status>${status(gf.status)}</span>`], ['Terms and conditions', esc(gf.terms) || '—'], ['Redemption date', gf.red ? gf.red.date : '—'], ['Employee who redeemed it', gf.red ? gf.red.by : '—'], ['Location where it was redeemed', gf.red ? esc(gf.red.loc) : '—'], ['Source', srcLabel(gf)], ...optRows(gf)]);
+  // Activity log: every assignment and redemption (+ cancellations made here).
+  const redTr = (gf, r) => r && [r.date, 'Redeemed', gf, r.by, esc(r.loc), '<span class="faint">—</span>'];
+  const logRows = list => list.flatMap(gf => [redTr(gf, gf.red), redTr(gf, gf.prevRed), [gf.fresh ? 'Just now' : gf.created, 'Assigned', gf, gf.by, '<span class="faint">—</span>', badge('Not delivered', 'outline')]].filter(Boolean))
+    .sort((a, b) => (b[0] === 'Just now') - (a[0] === 'Just now') || Date.parse(b[0]) - Date.parse(a[0]));
+  const logTr = ([d, a, gf, by, loc, n], hl) => `<tr ${hl ? 'data-fresh style="background:var(--color-mint-soft)"' : ''}><td class="muted" style="white-space:nowrap">${d}</td><td>${badge(a, a === 'Redeemed' ? 'blue' : a === 'Cancelled' ? 'outline' : 'green')}</td><td><b style="font-weight:600">${esc(gf.name)}</b></td><td><div class="person">${ini(gf.customer)}${esc(gf.customer)}</div></td><td>${esc(by)}</td><td class="muted">${loc}</td><td>${n}</td></tr>`;
+
+  function giftForm(o = {}) {
+    const k = o.preset || 'coffee', [n, d] = PRESETS[k];
+    return `<div class="stack" data-gift-form>
+      ${field({ label: 'Gift', required: true, input: `<div class="choice-chips" data-gf-preset>${Object.entries(PRESETS).map(([key, [l]]) => `<button type="button" class="chip ${key === k ? 'on' : ''}" data-key="${key}">${l}</button>`).join('')}</div>` })}
+      <div class="form-grid">${field({ label: 'Gift name', required: true, input: input({ value: n, attrs: 'maxlength="40" data-gf-name' }), cls: 'full' })}
+        ${o.rule ? field({ label: 'Expiration', required: true, input: `<div class="row" style="gap:10px">${input({ type: 'number', value: '30', attrs: 'min="1" style="width:100px" aria-label="Valid for days" data-gf-days' })}<span class="muted">days after the gift is assigned</span></div>`, cls: 'full' })
+          : field({ label: 'Activation date', required: true, input: input({ type: 'date', value: TODAY, attrs: 'data-gf-on' }), hint: 'A later date keeps the gift Scheduled until then.' }) + field({ label: 'Expiration date', required: true, input: input({ type: 'date', value: '2026-11-30', attrs: 'data-gf-exp' }) })}
+        ${field({ label: 'Description', optional: true, input: textarea(d, 'Shown to the customer', 'maxlength="120" data-gf-desc'), cls: 'full' })}
+        ${field({ label: 'Terms and conditions', optional: true, input: textarea(TERMS, '', 'maxlength="120" data-gf-terms'), cls: 'full' })}</div>
+      <div class="label">Redemption rules</div>
+      <div class="option-row"><div><b>Redemption</b><small>A gift is normally redeemable once.</small></div><div class="seg" data-gf-multi><button type="button" class="on" data-v="single">Single</button><button type="button" data-v="multiple">Multiple</button></div></div>
+      <div class="form-grid">${field({ label: 'Minimum purchase amount', optional: true, input: input({ type: 'number', ph: 'e.g. 10.00', attrs: 'min="0" step="0.01" data-gf-min' }), hint: 'EUR' })}
+        ${field({ label: 'Valid locations', required: true, input: `<div class="stack" style="gap:8px">${D.locations.map(l => U.check(esc(l), true, 'data-gf-loc')).join('')}</div>` })}</div>
+      ${optionRow('Combinable with other discounts', 'Allow this gift together with other discounts or rewards.', false, 'data-gf-combine')}
+      ${optionRow('Specific product or category only', 'Limit the gift to one product or category.', false, 'data-gf-prod-on data-reveal="[data-gf-prod]"')}
+      <div data-gf-prod hidden>${field({ label: 'Product or category', required: true, input: input({ ph: 'e.g. Cakes', attrs: 'maxlength="40" data-gf-prod-in' }) })}</div>
+      ${notifyNote()}</div>`;
+  }
+  function wireGiftForm(root) {
+    const $ = s => root.querySelector(s);
+    $('[data-gf-preset]').addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c || c.matches('[data-preview-lock]')) return; const [n, d] = PRESETS[c.dataset.key]; $('[data-gf-name]').value = c.dataset.key === 'custom' ? '' : n; $('[data-gf-desc]').value = d; if (c.dataset.key === 'custom') $('[data-gf-name]').focus(); });
+    // Returns the URL params for the gift, or null (with the problem shown) when the form is incomplete.
+    return () => {
+      const bad = (el, msg) => { const f = el.closest('.field'); f && f.classList.add('has-error'); setTimeout(() => f && f.classList.remove('has-error'), 1200); g.toast(msg, 'info'); return null; };
+      const p = new URLSearchParams(), name = $('[data-gf-name]').value.trim(), pr = $('[data-gf-prod-in]').value.trim();
+      if (!name) return bad($('[data-gf-name]'), 'Enter a gift name.');
+      if (!safe(name, 40)) return bad($('[data-gf-name]'), 'Use letters, numbers and simple punctuation in the gift name.');
+      p.set('gift', $('[data-gf-preset] .chip.on').dataset.key); p.set('n', name);
+      for (const [k, s] of [['d', '[data-gf-desc]'], ['tc', '[data-gf-terms]']]) { const raw = $(s).value.trim(), v = safe(raw, 120); if (raw && !v) return bad($(s), 'Use letters, numbers and simple punctuation (one line, up to 120 characters).'); v && p.set(k, v); }
+      const days = $('[data-gf-days]'); if (days && !(parseInt(days.value, 10) > 0)) return bad(days, 'Enter how many days the gift stays valid.');
+      const on = $('[data-gf-on]'), exp = $('[data-gf-exp]');
+      if (on) { if (!iso(on.value)) return bad(on, 'Choose an activation date.'); if (!iso(exp.value)) return bad(exp, 'Choose an expiration date.'); if (exp.value <= on.value) return bad(exp, 'The expiration date must be after the activation date.'); p.set('on', on.value); p.set('exp', exp.value); }
+      if (!root.querySelector('[data-gf-loc]:checked')) return bad($('[data-gf-loc]'), 'Choose at least one location.');
+      if ($('[data-gf-multi] .on').dataset.v === 'multiple') p.set('m', '1');
+      const min = parseFloat($('[data-gf-min]').value); if (min > 0) p.set('min', String(min));
+      if ($('[data-gf-combine]').checked) p.set('cb', '1');
+      if ($('[data-gf-prod-on]').checked) { if (!safe(pr, 40)) return bad($('[data-gf-prod-in]'), 'Enter the product or category.'); p.set('pr', pr); }
+      return p;
+    };
+  }
+  g.GIFTS = { all, byId, freshGifts, giftForm, wireGiftForm, giftKv, optRows, srcLabel, notifyNote, me, fmtDate, TODAY };
+
+  const giftTabs = (ctx, active) => tabs([['Rewards', ctx.link('45-')], ['Gifts', ctx.link('46-')]], active);
+  const giftHead = ctx => pageHead({ eyebrow: `${icon('gift', 'sm')} Engagement`, title: '<span class="hl">Rewards</span>', sub: 'Every reward issued to customers — from stamp cards, points, vouchers, win-back automation and gifts.' });
+  const ORIGIN = { manual: ['Manual gifts', 'Manual'], group: ['Group gifts', 'Group'], rules: ['Automatic rules', 'Rule'], log: ['Activity log'] };
+  const GSTAT = ['All', 'Scheduled', 'Available', 'Redeemed', 'Expired', 'Cancelled'];
+
+  S.gifts = ctx => {
+    const q = new URLSearchParams(location.search), tab = Object.hasOwn(ORIGIN, q.get('tab') || '') ? q.get('tab') : 'manual';
+    const fresh = freshGifts(ctx), list = [...fresh, ...D.gifts];
+    // A gift redeemed in the scanner (?redeemed=id) is shown with its redemption.
+    const rd = byId(q.get('redeemed')), red = rd && rd.status === 'Available' ? { ...rd, red: { date: 'Just now', by: me(ctx), loc: D.locations[0] }, prevRed: rd.red, status: rd.opts.multi ? 'Available' : 'Redeemed', justRedeemed: true } : null;
+    const gifts = red ? list.map(x => x.id === red.id ? red : x) : list;
+    const hint = { manual: `Assigned from a customer profile. <a class="link" href="${ctx.nav(ctx.link('35-'))}">Customers ${icon('arrowRight', 'sm')}</a>`, group: `<a class="link" href="${ctx.nav(ctx.page('gift-new-group'))}">New group gift ${icon('arrowRight', 'sm')}</a>`, rules: `Assigned when a customer meets a rule. <a class="link" href="${ctx.nav(ctx.page('gift-rules'))}">Manage rules ${icon('arrowRight', 'sm')}</a>` };
+    const freshNote = fresh.length ? `<div style="margin-bottom:18px">${callout('info', fresh[0].src === 'Group' ? 'Group gift assigned' : 'Gift assigned', fresh[0].src === 'Group' ? `${esc(fresh[0].name)} assigned to ${fresh.length} customer${fresh.length === 1 ? '' : 's'} (${esc(fresh[0].target)}) — ${fresh[0].status}.` : `${esc(fresh[0].name)} assigned to ${esc(fresh[0].customer)} — ${fresh[0].status}.`, 'checkCircle')}</div>` : red ? `<div style="margin-bottom:18px">${callout('info', 'Gift redeemed', `${esc(red.name)} redeemed for ${esc(red.customer)} — recorded in the activity log.`, 'checkCircle')}</div>` : '';
+    const table = `<div class="table-wrap"><table class="t"><thead><tr><th>Gift</th><th>Customer</th><th>Source</th><th>Status</th><th>Activation</th><th>Expires</th><th></th></tr></thead><tbody data-grows></tbody></table></div>`;
+    const logList = logRows(gifts);
+    const logCard = card({ title: 'Activity log', icon: 'clock', sub: 'Every gift assignment and redemption — prevents duplicate or accidental multiple redemptions.', actions: badge(`<span data-glog-n>${logList.length}</span> entries`, 'outline'), body: null, cls: 'reveal-up', attrs: 'data-glog style="overflow:hidden"' })
+      .replace('</section>', `<div style="padding:0 22px 16px">${callout('warn', 'Notifications not connected', 'Gifts are assigned, but app, email and wallet notifications are not delivered in this environment.')}</div><div class="table-wrap"><table class="t"><thead><tr><th>Date / time</th><th>Action</th><th>Gift</th><th>Customer</th><th>By</th><th>Location</th><th>Notification</th></tr></thead><tbody data-glog-rows>${logList.map((r, i) => logTr(r, r[0] === 'Just now')).join('')}</tbody></table></div></section>`);
+    const det = modal({ id: 'giftDetail', open: false, wide: true, title: 'Gift details', body: '<div data-gd-body></div>', foot: `<button class="btn btn-ghost" data-close>Close</button><button class="btn btn-danger-text" data-gd-cancel>${icon('x', 'sm')}Cancel gift</button>` });
+    return { nav: 'Rewards', title: 'Gifts', html: `${giftHead(ctx)}${giftTabs(ctx, 'Gifts')}
+      <div class="row between wrap" style="margin-bottom:18px;gap:12px">${tabs(Object.values(ORIGIN).map(([l]) => l), ORIGIN[tab][0], 'data-gtabs style="margin:0"')}<div class="row"><a class="btn btn-ghost" href="${ctx.page('gift-rules')}">${icon('zap', 'sm')}Automatic rules</a><a class="btn btn-primary" href="${ctx.page('gift-new-group')}">${icon('users', 'sm')}New group gift</a></div></div>
+      ${freshNote}
+      <section class="card reveal-up" style="overflow:hidden" data-glist ${tab === 'log' ? 'hidden' : ''}><div class="toolbar">${tabs(GSTAT.map(s => [s, null, 0]), 'All', 'data-gstat style="margin:0"')}<span class="hint" data-ghint></span></div>${table}</section>
+      <div data-glog-wrap ${tab === 'log' ? '' : 'hidden'}>${logCard}</div>${det}`, after() {
+        let origin = tab, st = 'All', open = null;
+        const src = () => ORIGIN[origin][1];
+        const draw = () => {
+          const inOrigin = gifts.filter(x => x.src === src()), rows = inOrigin.filter(x => st === 'All' || x.status === st);
+          document.querySelectorAll('[data-gstat] > button').forEach(b => b.querySelector('.count').textContent = b.dataset.tab === 'All' ? inOrigin.length : inOrigin.filter(x => x.status === b.dataset.tab).length);
+          document.querySelector('[data-ghint]').innerHTML = hint[origin] || '';
+          document.querySelector('[data-grows]').innerHTML = rows.map((x, i) => `<tr class="clickable" data-gift="${i}" ${x.fresh || x.justRedeemed ? 'data-fresh style="background:var(--color-mint-soft)"' : `style="animation:fadeUp .4s ${i * 15}ms both"`}><td><b style="font-weight:600">${esc(x.name)}</b></td><td><div class="person">${ini(x.customer)}${esc(x.customer)}</div></td><td class="muted">${esc(srcLabel(x))}</td><td>${status(x.status)}</td><td class="muted">${x.on}</td><td class="muted">${x.exp}</td><td class="num faint">${icon('chevronRight', 'sm')}</td></tr>`).join('') || `<tr><td colspan="7"><div class="empty"><div class="ill">${icon('gift', 'lg')}</div><b style="color:var(--color-text-primary)">No ${st === 'All' ? '' : st.toLowerCase() + ' '}gifts</b></div></td></tr>`;
+          document.querySelector('[data-grows]').__rows = rows;
+        };
+        document.querySelector('[data-gtabs]').addEventListener('tab', e => { origin = Object.keys(ORIGIN).find(k => ORIGIN[k][0] === e.detail); const log = origin === 'log'; document.querySelector('[data-glist]').hidden = log; document.querySelector('[data-glog-wrap]').hidden = !log; if (!log) draw(); });
+        document.querySelector('[data-gstat]').addEventListener('tab', e => { st = e.detail; draw(); });
+        const body = document.querySelector('[data-gd-body]'), cancel = document.querySelector('[data-gd-cancel]');
+        document.querySelector('[data-grows]').addEventListener('click', e => { const tr = e.target.closest('[data-gift]'); if (!tr) return; open = document.querySelector('[data-grows]').__rows[+tr.dataset.gift]; body.innerHTML = giftKv(open); cancel.hidden = !['Scheduled', 'Available'].includes(open.status); g.openModal('giftDetail'); });
+        cancel.addEventListener('click', () => {
+          if (!open || !['Scheduled', 'Available'].includes(open.status)) return;
+          open.status = 'Cancelled'; body.innerHTML = giftKv(open); cancel.hidden = true;
+          document.querySelector('[data-glog-rows]').insertAdjacentHTML('afterbegin', logTr(['Just now', 'Cancelled', open, me(ctx), '<span class="faint">—</span>', '<span class="faint">—</span>'], true));
+          const n = document.querySelector('[data-glog-n]'); n.textContent = +n.textContent + 1; draw(); g.toast(`${open.name} cancelled for ${open.customer}`);
+        });
+        if (tab !== 'log') draw(); else { origin = 'manual'; draw(); origin = 'log'; }
+      } };
+  };
+
+  /* ---------- group gift: client targets with a live recipient count from the customer data ---------- */
+  S.giftGroup = ctx => {
+    const xIn = (k, v, unit, lbl) => `<div class="row" style="gap:8px">${input({ type: 'number', value: v, attrs: `min="1" style="width:90px" aria-label="${lbl}" data-gx="${k}"` })}<span class="muted">${unit}</span></div>`;
+    const extra = { visits: xIn('visits', '5', 'visits or more', 'Minimum visits'), inactive: xIn('inactive', '30', 'days without a visit', 'Days without a visit'), tier: select(TIER_NAMES(), 'Gold', 'data-gx="tier" aria-label="Tier" style="max-width:180px"') };
+    const opts = TARGETS.map(([k, l, ic, sub]) => `<div class="type-card ${k === 'tier' ? 'on' : ''}" role="radio" tabindex="0" data-select="${k}"><div class="row between"><span class="ti">${icon(ic)}</span>${badge(`<span data-gcount="${k}"></span> customers`, 'outline')}</div><b>${l}</b>${extra[k] || `<small>${sub || 'Every customer of the business.'}</small>`}</div>`).join('');
+    const summary = card({ title: 'Recipients', icon: 'users', cls: 'reveal-up', body: `<div class="stack"><div><div class="val" style="font-family:var(--font-display);font-size:40px;font-weight:700;letter-spacing:-.03em" data-gg-count>0</div><div class="muted" data-gg-label></div></div><div class="hint" data-gg-names></div><button class="btn btn-primary btn-lg btn-block" data-gg-send>${icon('gift', 'sm')}Assign to <span data-gg-n>0</span> customers</button></div>` });
+    return { nav: 'Rewards', title: 'New group gift', html: `${pageHead({ eyebrow: crumb('Rewards', ctx.link('45-')) + crumb('Gifts', ctx.link('46-')) + 'New group gift', title: 'New <span class="hl">group gift</span>', sub: 'Assign one gift to a selected group of customers, e.g. “Send a free dessert to all Gold members.”' })}
+      <div class="layout-preview"><div class="stack">${card({ title: 'Customer group', icon: 'users', cls: 'reveal-up', body: `<div class="type-grid" data-gg-targets>${opts}</div>` })}${card({ title: 'Gift', icon: 'gift', cls: 'reveal-up', body: giftForm({ preset: 'dessert' }) })}</div><div class="sticky">${summary}</div></div>`, after() {
+        const read = wireGiftForm(document.querySelector('[data-gift-form]'));
+        let t = 'tier'; const xv = k => { const el = document.querySelector(`[data-gx="${k}"]`); return targetX(k, el && el.value); };
+        const upd = () => {
+          TARGETS.forEach(([k]) => document.querySelector(`[data-gcount="${k}"]`).textContent = recipients(k, xv(k)).length);
+          const r = recipients(t, xv(t)), n = r.length;
+          document.querySelector('[data-gg-count]').textContent = n; document.querySelector('[data-gg-n]').textContent = n; document.querySelector('[data-gg-label]').textContent = targetLabel(t, xv(t));
+          document.querySelector('[data-gg-names]').textContent = n ? r.slice(0, 6).map(c => c.name).join(', ') + (n > 6 ? ` and ${n - 6} more` : '') : 'No customers match this group.';
+        };
+        const tg = document.querySelector('[data-gg-targets]');
+        tg.addEventListener('typechange', e => { t = e.detail; upd(); }); tg.addEventListener('input', upd); tg.addEventListener('change', upd);
+        tg.addEventListener('keydown', e => { const c = e.target.closest('.type-card'); if (c && e.target === c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); c.click(); } });
+        document.querySelector('[data-gg-send]').onclick = () => {
+          if (!recipients(t, xv(t)).length) { g.toast('No customers match this group.', 'info'); return; }
+          const p = read(); if (!p) return; p.set('t', t); p.set('x', String(xv(t)));
+          location.href = ctx.nav(`${ctx.link('46-')}?tab=group&new=group&${p}`);
+        };
+        upd();
+      } };
+  };
+
+  /* ---------- automatic rules: the client's simple conditions; customers are not told in advance ---------- */
+  const RULES = [['After the Xth visit', 'visit'], ['Birthday', ''], ['After registration', ''], ['X days without a visit', 'days'], ['Reaching a tier', 'tier'], ['Spending amount', 'spend'], ['Points or stamps reached', 'pts']];
+  const ord = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10] || 'th');
+  const ruleText = (t, v) => ({ 'After the Xth visit': `After the ${ord(+v)} visit`, Birthday: 'On the customer’s birthday', 'After registration': 'After registration', 'X days without a visit': `After ${v} days without a visit`, 'Reaching a tier': `When reaching ${v} status`, 'Spending amount': `After spending ${v}`, 'Points or stamps reached': `After reaching ${v}` }[t]);
+  const ruleRow = ([t, v, gname, on]) => `<div class="option-row"><div><b>${esc(ruleText(t, v))}</b><small>${icon('gift', 'sm')} ${esc(gname)}</small></div>${toggle(on, `aria-label="${esc(ruleText(t, v))} active"`)}</div>`;
+  S.giftRules = ctx => {
+    const val = { visit: `<div class="row" style="gap:8px"><span class="muted">After visit number</span>${input({ type: 'number', value: '5', attrs: 'min="1" style="width:90px" aria-label="Visit number" data-rv-in="visit"' })}</div>`, days: `<div class="row" style="gap:8px">${input({ type: 'number', value: '30', attrs: 'min="1" style="width:90px" aria-label="Days without a visit" data-rv-in="days"' })}<span class="muted">days without a visit</span></div>`,
+      tier: select(TIER_NAMES().slice(1), 'Gold', 'aria-label="Tier" data-rv-in="tier"'), spend: `<div class="row" style="gap:8px">${input({ type: 'number', value: '200', attrs: 'min="1" style="width:110px" aria-label="Spending amount" data-rv-in="spend"' })}${select(['EUR', 'USD', 'GBP', 'CZK', 'TRY', 'CHF', 'PLN'], 'EUR', 'aria-label="Currency" data-rv-cur style="width:110px"')}</div>`,
+      pts: `<div class="row" style="gap:8px">${input({ type: 'number', value: '500', attrs: 'min="1" style="width:110px" aria-label="Points or stamps" data-rv-in="pts"' })}${select(['points · Coffee Rewards', 'stamps · Coffee Card'], 'points · Coffee Rewards', 'aria-label="Points or stamps" data-rv-unit')}</div>` };
+    const form = card({ title: 'New rule', icon: 'plus', cls: 'reveal-up', body: `<div class="stack">${field({ label: 'Condition', required: true, input: select(RULES.map(([t]) => t), 'After the Xth visit', 'data-rule-t') })}
+      ${Object.entries(val).map(([k, h]) => `<div data-rv="${k}" ${k === 'visit' ? '' : 'hidden'}>${h}</div>`).join('')}
+      <div style="border-top:1px dashed var(--color-border-strong);padding-top:16px">${giftForm({ rule: true })}</div></div>`, foot: `<button class="btn btn-primary" data-rule-save>${icon('check', 'sm')}Save rule</button>` });
+    return { nav: 'Rewards', title: 'Automatic gift rules', html: `${pageHead({ eyebrow: crumb('Rewards', ctx.link('45-')) + crumb('Gifts', ctx.link('46-')) + 'Automatic rules', title: 'Automatic <span class="hl">gift rules</span>', sub: 'A gift is assigned automatically when a customer meets the condition. Customers are not told about the rule in advance.' })}
+      <div class="layout-preview"><div class="stack">${form}</div><div class="sticky">${card({ title: 'Rules', icon: 'zap', actions: badge(`<span data-rules-n>${D.giftRules.length}</span> rules`, 'outline'), cls: 'reveal-up', body: `<div class="stack" style="gap:10px" data-rules>${D.giftRules.map(ruleRow).join('')}</div>` })}</div></div>`, after() {
+        const read = wireGiftForm(document.querySelector('[data-gift-form]')), ts = document.querySelector('[data-rule-t]');
+        const kind = () => RULES.find(([t]) => t === ts.value)[1];
+        ts.onchange = () => document.querySelectorAll('[data-rv]').forEach(d => d.hidden = d.dataset.rv !== kind());
+        document.querySelector('[data-rule-save]').onclick = () => {
+          const k = kind(), el = k && document.querySelector(`[data-rv-in="${k}"]`); let v = el ? el.value.trim() : '';
+          if (el && el.type === 'number' && !(parseFloat(v) > 0)) { g.toast('Enter a value for the condition.', 'info'); return; }
+          if (k === 'spend') v += ' ' + document.querySelector('[data-rv-cur]').value;
+          if (k === 'pts') v += ' ' + document.querySelector('[data-rv-unit]').value.split(' · ')[0];
+          const p = read(); if (!p) return;
+          document.querySelector('[data-rules]').insertAdjacentHTML('afterbegin', ruleRow([ts.value, v, p.get('n'), true]));
+          const n = document.querySelector('[data-rules-n]'); n.textContent = +n.textContent + 1; g.toast('Rule saved');
+        };
+      } };
   };
 
   /* ================= ANALYTICS ================= */
