@@ -142,7 +142,7 @@
   const giftRules = [['Birthday', '', 'Birthday gift', true], ['After the Xth visit', '5', 'Free coffee', true], ['After registration', '', '20% discount', true], ['X days without a visit', '30', 'Free dessert', false], ['Reaching a tier', 'Gold', 'One additional stamp', true]];
   const roles = [['Owner', 'Full access — billing/subscription, employees, customers, loyalty programs, analytics, scanner, business settings.', 'shield'], ['Manager', 'Customers, loyalty programs, rewards, analytics, scanner, limited settings, and employees if permitted.', 'badge'], ['Employee', 'Scanner, limited customer info, add stamps/points/visits, redeem rewards. No billing or subscription access.', 'scan']];
   const plans = {
-    free: ['Up to 15 customers', 'Up to 1 programs', 'Up to 1 locations', 'Up to 1 employees'],
+    free: ['Up to 15 customers', '1 loyalty program', '1 location', '1 employee'],
     trial: ['All Pro features, temporarily', 'Unlimited customers', 'Unlimited programs', 'Unlimited locations', 'Unlimited employees'],
     pro: ['Unlimited customers', 'Unlimited programs', 'Unlimited locations', 'Unlimited employees', 'AI heatmap commentary']
   };

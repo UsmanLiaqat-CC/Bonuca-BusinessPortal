@@ -146,7 +146,7 @@ const toastHas = async (p, t) => (await p.locator('.toast').allInnerTexts()).som
   await check('P1.6 Plan selection: Free / Free Trial / paid + Skip for now', async () => {
     await p.goto(url('common/pages/08-onboarding-plan-selection.html')); await ready(p);
     const t = await p.locator('.plan h3').allInnerTexts();
-    assert(t.join('|') === 'Free Plan|Free Trial|Pro Plan', 'plans: ' + t.join('|'));
+    assert(t.join('|') === 'Free Plan|Free Trial|Business Plan|Pro Plan', 'plans: ' + t.join('|'));
     assert(await p.locator('a:has-text("Skip for now")').count() === 1, 'skip');
   });
 
