@@ -88,9 +88,9 @@
   g.SHELL_BITS = { themeSeg, lang };
 
   function shell(ctx, nav, inner) {
-    const r = ROLE[ctx.role], st = ctx.state, plans = can(ctx.role, 'billing');
+    const r = ROLE[ctx.role], st = ctx.state, plans = can(ctx.role, 'billing'), emp = ctx.role === 'employee';
     const navHtml = (ctx.role === 'employee' ? NAV_EMPLOYEE : NAV).map((n, i) => [...n, ctx.role === 'employee' ? '' : groups[i]]).filter(([, , , key]) => can(ctx.role, key)).map(([label, ic, pre, , grp]) => `${grp ? `<div class="nav-label">${grp}</div>` : ''}<a href="${link(ctx.role, pre)}" class="${label === nav ? 'active' : ''}">${icon(ic)}${label}</a>`).join('');
-    const planCard = st.preview ? `<div class="trial-card"><b>Preview Mode</b><span>No plan selected · demo data.</span><br><a href="${link(ctx.role, '49-')}">View plans ${icon('arrowRight', 'sm')}</a></div>`
+    const planCard = emp ? '' : st.preview ? `<div class="trial-card"><b>Preview Mode</b><span>No plan selected · demo data.</span><br><a href="${link(ctx.role, '49-')}">View plans ${icon('arrowRight', 'sm')}</a></div>`
       : st.override ? `<div class="trial-card"><b>Managed by Bonuca</b><span>${st.overrideEnd ? 'Until ' + st.overrideEnd + '.' : 'No end date.'}</span></div>`
       : `<div class="trial-card"><span class="ring">${g.UI.ring(4 / 14, 40, 4, 'var(--color-highlight)', 'rgba(127,127,140,.3)', '10')}</span><b>Free Trial</b><span>10 days left.</span>${plans ? `<br><a href="${link(ctx.role, '49-')}">View plans ${icon('arrowRight', 'sm')}</a>` : ''}</div>`;
     const pill = st.preview ? `Preview Mode — <b>demo data</b>` : st.override ? `Plan managed by Bonuca${st.overrideEnd ? ` — <b>until ${st.overrideEnd}</b>` : ''}` : `Free Trial — <b>10 days left.</b>`;
@@ -107,7 +107,7 @@
     <header class="topbar">
       <button class="icon-btn menu-btn" data-menu aria-label="Open navigation">${icon('menu')}</button>
       <div class="biz"><span class="avatar">S</span><div><b>Sample Business (development)</b><small>${r.user} <span class="role-chip ${r.isOwner ? 'owner' : ''}">${r.label}</span></small></div></div>
-      <div class="top-actions"><span class="trial-pill">${icon('info', 'sm')}<span>${pill}</span></span>${lang()}${themeSeg()}<a class="btn btn-text btn-sm" href="../../common/pages/03-login.html">${icon('logout', 'sm')}Log out</a></div>
+      <div class="top-actions">${emp ? '' : `<span class="trial-pill">${icon('info', 'sm')}<span>${pill}</span></span>`}${lang()}${themeSeg()}<a class="btn btn-text btn-sm" href="../../common/pages/03-login.html">${icon('logout', 'sm')}Log out</a></div>
     </header>
     <main class="content" id="content">${inner}</main>
   </div>
@@ -184,7 +184,7 @@
   /* Preview Mode: write actions stay visible but locked; clicking one explains why (exact client wording). */
   function lockPreview() {
     document.getElementById('content').querySelectorAll('button, a.btn, input, select, textarea, .type-card[data-href]').forEach(el => {
-      if (el.closest('[data-preview-ok], .tabs, .seg, [data-ct], [data-pg], [data-rpg]') || el.matches('[data-close]:not([data-scan-ok]), [data-device]')) return;
+      if (el.closest('[data-preview-ok], .tabs, .seg, [data-ct], [data-pg], [data-rpg]') || el.matches('[data-close]:not([data-scan-ok]):not(.btn-primary):not(.btn-ink):not(.btn-danger), [data-device]')) return;
       if (el.matches('input, select') && el.closest('.toolbar, .search')) return;
       if (el.matches('a.btn') && !el.matches('.btn-primary') && !/-new-|-edit|choose-type|dialog|invite/.test(el.getAttribute('href') || '')) return;
       el.dataset.previewLock = ''; el.setAttribute('aria-disabled', 'true');
@@ -208,10 +208,10 @@
       const op = t.closest('[data-open]'); if (op) { e.preventDefault(); openModal(op.dataset.open); }
       const cl = t.closest('[data-close]'); if (cl) { closeModal(cl.closest('.backdrop')); }
       if (t.classList.contains('backdrop')) closeModal(t);
-      const ok = t.closest('[data-scan-ok]'); if (ok && !ok.disabled) scanSuccess(ok.closest('.offer-card, .card'));
+      const ok = t.closest('[data-scan-ok]'); if (ok && !ok.disabled) scanSuccess(ok.closest('.offer-card, .card') || document.querySelector('#content .card'));
       const tst = t.closest('[data-toast]'); if (tst) { e.preventDefault(); toast(tst.dataset.toast); }
-      const cp = t.closest('[data-copy]'); if (cp) { try { navigator.clipboard.writeText(cp.dataset.copy); } catch (x) { } toast('Link copied'); }
-      const chip = t.closest('.choice-chips .chip'); if (chip) { chip.parentElement.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c === chip)); }
+      const cp = t.closest('[data-copy]'); if (cp) { try { navigator.clipboard.writeText(cp.dataset.copy).catch(() => { }); } catch (x) { } toast('Link copied'); }
+      const chip = t.closest('.choice-chips .chip'); if (chip) { if (chip.parentElement.hasAttribute('data-multi')) chip.classList.toggle('on'); else chip.parentElement.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c === chip)); }
       const ip = t.closest('.icon-picker button'); if (ip) { ip.parentElement.querySelectorAll('button').forEach(c => c.classList.toggle('on', c === ip)); const pick = ip.dataset.icon; document.querySelectorAll('.pass .stamp svg').forEach(s => s.outerHTML = icon(pick)); }
       const tc = t.closest('.type-card[data-href]'); if (tc) { location.href = tc.dataset.href; }
       const tsel = t.closest('.type-card[data-select]'); if (tsel) { tsel.parentElement.querySelectorAll('.type-card').forEach(c => c.classList.toggle('on', c === tsel)); tsel.parentElement.dispatchEvent(new CustomEvent('typechange', { detail: tsel.dataset.select, bubbles: true })); }
