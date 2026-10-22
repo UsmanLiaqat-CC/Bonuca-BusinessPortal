@@ -48,7 +48,7 @@
         <button class="btn btn-primary btn-lg btn-block" type="submit">Log In ${icon('arrowRight', 'sm')}</button>
         <div class="callout dev dev-accounts" style="display:block">
           <b style="display:flex;gap:8px;align-items:center;margin-bottom:6px">${icon('zap', 'sm')}Development sample accounts</b>
-          ${[['Owner', 'owner@sample.dev', '../../owner/pages/01-dashboard.html'], ['Manager', 'manager@sample.dev', '../../manager/pages/01-dashboard.html'], ['Employee', 'employee@sample.dev', '']].map(([r, e, h]) => `<div class="acc"><span>${r}: <span class="mono">${e}</span></span><button type="button" class="btn btn-text btn-sm" style="color:var(--color-accent)" data-use="${e}" data-go="${h}">Use</button></div>`).join('')}
+          ${[['Owner', 'owner@sample.dev', '../../owner/pages/01-dashboard.html'], ['Manager', 'manager@sample.dev', '../../manager/pages/01-dashboard.html'], ['Employee', 'employee@sample.dev', '../../employee/pages/01-scanner-home.html']].map(([r, e, h]) => `<div class="acc"><span>${r}: <span class="mono">${e}</span></span><button type="button" class="btn btn-text btn-sm" style="color:var(--color-accent)" data-use="${e}" data-go="${h}">Use</button></div>`).join('')}
         </div>
         <p class="muted" style="text-align:center">New to Bonuca? <a class="link underline-hl" style="color:var(--color-text-primary)" href="04-register.html">Start Free</a></p>
       </form>
@@ -60,7 +60,7 @@
     if (q.has('invited')) g.toast('Invitation accepted. Log in with your new password.');
     document.querySelector('[data-peek]').onclick = () => { const p = document.querySelector('[data-pw]'); p.type = p.type === 'password' ? 'text' : 'password'; };
     document.querySelectorAll('[data-use]').forEach(b => b.onclick = () => { document.querySelector('[data-email]').value = b.dataset.use; document.querySelector('[data-pw]').value = 'password1'; b.closest('form').dataset.go = b.dataset.go; });
-    document.querySelector('[data-login]').onsubmit = e => { e.preventDefault(); const go = e.target.dataset.go; if (go) location.href = go; else g.toast(document.querySelector('[data-email]').value ? 'Employee accounts use the Bonuca app' : 'Enter your email and password'); };
+    document.querySelector('[data-login]').onsubmit = e => { e.preventDefault(); const go = e.target.dataset.go; if (go) location.href = go; else g.toast(document.querySelector('[data-email]').value ? 'Use a development sample account to log in' : 'Enter your email and password'); };
   } });
 
   function authFrame(title, sub, inner, opts = {}) {

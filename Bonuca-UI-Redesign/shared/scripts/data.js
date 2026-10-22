@@ -108,6 +108,12 @@
   const tierScans = { anna: ['Anna Schmidt', 'C-10001', 4], kemal: ['Kemal Bianchi', 'C-10039', 9], umut: ['Umut Martin', 'C-10019', 24] };
   /* membership customers the scanner can open: [name, customer ID, visits, last visit, member since] */
   const memberScans = { anna: ['Anna Schmidt', 'C-10001', 12, 'Oct 21, 2026', 'Jan 15, 2026'] };
+  /* customer info shown after a scan: [name, active programs [program id, progress, progress %, pass code], available rewards [reward, source, icon]] */
+  const custInfo = {
+    anna: ['Anna Schmidt', [['coffee', '2 / 10 stamps', 20, 'BNC-DEMO1000'], ['points', '120 points · next: Free Dessert at 250']], [['1 Free Coffee', 'stamp card', 'stamp'], ['1 Free Coffee', 'voucher', 'ticket']]],
+    leon: ['Leon Fischer', [['coffee', '9 / 10 stamps', 90]], []],
+    vera: ['Vera Conti', [['points', '237 points · next: Free Burger at 500']], [['Free Coffee', 'points · 100 points', 'coins']]]
+  };
   const stampScans = { anna: ['Anna Schmidt', 'C-10001', 1], leon: ['Leon Fischer', 'C-10009', 9] };
   /* Free Coffee Campaign vouchers the scanner can open: [name, customer ID, voucher status, redeemed on] */
   const voucherScans = { anna: ['Anna Schmidt', 'C-10001', 'Available', ''], felix: ['Felix Bernard', 'C-10007', 'Redeemed', 'Oct 5, 2026'] };
@@ -140,5 +146,5 @@
     trial: ['All Pro features, temporarily', 'Unlimited customers', 'Unlimited programs', 'Unlimited locations', 'Unlimited employees'],
     pro: ['Unlimited customers', 'Unlimited programs', 'Unlimited locations', 'Unlimited employees', 'AI heatmap commentary']
   };
-  g.DATA = { programs, campaigns, customers, scansBase, rewards, winbackLog, stages, dash, analytics, team, roles, plans, stampScans, pointsScans, pointsLog, voucherScans, winbackScans, tierScans, memberScans, clubTiers, gifts, giftRules, locations: [LOC] };
+  g.DATA = { programs, campaigns, customers, scansBase, rewards, winbackLog, stages, dash, analytics, team, roles, plans, stampScans, pointsScans, pointsLog, voucherScans, winbackScans, tierScans, memberScans, clubTiers, gifts, giftRules, locations: [LOC], custInfo };
 })(window);

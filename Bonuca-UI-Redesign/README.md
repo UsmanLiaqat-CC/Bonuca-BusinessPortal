@@ -7,6 +7,7 @@ This folder holds the redesigned HTML for every screen of the Bonuca Business Po
 | `common/` | 9 | Landing, login, register, verify email, 3 onboarding steps |
 | `manager/` | 59 | Full portal as **Mia Manager** (role: Manager) |
 | `owner/` | 60 | Full portal as **Sam Owner** (role: Owner); one extra screen, `57-settings-billing` |
+| `employee/` | 11 | Operational experience as **Eli Employee** (role: Employee): 01 scanner home, 02 scan result, 03 customer info (limited), 04 recent scans, 05 account; 06–11 = the other scan states of the same scanner screen |
 | **Total** | **128** | Each HTML file has the same name as its original screenshot |
 
 Everything is plain **HTML + CSS + JavaScript**. There is no framework, no build step and no internet dependency (fonts are bundled locally).
@@ -45,6 +46,9 @@ Bonuca-UI-Redesign/
 ├── owner/
 │   ├── index.html
 │   └── pages/01-dashboard.html … 60-dashboard-dark-mode.html
+├── employee/
+│   ├── index.html
+│   └── pages/01-scanner-home.html … 11-scan-membership.html
 ├── shared/
 │   ├── design-tokens/tokens.css   ← colours, fonts, spacing, radii, shadows, motion (light + dark)
 │   ├── styles/app.css             ← all component styles + animations + responsive rules
