@@ -28,7 +28,7 @@ const indexPage = (title, groups, prefix) => `<!doctype html><html lang="en"><he
 ${groups.map(([g, base, files]) => `<h2 class="section-title">${g} <span class="count">${files.length}</span></h2><div class="grid g3">${files.map(f => `<a class="card hover" style="padding:16px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px" href="${base}${f}.html"><span><span class="faint mono" style="font-size:12px">${f.split('-')[0]}</span><b style="display:block;font-weight:600">${titleOf(f)}</b></span><span class="faint">→</span></a>`).join('')}</div>`).join('')}
 </div></body></html>`;
 const groups = [];
-for (const role of ['common', 'manager', 'owner']) {
+for (const role of ['common', 'manager', 'owner', 'employee']) {
   const dir = path.join(root, role, 'pages'); fs.mkdirSync(dir, { recursive: true });
   fs.readdirSync(dir).forEach(f => fs.unlinkSync(path.join(dir, f)));
   const files = PAGES[role].map(p => p[0]);

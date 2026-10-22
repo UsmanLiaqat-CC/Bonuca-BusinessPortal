@@ -513,6 +513,10 @@ table.t{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
 
 /* ---------- animations ---------- */
 .reveal-up{animation:fadeUp .6s var(--ease-out) both;animation-delay:calc(var(--i,0) * 60ms)}
+/* scan success: card rotates slightly + check + small confetti, ≈0.8 s (after .reveal-up so it wins) */
+.scan-success{position:relative;animation:scanFlip .8s var(--ease-spring) both}
+.scan-fx{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;z-index:2}
+.scan-fx i{position:absolute;left:50%;top:50%;width:7px;height:7px;border-radius:2px;background:var(--c);animation:confetti .8s var(--ease-out) forwards}
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes modalIn{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:none}}
@@ -532,11 +536,14 @@ table.t{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
 @keyframes float{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-14px) rotate(var(--r,0deg))}}
 @keyframes twinkle{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.2) rotate(15deg)}}
 @keyframes ripple{to{transform:scale(4);opacity:0}}
+@keyframes scanFlip{0%{transform:perspective(800px) rotateY(-16deg) scale(.97)}55%{transform:perspective(800px) rotateY(5deg)}100%{transform:none}}
+@keyframes confetti{0%{opacity:1;transform:translate(-50%,-50%) scale(.4)}100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) rotate(220deg)}}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
   .pass::after,.qr-box::after,.scan-hero .frame .beam{display:none}
   .badge.live .d::after,.success-burst::after{display:none}
+  .scan-fx{display:none}
 }
 
 /* ---------- responsive ---------- */

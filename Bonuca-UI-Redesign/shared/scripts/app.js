@@ -27,7 +27,10 @@
       ['60-scanner-stamp-reward-ready', 'scanner', { state: 'rewardReady' }], ['61-scanner-points-redeem', 'scanner', { state: 'pointsRedeem' }], ['62-points-transactions', 'pointsLog']],
     owner: [...shared, ['57-settings-billing', 'settings', { sec: 'billing' }], ['58-settings-wallet', 'settings', { sec: 'wallet' }], ['59-settings-language', 'settings', { sec: 'language' }], ['60-dashboard-dark-mode', 'dashboard', { theme: 'dark' }],
       ['61-dashboard-preview-mode', 'dashboard', { preview: true }], ['62-scanner-stamp-reward-ready', 'scanner', { state: 'rewardReady' }],
-      ['63-scanner-points-redeem', 'scanner', { state: 'pointsRedeem' }], ['64-points-transactions', 'pointsLog']]
+      ['63-scanner-points-redeem', 'scanner', { state: 'pointsRedeem' }], ['64-points-transactions', 'pointsLog']],
+    // Operational experience (client): scanner, limited customer info, recent scans, account. 06+ = the other scan states, same scanner screen.
+    employee: [['01-scanner-home', 'scanner', { state: 'idle' }], ['02-scan-result', 'scanner', { state: 'stamp' }], ['03-customer-info', 'customerProfile'], ['04-recent-scans', 'recentScans'], ['05-account', 'account'],
+      ['06-scan-confirmed', 'scanner', { state: 'confirmed' }], ['07-scan-points', 'scanner', { state: 'points' }], ['08-scan-points-redeem', 'scanner', { state: 'pointsRedeem' }], ['09-scan-reward-ready', 'scanner', { state: 'rewardReady' }], ['10-scan-tier', 'scanner', { state: 'tier' }], ['11-scan-membership', 'scanner', { state: 'membership' }]]
   };
   // New screens get different numbers per role (R6), so link to them by name: page(role, 'scanner-stamp-reward-ready').
   const page = (role, name) => (PAGES[role].find(p => p[0].slice(3) === name) || [name])[0] + '.html';
@@ -36,16 +39,21 @@
 
   const ROLE = {
     manager: { user: 'Mia Manager', label: 'Manager', isOwner: false },
-    owner: { user: 'Sam Owner', label: 'Owner', isOwner: true }
+    owner: { user: 'Sam Owner', label: 'Owner', isOwner: true },
+    employee: { user: 'Eli Employee', label: 'Employee', isOwner: false }
   };
   const link = (role, prefix) => (PAGES[role].find(p => p[0].startsWith(prefix)) || [prefix])[0] + '.html';
   g.link = link;
+  // Scanner states are linked by state, so each role (incl. employee) uses its own numbering: scan(role, 'confirmed').
+  const scan = (role, state) => ((PAGES[role].find(([, s, o]) => s === 'scanner' && o && o.state === state) || [])[0] || '') + '.html';
+  const has = (role, name) => PAGES[role].some(p => p[0].slice(3) === name);
 
   /* ---------- role access (client spec: Owner full · Manager no billing, employees if permitted) ---------- */
   const ACCESS = {
     billing: role => role === 'owner',
     team: role => role === 'owner' || g.DATA.team.some(([, , r, , canManage]) => r === 'Manager' && canManage),
-    multiStamp: role => role !== 'employee' || g.DATA.team.some(([, , r, , , canMulti]) => r === 'Employee' && canMulti)
+    multiStamp: role => role !== 'employee' || g.DATA.team.some(([n, , r, , , canMulti]) => n === ROLE.employee.user && r === 'Employee' && canMulti),
+    customerDetails: role => role !== 'employee' // employees see limited customer info: no email/phone/notes/analytics
   };
   const can = (role, key) => !ACCESS[key] || ACCESS[key](role);
   g.can = can;
@@ -66,6 +74,8 @@
     ['Notifications', 'bell', '41-'], ['Rewards', 'gift', '45-'], ['Analytics', 'chart', '47-'], ['Branding', 'palette', '48-'], ['Subscription & Billing', 'card', '49-', 'billing'], ['Settings', 'settings', '50-']
   ];
   const groups = { 0: 'Overview', 3: 'Operations', 6: 'Engagement', 9: 'Business' };
+  // Employees get the operational experience only (client): scanner, recent scans, account.
+  const NAV_EMPLOYEE = [['QR Scanner', 'qr', '01-'], ['Recent scans', 'clock', '04-'], ['Account', 'badge', '05-']];
 
   function themeSeg() {
     return `<div class="seg icons" data-seg="theme" role="group" aria-label="Theme">${[['light', 'sun'], ['dark', 'moon'], ['system', 'monitor']].map(([t, ic]) => `<button data-theme-set="${t}" title="${t[0].toUpperCase() + t.slice(1)} theme" aria-label="${t} theme">${icon(ic, 'sm')}</button>`).join('')}</div>`;
@@ -75,7 +85,7 @@
 
   function shell(ctx, nav, inner) {
     const r = ROLE[ctx.role], st = ctx.state, plans = can(ctx.role, 'billing');
-    const navHtml = NAV.map((n, i) => [...n, groups[i]]).filter(([, , , key]) => can(ctx.role, key)).map(([label, ic, pre, , grp]) => `${grp ? `<div class="nav-label">${grp}</div>` : ''}<a href="${link(ctx.role, pre)}" class="${label === nav ? 'active' : ''}">${icon(ic)}${label}</a>`).join('');
+    const navHtml = (ctx.role === 'employee' ? NAV_EMPLOYEE : NAV).map((n, i) => [...n, ctx.role === 'employee' ? '' : groups[i]]).filter(([, , , key]) => can(ctx.role, key)).map(([label, ic, pre, , grp]) => `${grp ? `<div class="nav-label">${grp}</div>` : ''}<a href="${link(ctx.role, pre)}" class="${label === nav ? 'active' : ''}">${icon(ic)}${label}</a>`).join('');
     const planCard = st.preview ? `<div class="trial-card"><b>Preview Mode</b><span>No plan selected · demo data.</span><br><a href="${link(ctx.role, '49-')}">View plans ${icon('arrowRight', 'sm')}</a></div>`
       : st.override ? `<div class="trial-card"><b>Managed by Bonuca</b><span>${st.overrideEnd ? 'Until ' + st.overrideEnd + '.' : 'No end date.'}</span></div>`
       : `<div class="trial-card"><span class="ring">${g.UI.ring(4 / 14, 40, 4, 'var(--color-highlight)', 'rgba(127,127,140,.3)', '10')}</span><b>Free Trial</b><span>10 days left.</span>${plans ? `<br><a href="${link(ctx.role, '49-')}">View plans ${icon('arrowRight', 'sm')}</a>` : ''}</div>`;
@@ -142,6 +152,26 @@
   }
   g.countUp = countUp;
 
+  /* ---------- scan success (client): card rotates slightly, green check, small confetti, short sound, ≈0.8 s; purely decorative, never delays the confirmation ---------- */
+  function successSound() {
+    try { // tiny Web Audio beep, only once the user has interacted (no autoplay)
+      const ua = navigator.userActivation, A = g.AudioContext || g.webkitAudioContext; if (!ua || !ua.hasBeenActive || !A) return;
+      const ac = g.__ac || (g.__ac = new A()), t = ac.currentTime, o = ac.createOscillator(), v = ac.createGain();
+      o.frequency.setValueAtTime(880, t); o.frequency.setValueAtTime(1320, t + .08); v.gain.setValueAtTime(.0001, t); v.gain.exponentialRampToValueAtTime(.12, t + .02); v.gain.exponentialRampToValueAtTime(.0001, t + .22);
+      o.connect(v).connect(ac.destination); o.start(t); o.stop(t + .24);
+    } catch (e) { }
+  }
+  function scanSuccess(host) {
+    if (!host) return; successSound();
+    host.classList.remove('scan-success'); void host.offsetWidth; host.classList.add('scan-success');
+    if (reduced()) return;
+    const fx = document.createElement('span'); fx.className = 'scan-fx'; fx.setAttribute('aria-hidden', 'true');
+    const cols = ['var(--color-mint)', 'var(--color-highlight)', 'var(--color-accent)'];
+    fx.innerHTML = (host.querySelector('.success-burst') ? '' : `<span class="success-burst">${icon('check', 'lg')}</span>`) + Array.from({ length: 12 }, (_, i) => { const a = i / 12 * 2 * Math.PI, r = 70 + (i % 3) * 18; return `<i style="--c:${cols[i % 3]};--x:${Math.round(Math.cos(a) * r)}px;--y:${Math.round(Math.sin(a) * r)}px"></i>`; }).join('');
+    host.appendChild(fx); setTimeout(() => fx.remove(), 900);
+  }
+  g.successSound = successSound; g.scanSuccess = scanSuccess;
+
   function openModal(id) { const m = document.querySelector(`[data-modal="${id}"]`); if (m) { m.hidden = false; const f = m.querySelector('input,select,textarea'); f && setTimeout(() => f.focus(), 60); } }
   function closeModal(m) { m.hidden = true; }
   g.openModal = openModal;
@@ -174,6 +204,7 @@
       const op = t.closest('[data-open]'); if (op) { e.preventDefault(); openModal(op.dataset.open); }
       const cl = t.closest('[data-close]'); if (cl) { closeModal(cl.closest('.backdrop')); }
       if (t.classList.contains('backdrop')) closeModal(t);
+      const ok = t.closest('[data-scan-ok]'); if (ok && !ok.disabled) scanSuccess(ok.closest('.offer-card, .card'));
       const tst = t.closest('[data-toast]'); if (tst) { e.preventDefault(); toast(tst.dataset.toast); }
       const cp = t.closest('[data-copy]'); if (cp) { try { navigator.clipboard.writeText(cp.dataset.copy); } catch (x) { } toast('Link copied'); }
       const chip = t.closest('.choice-chips .chip'); if (chip) { chip.parentElement.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c === chip)); }
@@ -206,7 +237,7 @@
     const entry = PAGES[role].find(p => p[0] === file); if (!entry) { body.innerHTML = '<p style="padding:40px">Unknown page ' + esc(file) + '</p>'; return; }
     const [, screen, opts = {}] = entry;
     const state = role === 'common' ? {} : accessState(role, opts);
-    const ctx = { role, file, opts, owner: role === 'owner', link: pre => link(role, pre), page: name => page(role, name), state, can: key => can(role, key),
+    const ctx = { role, file, opts, owner: role === 'owner', link: pre => link(role, pre), page: name => page(role, name), scan: st => scan(role, st), has: name => has(role, name), state, can: key => can(role, key),
       nav: u => state.query ? u + (u.includes('?') ? '&' : '?') + state.query : u }; // keeps preview/override state on scripted navigation
     const out = S[screen](ctx);
     document.title = `${out.title || out.nav} · Bonuca`;

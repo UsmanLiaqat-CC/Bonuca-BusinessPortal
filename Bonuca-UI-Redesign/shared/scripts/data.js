@@ -95,6 +95,12 @@
     ['Anna Schmidt', 'Coffee Rewards', 'EUR', '—', '−100 · Free Coffee', 220, 120, 'Mia Manager', LOC, 'Oct 20, 2026, 05:10 PM', 'Completed'],
     ['Vera Conti', 'Coffee Rewards', 'EUR', '12.40', '+124', 113, 237, 'Eli Employee', LOC, 'Oct 18, 2026, 11:32 AM', 'Completed']
   ];
+  /* customer info shown after a scan: [name, active programs [program id, progress, progress %, pass code], available rewards [reward, source, icon]] */
+  const custInfo = {
+    anna: ['Anna Schmidt', [['coffee', '2 / 10 stamps', 20, 'BNC-DEMO1000'], ['points', '120 points · next: Free Dessert at 250']], [['1 Free Coffee', 'stamp card', 'stamp'], ['1 Free Coffee', 'voucher', 'ticket']]],
+    leon: ['Leon Fischer', [['coffee', '9 / 10 stamps', 90]], []],
+    vera: ['Vera Conti', [['points', '237 points · next: Free Burger at 500']], [['Free Coffee', 'points · 100 points', 'coins']]]
+  };
   const stampScans = { anna: ['Anna Schmidt', 'C-10001', 1], leon: ['Leon Fischer', 'C-10009', 9] };
   const roles = [['Owner', 'Full access — billing/subscription, employees, customers, loyalty programs, analytics, scanner, business settings.', 'shield'], ['Manager', 'Customers, loyalty programs, rewards, analytics, scanner, limited settings, and employees if permitted.', 'badge'], ['Employee', 'Scanner, limited customer info, add stamps/points/visits, redeem rewards. No billing or subscription access.', 'scan']];
   const plans = {
@@ -102,5 +108,5 @@
     trial: ['All Pro features, temporarily', 'Unlimited customers', 'Unlimited programs', 'Unlimited locations', 'Unlimited employees'],
     pro: ['Unlimited customers', 'Unlimited programs', 'Unlimited locations', 'Unlimited employees', 'AI heatmap commentary']
   };
-  g.DATA = { programs, campaigns, customers, scansBase, rewards, winbackLog, stages, dash, analytics, team, roles, plans, stampScans, pointsScans, pointsLog };
+  g.DATA = { programs, campaigns, customers, scansBase, rewards, winbackLog, stages, dash, analytics, team, roles, plans, stampScans, pointsScans, pointsLog, custInfo };
 })(window);
