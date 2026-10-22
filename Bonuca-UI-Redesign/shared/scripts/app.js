@@ -175,6 +175,8 @@
     host.appendChild(fx); setTimeout(() => fx.remove(), 900);
   }
   g.successSound = successSound; g.scanSuccess = scanSuccess;
+  // Demo memory: what a user saves stays for this browser tab (no backend in the prototype).
+  g.mem = { get(k, d) { try { const v = sessionStorage.getItem('bonuca-' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { sessionStorage.setItem('bonuca-' + k, JSON.stringify(v)); } catch (e) { } } };
 
   function openModal(id) { const m = document.querySelector(`[data-modal="${id}"]`); if (m) { m.hidden = false; const f = m.querySelector('input,select,textarea'); f && setTimeout(() => f.focus(), 60); } }
   function closeModal(m) { m.hidden = true; }
