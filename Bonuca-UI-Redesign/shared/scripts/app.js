@@ -53,10 +53,13 @@
   const has = (role, name) => PAGES[role].some(p => p[0].slice(3) === name);
 
   /* ---------- role access (client spec: Owner full · Manager no billing, employees if permitted) ---------- */
+  // Permission toggles saved on the Employees screen (demo memory) override the seed data: { email: [canManageEmployees, canAwardMultipleStamps] }.
+  const team = () => { const tp = g.mem.get('team-perms', {}); return g.DATA.team.map(t => Object.hasOwn(tp, t[1]) ? [...t.slice(0, 4), ...tp[t[1]]] : t); };
+  g.team = team;
   const ACCESS = {
     billing: role => role === 'owner',
-    team: role => role === 'owner' || g.DATA.team.some(([, , r, , canManage]) => r === 'Manager' && canManage),
-    multiStamp: role => role !== 'employee' || g.DATA.team.some(([n, , r, , , canMulti]) => n === ROLE.employee.user && r === 'Employee' && canMulti),
+    team: role => role === 'owner' || team().some(([, , r, , canManage]) => r === 'Manager' && canManage),
+    multiStamp: role => role !== 'employee' || team().some(([n, , r, , , canMulti]) => n === ROLE.employee.user && r === 'Employee' && canMulti),
     customerDetails: role => role !== 'employee' // employees see limited customer info: no email/phone/notes/analytics
   };
   const can = (role, key) => !ACCESS[key] || ACCESS[key](role);
@@ -84,7 +87,8 @@
   function themeSeg() {
     return `<div class="seg icons" data-seg="theme" role="group" aria-label="Theme">${[['light', 'sun'], ['dark', 'moon'], ['system', 'monitor']].map(([t, ic]) => `<button data-theme-set="${t}" title="${t[0].toUpperCase() + t.slice(1)} theme" aria-label="${t} theme">${icon(ic, 'sm')}</button>`).join('')}</div>`;
   }
-  const lang = () => `<select class="lang" aria-label="Language"><option>English</option><option>Deutsch</option><option>Türkçe</option><option>Français</option><option>Italiano</option></select>`;
+  const LANGS = ['English', 'Deutsch', 'Türkçe', 'Français', 'Italiano'];
+  const lang = () => { const cur = g.mem.get('lang', 'English'); return `<select class="lang" aria-label="Language" data-lang>${LANGS.map(l => `<option${l === cur ? ' selected' : ''}>${l}</option>`).join('')}</select>`; };
   g.SHELL_BITS = { themeSeg, lang };
 
   function shell(ctx, nav, inner) {
@@ -199,6 +203,7 @@
 
   function wire() {
     document.addEventListener('click', e => { if (!e.target.closest('[data-preview-lock]')) return; e.preventDefault(); e.stopPropagation(); toast(PREVIEW_MSG, 'lock'); }, true);
+    document.addEventListener('change', e => { const s = e.target.closest && e.target.closest('select.lang, select[data-lang]'); if (!s || s.dataset.previewLock !== undefined) return; g.mem.set('lang', s.value); document.querySelectorAll('select.lang, select[data-lang]').forEach(o => { if (o !== s && [...o.options].some(x => x.value === s.value)) o.value = s.value; }); toast('Language saved: ' + s.value); });
     ['mousedown', 'keydown'].forEach(t => document.addEventListener(t, e => { if (e.target.closest && e.target.closest('select[data-preview-lock]') && e.key !== 'Tab') { e.preventDefault(); if (t === 'keydown') toast(PREVIEW_MSG, 'lock'); } }, true));
     document.addEventListener('click', e => {
       const t = e.target;
