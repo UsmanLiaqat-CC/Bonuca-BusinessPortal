@@ -20,7 +20,7 @@
   <div class="hero-cards">
     <div class="float-pass" style="left:4%;top:60px;--r:-8deg;transform:rotate(-8deg);width:270px;opacity:.95">${pass({ type: 'points', name: 'Coffee Rewards', balance: '240 pts', nextReward: 'Free Dessert', needed: '10', pct: 92 }).replace('<div class="pass-qr">', '<div class="pass-qr" style="display:none">')}</div>
     <div class="float-pass" style="left:50%;margin-left:-175px;top:0;width:350px;z-index:2;animation-delay:-2s">${pass({ type: 'stamp', name: 'Bonuca', reward: '1 Free Coffee', total: 10, filled: 6 }).replace('<div class="pass-qr">', '<div class="pass-qr" style="display:none">')}</div>
-    <div class="float-pass" style="right:4%;top:70px;--r:8deg;width:270px;animation-delay:-4s">${pass({ type: 'membership', name: 'VIP Member', benefit: '10% off every visit', bg: '#1B1B1F' }).replace('<div class="pass-qr">', '<div class="pass-qr" style="display:none">')}</div>
+    <div class="float-pass" style="right:4%;top:70px;--r:8deg;width:270px;animation-delay:-4s">${pass({ type: 'membership', name: 'VIP Member', benefit: '10% Discount', bg: '#1B1B1F' }).replace('<div class="pass-qr">', '<div class="pass-qr" style="display:none">')}</div>
   </div>
 </section></div>${dl}<div class="toast-zone"></div>` };
   };

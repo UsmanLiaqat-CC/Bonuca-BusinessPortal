@@ -4,6 +4,16 @@
   const S = g.SCREENS = g.SCREENS || {};
   const P = id => D.programs.find(p => p.id === id);
 
+  /* ================= TIERS ================= */
+  // Value in the program's upgrade requirement: "6 visits" · "60 points" · "6.00 EUR".
+  const tierFmt = (c, n) => c.req === 'Total spending' ? `${(+n).toFixed(2)} ${c.currency}` : `${n} ${c.req === 'Points' ? 'point' : 'visit'}${n === 1 ? '' : 's'}`;
+  // Customers level up automatically: the highest tier whose required value is reached.
+  const tierAt = (c, v) => { let i = 0; c.tiers.forEach((t, j) => { if (v >= t[1]) i = j; }); const t = c.tiers[i], nx = c.tiers[i + 1]; return { i, name: t[0], bg: t[2], benefit: t[3], nx, left: nx ? +(nx[1] - v).toFixed(2) : 0, pct: nx ? Math.round((v - t[1]) / (nx[1] - t[1]) * 100) : 100 }; };
+  // Client: "Silver → Wallet becomes silver. Gold → Wallet becomes gold." — the pass background is the reached tier's wallet colour.
+  const tierPass = (p, v) => { const t = tierAt(p.cfg, v); return { type: 'tier', name: p.name, tier: t.name, next: t.nx ? `${tierFmt(p.cfg, t.left)} to ${t.nx[0]}` : 'Highest tier reached', pct: t.pct, bg: t.bg }; };
+  g.TIER = { fmt: tierFmt, at: tierAt, pass: tierPass };
+  const tierList = c => setup(c.tiers.map(([n, v, col, b], i) => [`<span class="row" style="gap:8px"><span class="swatch" style="width:22px;height:22px;padding:3px;border-radius:7px"><i style="--c:${col};border-radius:4px"></i></span>${n}${i ? '' : ' (Default)'}</span>`, `${tierFmt(c, v)} · ${b}`]));
+
   /* ================= DASHBOARD ================= */
   S.dashboard = ctx => {
     const o = ctx.owner, d = D.dash;
@@ -88,36 +98,41 @@
       ${field({ label: 'Reward Description', required: true, input: input({ value: edit ? '1 Free Coffee' : '', ph: 'e.g. 1 Free Coffee', attrs: 'data-bind-src="reward" data-fallback="Reward description"' }), hint: 'What the customer gets, e.g. “1 Free Coffee”.' })}
       ${field({ label: 'Reward Type', required: true, input: select(['Free item', 'Discount', 'Upgrade', 'Other'], 'Free item'), hint: 'Used for reporting and the redeem-reward wording.' })}
       <div class="full">${multiStamps(edit ? P('coffee').multi : { on: false, max: 3 })}</div></div>`;
-    if (k === 'membership') rules = `<div class="stack">${callout('info', '', 'Membership Cards never track stamps or points — they identify the customer and state their benefit at checkout.')}<div class="form-grid">
-      <div class="full">${field({ label: 'Benefit Description', required: true, input: input({ ph: '10% off every visit', attrs: 'data-bind-src="benefit" data-fallback="Benefit description"' }), hint: 'Main line on the pass, e.g. “10% off every visit”.' })}</div>
-      ${field({ label: 'Benefit Type', required: true, input: select(['% discount', 'Fixed amount', 'Free item', 'Other'], '% discount'), hint: 'Drives what the employee sees when scanning this member.' })}
-      ${field({ label: 'Discount Value (%)', required: true, input: `<div class="input-wrap">${icon('percent')}${input({ type: 'number', ph: '10' })}</div>` })}
-      ${field({ label: 'Validity', required: true, input: select(['Permanent', 'Renews annually', 'Fixed end date'], 'Permanent') })}</div></div>`;
-    if (k === 'tier') {
-      const tiers = [['Member', 0, '#3A3F55'], ['Silver', 10, '#8A8FA3'], ['Gold', 20, '#B8902E']];
-      rules = `<div class="stack">${optionRow('Enable Tiers', 'Turn tiering off entirely to use a flat membership card instead.', true)}
-      <div class="form-grid">${field({ label: 'Number of Tiers', required: true, input: select(['2', '3', '4', '5'], '3'), hint: 'Between 2 and 5.' })}${field({ label: 'Upgrade Basis', required: true, input: select(['Visits', 'Points', 'Spend'], 'Visits'), hint: 'One basis applies to all tiers.' })}</div>
-      <div class="tier-ladder stack">${tiers.map(([n, v, c], i) => `<div class="reveal" style="border-left:4px solid ${c}"><div class="row between"><div class="row"><span class="medal ${['', 's', 'b'][0]}" style="background:${c};color:#fff">${i + 1}</span><b style="font-family:var(--font-display);font-size:16px">Tier ${i + 1}</b></div>${badge(v + ' visits', 'outline')}</div>
-        <div class="form-grid" style="margin-top:14px">${field({ label: 'Tier Name', required: true, input: input({ value: n }) })}${field({ label: 'Required Value (visits)', required: true, input: input({ type: 'number', value: String(v) }) })}
-        ${field({ label: 'Wallet Colour', required: true, input: colorIn(c), hint: 'The pass background once a customer reaches this tier.' })}${field({ label: 'Tier Badge / Icon', optional: true, input: upload(false) })}
-        <div class="full">${field({ label: 'Rewards & Benefits', required: true, input: input({ ph: 'e.g. Free birthday drink, priority seating' }) })}</div></div></div>`).join('')}</div>
-      ${optionRow('Downgrade Rule', 'If enabled, a customer drops one tier after X days of no visits.', false)}</div>`;
-    }
-    // Client points configuration: currency per program, "<amount> <currency> = <points> points", Fixed per visit or Manual.
-    if (k === 'points') rules = `<div class="form-grid">
-      ${field({ label: 'Currency', required: true, input: `${select(['EUR', 'USD', 'GBP', 'CZK', 'TRY', 'CHF', 'PLN', 'Other'], 'EUR', 'data-pt-cur')}<input class="input" placeholder="Currency code, e.g. SEK" aria-label="Other currency" data-pt-cur-other style="margin-top:10px" hidden>`, hint: 'Set per program, never account-wide. Employees never pick a currency during a scan.' })}
-      ${field({ label: 'Awarding Method', required: true, input: select(['Manual', 'Fixed points per visit'], 'Manual', 'data-pt-method'), hint: 'Manual: the employee enters the purchase amount. Fixed: every scan gives the same points.' })}
+    // Currency + earning rule are shared by the Points Program and points-based / spend-based tiers (P4.4/P4.5: same rules as the Points Program).
+    const curField = field({ label: 'Currency', required: true, input: `${select(['EUR', 'USD', 'GBP', 'CZK', 'TRY', 'CHF', 'PLN', 'Other'], 'EUR', 'data-pt-cur')}<input class="input" placeholder="Currency code, e.g. SEK" aria-label="Other currency" data-pt-cur-other style="margin-top:10px" hidden>`, hint: 'Set per program, never account-wide. Employees never pick a currency during a scan.' });
+    const ptsFields = `      ${field({ label: 'Awarding Method', required: true, input: select(['Manual', 'Fixed points per visit'], 'Manual', 'data-pt-method'), hint: 'Manual: the employee enters the purchase amount. Fixed: every scan gives the same points.' })}
       ${field({ label: 'Purchase amount', required: true, input: input({ type: 'number', value: '1', attrs: 'min="0" step="0.01" data-pt-basis' }), hint: 'Calculation basis, e.g. 1, 10 or 5.' })}
       ${field({ label: 'Points awarded for that amount', required: true, input: input({ type: 'number', value: '10', attrs: 'min="0" data-pt-pts' }), hint: `Earning rule: <b data-pt-rule>1 EUR = 10 points</b>` })}
       <div data-pt-fixed hidden>${field({ label: 'Fixed points per visit', required: true, input: input({ type: 'number', value: '10', attrs: 'min="1"' }) })}</div><div data-pt-fixed hidden></div>
       ${field({ label: 'Rounding', required: true, input: select(['Round down', 'Round up', 'Round to nearest'], 'Round down'), hint: 'Applied to the calculated points.' })}
       ${field({ label: 'Minimum purchase amount', optional: true, input: input({ type: 'number', attrs: 'min="0" step="0.01"' }), hint: 'Purchases below this earn no points.' })}
-      ${field({ label: 'Maximum points per transaction', optional: true, input: input({ type: 'number', attrs: 'min="1"' }), hint: 'Caps how many points one scan can award.' })}
+      ${field({ label: 'Maximum points per transaction', optional: true, input: input({ type: 'number', attrs: 'min="1"' }), hint: 'Caps how many points one scan can award.' })}`;
+    // Client: "VIP Member · 10% Discount · Permanent member benefits · No stamps. Just identification." (E6: no validity / renewal / end date.)
+    if (k === 'membership') rules = `<div class="stack">${callout('info', '', 'Permanent member benefits. No stamps — just identification.')}
+      ${field({ label: 'Benefit', required: true, input: input({ ph: 'e.g. 10% Discount', attrs: 'data-bind-src="benefit" data-fallback="Benefit"' }), hint: 'Main line on the pass and what the employee sees when scanning a member.' })}</div>`;
+    // Client tiers: 2–5 tiers, editable names, upgrade requirement (visits / points / total spending), required value, rewards & benefits, colour + wallet design
+    // per tier, automatic level-up. E4: no downgrade rule. E7: no "Enable Tiers" toggle — choosing the Tier Program type is the choice.
+    if (k === 'tier') {
+      // Default suggestions, all editable: Member (Default) · Silver – 10 visits · Gold – 25 visits · Platinum – 50 visits; Diamond available as the 5th.
+      // ❓ The client gives no default required value for Diamond — left empty.
+      const DEF = [['Member', 0, '#3A3F55'], ['Silver', 10, '#8A8FA3'], ['Gold', 25, '#B8902E'], ['Platinum', 50, '#5E6A7D'], ['Diamond', '', '#0369A1']];
+      rules = `<div class="stack"><div class="form-grid">${field({ label: 'Number of Tiers', required: true, input: select(['2', '3', '4', '5'], '4', 'data-tier-n'), hint: 'Between 2 and 5.' })}${field({ label: 'Upgrade Requirement', required: true, input: select(['Visits', 'Points', 'Total spending'], 'Visits', 'data-tier-req'), hint: 'One requirement applies to all tiers. Customers level up automatically.' })}
+      <div data-tier-cur hidden>${curField}</div><div data-tier-cur hidden></div></div>
+      <div class="form-grid" data-tier-pts hidden>${ptsFields}</div>
+      <div class="tier-ladder stack" data-tier-ladder>${DEF.map(([n, v, c], i) => `<div class="reveal" style="border-left:4px solid ${c}" data-tier ${i < 4 ? '' : 'hidden'}><div class="row between"><div class="row"><span class="medal" style="background:${c};color:#fff">${i + 1}</span><b style="font-family:var(--font-display);font-size:16px">Tier ${i + 1}</b>${i ? '' : badge('Default', 'outline')}</div><span data-tier-badge>${badge(v === '' ? '—' : v + ' visits', 'outline')}</span></div>
+        <div class="form-grid" style="margin-top:14px">${field({ label: 'Tier Name', required: true, input: input({ value: n, attrs: 'data-tier-name' }) })}${field({ label: 'Required Value <span data-tier-unit>(visits)</span>', required: true, input: input({ type: 'number', value: String(v), ph: 'e.g. 100', attrs: 'min="0" step="any" data-tier-val' }) })}
+        ${field({ label: 'Wallet Colour', required: true, input: colorIn(c), hint: 'The pass background once a customer reaches this tier.' })}${field({ label: 'Tier Badge / Icon', optional: true, input: upload(false) })}
+        <div class="full">${field({ label: 'Rewards &amp; Benefits', required: true, input: input({ ph: 'e.g. Free birthday drink, priority seating' }) })}</div></div></div>`).join('')}</div></div>`;
+    }
+    // Client points configuration: currency per program, "<amount> <currency> = <points> points", Fixed per visit or Manual.
+    if (k === 'points') rules = `<div class="form-grid">
+      ${curField}
+${ptsFields}
       <div class="full">${field({ label: 'Rewards <span class="opt">— at least one reward</span>', required: true, input: `<div class="reveal" data-reward-list><div class="row" style="align-items:flex-end"><div style="flex:1">${field({ label: 'Reward 1 name', required: true, input: input({ ph: 'e.g. Free Coffee' }) })}</div><div style="width:150px">${field({ label: 'Required points', required: true, input: `<div class="input-wrap">${icon('coins')}${input({ type: 'number', ph: 'e.g. 100' })}</div>` })}</div><button class="icon-btn" aria-label="Remove reward" style="margin-bottom:4px">${icon('trash')}</button></div><div style="margin-top:12px">${field({ label: 'Reward 1 icon', optional: true, input: upload(false) })}</div></div><button class="btn btn-ghost btn-sm" style="margin-top:10px;align-self:flex-start" data-add-reward>${icon('plus', 'sm')}Add reward</button>`, hint: 'e.g. 100 points → Free Coffee · 250 points → Free Dessert · 500 points → Free Burger' })}</div>
       ${field({ label: 'Point expiry period', optional: true, input: `<div class="row">${input({ type: 'number', attrs: 'min="1" style="max-width:120px"' })}<b class="muted">months</b></div>`, hint: 'Unused points expire after this period. Leave empty for no expiry.' })}
       ${field({ label: 'Reward expiry period', optional: true, input: `<div class="row">${input({ type: 'number', attrs: 'min="1" style="max-width:120px"' })}<b class="muted">days</b></div>`, hint: 'An earned reward expires if not redeemed in this period. Leave empty for no expiry.' })}</div>`;
     const terms = field({ label: 'Terms &amp; Conditions', optional: true, input: textarea(edit ? 'Sample terms and conditions.' : ''), hint: 'Shown on the back of the wallet pass.' });
-    const pv = { stamp: { type: 'stamp', name: edit ? nm : 'Program name', reward: edit ? '1 Free Coffee' : 'Reward description', total: 10, filled: 3, logo: edit }, membership: { type: 'membership', name: 'Program name', benefit: 'Benefit description', logo: false }, tier: { type: 'tier', name: 'Program name', tier: 'Member', next: '6 visits to Silver', pct: 32, bg: '#3A3F55', logo: false }, points: { type: 'points', name: 'Program name', balance: '120 pts', logo: false } }[k];
+    const pv = { stamp: { type: 'stamp', name: edit ? nm : 'Program name', reward: edit ? '1 Free Coffee' : 'Reward description', total: 10, filled: 3, logo: edit }, membership: { type: 'membership', name: 'Program name', benefit: 'Benefit', logo: false }, tier: { type: 'tier', name: 'Program name', tier: 'Member', next: '10 visits to Silver', pct: 0, bg: '#3A3F55', logo: false }, points: { type: 'points', name: 'Program name', balance: '120 pts', logo: false } }[k];
     g.__pass = pv;
     const actions = edit ? `<button class="btn btn-primary btn-lg" data-save>${icon('check', 'sm')}Save</button><a class="btn btn-text" href="${ctx.link('10-')}">Cancel</a>` : `<button class="btn btn-primary btn-lg" data-toast="Program published">${icon('send', 'sm')}Publish</button><button class="btn btn-ghost btn-lg" data-toast="Saved as draft">Save as draft</button>`;
     const wm = modal({ id: 'warn', open: !!warn, title: 'Update every issued wallet pass?', body: `<p style="margin-bottom:14px">You changed <b>Program Name</b>. This program is live, so the change applies retroactively to every wallet pass already issued.</p>${callout('', 'Wallet integration not connected', 'Pass updates are pushed by the Apple/Google Wallet backend integration, which is not available in this environment.')}`, foot: `<button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" data-close data-toast="Saved — applies to all issued passes">Save (applies to all issued passes)</button>` });
@@ -128,7 +143,7 @@
         ${sec(3, 'Program rules', '', rules)}
         ${sec(4, 'Terms &amp; Conditions', '', terms)}
         <div class="row reveal-up">${actions}</div>
-      </div><div class="sticky">${phonePreview(pv, cap)}</div></div>${edit ? wm : ''}`, after() {
+      </div><div class="sticky">${k === 'tier' ? '<div class="choice-chips" data-tier-chips data-preview-ok style="margin-bottom:12px"></div>' : ''}${phonePreview(pv, cap)}</div></div>${edit ? wm : ''}`, after() {
         const cur = document.querySelector('[data-pt-cur]'); if (cur) {
           const $ = s => document.querySelector(s), other = $('[data-pt-cur-other]'), method = $('[data-pt-method]');
           const rule = () => { const c = cur.value === 'Other' ? (other.value.trim() || 'Other') : cur.value, n = +$('[data-pt-pts]').value || 0; $('[data-pt-rule]').textContent = `${+$('[data-pt-basis]').value || 0} ${c} = ${n} point${n === 1 ? '' : 's'}`; };
@@ -139,6 +154,23 @@
             document.querySelectorAll('[data-pt-fixed]').forEach(el => el.hidden = !fixed);
             ['[data-pt-basis]', '[data-pt-pts]'].forEach(s => { $(s).closest('.field').hidden = fixed; });
           });
+        }
+        // Tiers: show 2–5 tier blocks, unit follows the upgrade requirement, preview any tier's pass (its wallet colour).
+        const tn = document.querySelector('[data-tier-n]'); if (tn) {
+          const $$ = s => [...document.querySelectorAll(s)], req = document.querySelector('[data-tier-req]'), chips = document.querySelector('[data-tier-chips]'); let sel = 0;
+          const unit = () => req.value === 'Visits' ? 'visits' : req.value === 'Points' ? 'points' : (cur.value === 'Other' ? document.querySelector('[data-pt-cur-other]').value.trim() || 'Other' : cur.value);
+          const shown = () => $$('[data-tier]').filter(b => !b.hidden), nm = b => b.querySelector('[data-tier-name]').value.trim() || 'Tier', val = b => +b.querySelector('[data-tier-val]').value || 0;
+          const show = i => { const bl = shown(); sel = Math.min(i, bl.length - 1); const b = bl[sel], nx = bl[sel + 1];
+            g.__pass = { type: 'tier', name: document.querySelector('[data-bind-src="name"]').value || 'Program name', tier: nm(b), next: nx ? `${+(val(nx) - val(b)).toFixed(2)} ${unit()} to ${nm(nx)}` : 'Highest tier reached', pct: 0, bg: b.querySelector('[data-color]').value, logo: false };
+            document.querySelector('[data-pass-host]').innerHTML = pass({ ...g.__pass, android: document.querySelector('[data-phone]').classList.contains('android') });
+            chips.innerHTML = bl.map((x, j) => `<button class="chip ${j === sel ? 'on' : ''}" data-tier-pv="${j}">${U.esc(nm(x))}</button>`).join(''); };
+          const sync = () => { const n = +tn.value, u = unit();
+            $$('[data-tier]').forEach((b, i) => { b.hidden = i >= n; const v = b.querySelector('[data-tier-val]').value; b.querySelector('[data-tier-unit]').textContent = `(${u})`; b.querySelector('[data-tier-badge]').innerHTML = badge(v === '' ? '—' : `${v} ${u}`, 'outline'); });
+            $$('[data-tier-cur]').forEach(e => e.hidden = req.value === 'Visits'); document.querySelector('[data-tier-pts]').hidden = req.value !== 'Points'; show(sel); };
+          [tn, req, cur, document.querySelector('[data-pt-cur-other]')].forEach(e => { e.addEventListener('change', sync); e.addEventListener('input', sync); });
+          document.querySelector('[data-tier-ladder]').addEventListener('input', sync);
+          chips.addEventListener('click', e => { const c = e.target.closest('[data-tier-pv]'); if (c) show(+c.dataset.tierPv); });
+          sync();
         }
         document.querySelectorAll('[data-max-chips] .chip').forEach(c => c.addEventListener('click', () => { document.querySelector('[data-max-custom]').hidden = c.dataset.max !== 'Custom'; }));
         const s = document.querySelector('[data-save]'); if (s) s.onclick = () => { const i = document.querySelector('[data-orig]'); if (i.value !== i.dataset.orig) g.openModal('warn'); else g.toast('Saved'); };
@@ -154,9 +186,12 @@
     const p = P(ctx.opts.id), draft = p.status === 'Draft'; g.__pass = p.pass;
     const life = card({ title: 'Lifecycle', icon: 'zap', actions: status(p.status), body: draft ? `<button class="btn btn-primary btn-lg btn-block" data-toast="Program published">${icon('send', 'sm')}Publish</button>` : activeToggle('program'), cls: 'reveal-up' });
     const qrc = card({ title: 'Join QR code', icon: 'qr', sub: 'Generated the first time the program is published.', body: draft ? `<div class="empty"><div class="ill">${icon('qr', 'lg')}</div><b style="color:var(--color-text-primary)">No QR exists yet</b><span>Draft programs are invisible to customers.</span></div>` : qrPanel({ url: p.url, link: ctx.link('34-') }), cls: 'reveal-up' });
-    const st = card({ title: 'Setup', icon: 'sliders', body: setup(p.setup), cls: 'reveal-up' });
+    // Tier program setup comes from its configuration (client: number of tiers, upgrade requirement, required value + rewards & benefits per tier, automatic level-up).
+    const c = p.cfg, tierRows = p.kind === 'tier' ? [['Number of tiers', String(c.tiers.length)], ['Upgrade requirement', c.req + (c.req === 'Visits' ? '' : ` · ${c.currency}`)], ...(c.req === 'Points' ? [['Awarding method', c.method === 'Manual' ? `Manual · ${c.basis} ${c.currency} = ${c.pts} points` : `${c.perVisit} points per visit`]] : []), ['Level-up', 'Automatic']] : [];
+    const st = card({ title: 'Setup', icon: 'sliders', body: setup([...tierRows, ...p.setup]), cls: 'reveal-up' });
+    const tc = p.kind === 'tier' ? card({ title: 'Tiers', icon: 'layers', sub: 'Required value, rewards &amp; benefits and wallet colour per tier.', body: tierList(c), cls: 'reveal-up' }) : '';
     return { nav: 'Loyalty Programs', title: p.name, html: `${pageHead({ eyebrow: crumb('Loyalty Programs', ctx.link('03-')) + p.name, title: p.name, sub: `<span class="row" style="gap:8px">${badge(p.type, 'outline')}<span>${p.date}</span></span>`, actions: `${p.kind === 'points' ? `<a class="btn btn-ghost" href="${ctx.page('points-transactions')}">${icon('file', 'sm')}Transactions</a>` : ''}${walletPage[p.id] ? `<a class="btn btn-ghost" href="${ctx.link(walletPage[p.id])}">${icon('palette', 'sm')}Wallet design</a>` : `<a class="btn btn-ghost" href="${ctx.link('22-')}">${icon('palette', 'sm')}Wallet design</a>`}<a class="btn btn-primary" href="${ctx.link('15-')}">${icon('edit', 'sm')}Edit</a>` })}
-      <div class="layout-preview"><div class="stack">${life}${qrc}${st}</div><div class="sticky">${phonePreview(p.pass, p.cap)}</div></div>` };
+      <div class="layout-preview"><div class="stack">${life}${qrc}${st}${tc}</div><div class="sticky">${phonePreview(p.pass, p.cap)}</div></div>` };
   };
 
   /* ================= CAMPAIGN FORM ================= */
@@ -242,7 +277,7 @@
     const tpl = [['Digital Stamp Card', { type: 'stamp', name: 'Stamp template', reward: 'Reward', total: 10, filled: 4, logo: false }], ['Membership Card', { type: 'membership', name: 'Membership template', benefit: 'Benefit', logo: false }], ['Tier Program Pass', { type: 'tier', name: 'Tier template', tier: 'Tier', next: 'Progress line', logo: false }]];
     const trim = h => h.replace('<div class="pass-qr">', '<div class="pass-qr" style="display:none">');
     const tplCards = tpl.map(([n, p]) => `<article class="card hover reveal-up" style="padding:14px"><div style="transform:scale(.92);transform-origin:top center;margin-bottom:-22px">${trim(pass(p))}</div><div style="padding:6px 6px 2px"><b style="font-family:var(--font-display);font-size:16px">${n}</b><div class="hint">Base template · structure owned by Bonuca</div></div></article>`).join('');
-    const sub = { coffee: '1 Free Coffee', vip: '10% off every visit', club: 'Member', points: '120 pts', lunch: 'Free Lunch Menu' };
+    const sub = { coffee: '1 Free Coffee', vip: '10% Discount', club: 'Member', points: '120 pts', lunch: 'Free Lunch Menu' };
     const tiles = D.programs.map(p => `<article class="card hover wallet-tile reveal-up" data-href="${ctx.link(walletPage[p.id] || '14-')}"><div class="pass mini" style="${p.pass.bg ? `--bgp:${p.pass.bg}` : ''}"><div class="pass-top"><div class="pass-name">${p.name}</div><div class="pass-logo" style="width:28px;height:28px;font-size:14px">☕</div></div><div><div class="pass-lbl" style="margin-top:0">${{ stamp: 'Reward', membership: 'Benefit', tier: 'Current tier', points: 'Balance' }[p.kind]}</div><div class="pass-val sm">${sub[p.id]}</div></div></div><div class="meta"><span>${p.cap}</span>${status(p.status)}</div></article>`).join('');
     return { nav: 'Wallet Cards', html: `${pageHead({ eyebrow: `${icon('wallet', 'sm')} Wallet`, title: 'Wallet <span class="hl">Cards</span>', sub: 'Every field is entered once in the program’s setup. Here you choose how the pass starts (Bonuca template or custom) and preview how it renders.' })}
       <h2 class="section-title" style="margin-top:0">Base templates</h2><div class="grid g3">${tplCards}</div>
@@ -257,7 +292,7 @@
     const bg = { coffee: 'Bonuca gradient', vip: '#1B1B1F', club: 'Per-tier wallet colour', points: 'Bonuca gradient' }[p.id];
     const sw = c => c.startsWith('#') ? `<span class="row" style="gap:8px"><span class="swatch" style="width:22px;height:22px;padding:3px;border-radius:7px"><i style="--c:${c};border-radius:4px"></i></span><span class="mono">${c}</span></span>` : c === 'Bonuca gradient' ? `<span class="row" style="gap:8px"><span style="width:22px;height:22px;border-radius:7px;background:var(--wallet-gradient)"></span>${c}</span>` : c;
     const rows = [['Program Name', 'stamp', p.name, 'Pass header / title'], ['Logo', 'image', '<span class="row" style="gap:8px"><span class="pass-logo" style="width:22px;height:22px;font-size:12px;border-radius:6px">☕</span>Uploaded</span>', 'Top-left logo image'], ['Icon', 'sparkles', 'Uses logo', 'Wallet app list icon + notification icon'], ['Background', 'palette', sw(bg), 'Pass body background'], ['Hero / Strip Image', 'image', '<span class="faint">None</span>', 'Banner image across the top of the pass'], ['Text Colour', 'hash', sw('#FFFFFF'), 'Foreground text and small field labels'], ['QR Code', 'qr', 'Auto-generated', 'Bottom of the pass — not editable']];
-    const dyn = { coffee: ['Stamp grid using the chosen Stamp Icon; “X stamps to go” line; Reward Description.', 'Every confirmed employee scan (+1 stamp).'], vip: ['Benefit Description; Member Since date.', 'Static — only changes if the business edits the program.'], club: ['Current Tier name + badge; background switches to that tier’s colour; “X visits/points to [next tier]” progress line.', 'Every scan that changes the customer’s visits/points/spend total.'], points: ['Current point balance; progress bar; Next Reward name; points still needed. (Multiple upcoming levels pending a technical spike — fallback layout shown.)', 'Every confirmed points transaction.'] }[p.id];
+    const dyn = { coffee: ['Stamp grid using the chosen Stamp Icon; “X stamps to go” line; Reward Description.', 'Every confirmed employee scan (+1 stamp).'], vip: ['Benefit; Member Since date.', 'Static — only changes if the business edits the program.'], club: ['Current Tier name + badge; background switches to that tier’s colour; “X visits/points to [next tier]” progress line.', 'Every scan that changes the customer’s visits/points/spend total.'], points: ['Current point balance; progress bar; Next Reward name; points still needed. (Multiple upcoming levels pending a technical spike — fallback layout shown.)', 'Every confirmed points transaction.'] }[p.id];
     // E3: only the program's base template — no blank "Start from Scratch" canvas (not in client spec).
     const opts = `<div class="option-row" style="display:block"><div class="row" style="gap:10px"><span class="feed-ic" style="background:var(--color-accent-soft);color:var(--color-accent)">${icon('layers', 'sm')}</span><b>Base template: ${tplName}</b></div><small style="display:block;margin-top:6px">Bonuca owns the structure (stamp grid, benefit layout, tier colour switching). You customise all visuals and wording.</small></div>`;
     const table = `<div class="table-wrap"><table class="t"><thead><tr><th>Business sets</th><th>Current</th><th>Appears on the pass as</th></tr></thead><tbody>${rows.map(([a, ic, b, c]) => `<tr><td><span class="row" style="gap:10px;font-weight:600"><span class="feed-ic" style="width:28px;height:28px;border-radius:9px;background:var(--color-surface-sunken)">${icon(ic, 'sm')}</span>${a}</span></td><td>${b}</td><td class="muted">${c}</td></tr>`).join('')}</tbody></table></div>`;
@@ -266,7 +301,11 @@
         ${card({ title: 'Where the design starts', icon: 'layers', body: opts, cls: 'reveal-up' })}
         ${card({ title: 'Master field list', icon: 'sliders', sub: 'Set once in the program setup screen.', body: null, cls: 'reveal-up' }).replace('</section>', table + '</section>')}
         ${card({ title: 'Dynamic content', icon: 'zap', body: setup([['Shown besides the master fields', dyn[0]], ['What triggers an update', dyn[1]]]), cls: 'reveal-up' })}
+        ${p.kind === 'tier' ? card({ title: 'Tier wallet colours', icon: 'palette', sub: 'Silver → the wallet becomes silver. Gold → the wallet becomes gold. Pick a tier to preview its pass.', body: `<div class="stack"><div class="choice-chips" data-tier-chips data-preview-ok>${p.cfg.tiers.map(([n], i) => `<button class="chip ${i ? '' : 'on'}" data-tier-pv="${i}">${n}</button>`).join('')}</div>${tierList(p.cfg)}</div>`, cls: 'reveal-up' }) : ''}
         ${callout('', 'Wallet update status: not connected', 'Editing a master field of an Active program applies to every issued pass; the backend would push updates via APNs / Google Wallet API. No wallet integration is available in this environment.')}
-      </div><div class="sticky">${phonePreview(p.pass, p.cap, { android })}</div></div>` };
+      </div><div class="sticky">${phonePreview(p.pass, p.cap, { android })}</div></div>`, after() {
+        const ch = document.querySelector('[data-tier-chips]'); if (ch) ch.addEventListener('click', e => { const c = e.target.closest('[data-tier-pv]'); if (!c) return;
+          g.__pass = tierPass(p, p.cfg.tiers[+c.dataset.tierPv][1]); document.querySelector('[data-pass-host]').innerHTML = pass({ ...g.__pass, android: document.querySelector('[data-phone]').classList.contains('android') }); });
+      } };
   };
 })(window);

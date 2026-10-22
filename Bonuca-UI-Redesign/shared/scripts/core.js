@@ -124,9 +124,9 @@
       const n = p.total || 10, f = p.filled || 0, ic = STAMP_ICONS[p.icon || 'coffee'];
       mid = `<div class="pass-lbl">Reward</div><div class="pass-val">${esc(p.reward)}</div><div class="stamps">${Array.from({ length: n }, (_, i) => `<span class="stamp ${i < f ? 'on' : ''}" style="animation-delay:${i * 70}ms">${icon(ic)}</span>`).join('')}</div><div class="pass-lbl">Progress</div><div class="pass-val sm">${n - f} stamp${n - f === 1 ? '' : 's'} to go</div>`;
     } else if (p.type === 'membership') {
-      mid = `<div class="pass-lbl">Benefit</div><div class="pass-val">${esc(p.benefit)}</div><div class="pass-lbl">Member since</div><div class="pass-val sm">${esc(p.since || 'Jan 15, 2026')}</div>`;
+      mid = `<div class="pass-lbl">Benefit</div><div class="pass-val" data-bind="benefit">${esc(p.benefit)}</div><div class="pass-lbl">Member since</div><div class="pass-val sm">${esc(p.since || 'Jan 15, 2026')}</div>`;
     } else if (p.type === 'tier') {
-      mid = `<div class="pass-lbl">Current tier</div><div class="pass-val">${esc(p.tier || 'Member')}</div><div class="prog"><i style="--w:${p.pct || 40}%"></i></div><div class="pass-lbl">Next tier</div><div class="pass-val sm">${esc(p.next || '6 visits to Silver')}</div>`;
+      mid = `<div class="pass-lbl">Current tier</div><div class="pass-val">${esc(p.tier || 'Member')}</div><div class="prog"><i style="--w:${p.pct ?? 40}%"></i></div><div class="pass-lbl">Next tier</div><div class="pass-val sm">${esc(p.next || '6 visits to Silver')}</div>`;
     } else if (p.type === 'points') {
       mid = `<div class="pass-lbl">Balance</div><div class="pass-val">${esc(p.balance || '120 pts')}</div>${p.nextReward ? `<div class="prog"><i style="--w:${p.pct || 48}%"></i></div><div class="pass-cols"><div><div class="pass-lbl">Next reward</div><div class="pass-val sm">${esc(p.nextReward)}</div></div><div><div class="pass-lbl">Points still required</div><div class="pass-val sm">${esc(p.needed)}</div></div></div>` : `<div class="pass-lbl">Next reward</div><div class="pass-val sm">All rewards unlocked</div>`}`;
     } else if (p.type === 'voucher') {
