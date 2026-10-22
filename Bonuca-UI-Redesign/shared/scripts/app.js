@@ -68,12 +68,16 @@
   /* ---------- access states carried in the URL: ?preview (no plan selected) · ?override[=YYYY-MM-DD] (Super Admin) ---------- */
   const PREVIEW_MSG = 'Select a free trial, free plan, or paid plan to use this feature.';
   g.PREVIEW_MSG = PREVIEW_MSG;
+  // Selected plan: chosen on plan selection / subscription (demo memory), or ?plan= for review.
+  const PLAN_NAMES = { free: 'Free Plan', trial: 'Free Trial', business: 'Business Plan', pro: 'Pro Plan' };
+  g.PLAN_NAMES = PLAN_NAMES;
   function accessState(role, opts) {
     const q = new URLSearchParams(location.search), o = q.get('override');
     const d = /^\d{4}-\d{2}-\d{2}$/.test(o || '') ? new Date(o + 'T00:00:00') : null;
     const end = d && !isNaN(d) ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
     const preview = role === 'owner' && (!!opts.preview || q.get('preview') === '1'), override = role === 'owner' && !preview && q.has('override');
-    return { preview, override, overrideEnd: end, query: preview ? 'preview=1' : override ? 'override=' + encodeURIComponent(o || '') : '' };
+    const pq = q.get('plan'), plan = Object.hasOwn(PLAN_NAMES, pq || '') ? pq : g.mem.get('plan', 'trial');
+    return { preview, override, overrideEnd: end, plan, query: preview ? 'preview=1' : override ? 'override=' + encodeURIComponent(o || '') : '' };
   }
 
   const NAV = [
@@ -96,8 +100,9 @@
     const navHtml = (ctx.role === 'employee' ? NAV_EMPLOYEE : NAV).map((n, i) => [...n, ctx.role === 'employee' ? '' : groups[i]]).filter(([, , , key]) => can(ctx.role, key)).map(([label, ic, pre, , grp]) => `${grp ? `<div class="nav-label">${grp}</div>` : ''}<a href="${link(ctx.role, pre)}" class="${label === nav ? 'active' : ''}">${icon(ic)}${label}</a>`).join('');
     const planCard = emp ? '' : st.preview ? `<div class="trial-card"><b>Preview Mode</b><span>No plan selected · demo data.</span><br><a href="${link(ctx.role, '49-')}">View plans ${icon('arrowRight', 'sm')}</a></div>`
       : st.override ? `<div class="trial-card"><b>Managed by Bonuca</b><span>${st.overrideEnd ? 'Until ' + st.overrideEnd + '.' : 'No end date.'}</span></div>`
+      : st.plan !== 'trial' ? `<div class="trial-card"><b>${PLAN_NAMES[st.plan]}</b><span>Current plan.</span>${plans ? `<br><a href="${link(ctx.role, '49-')}">View plans ${icon('arrowRight', 'sm')}</a>` : ''}</div>`
       : `<div class="trial-card"><span class="ring">${g.UI.ring(4 / 14, 40, 4, 'var(--color-highlight)', 'rgba(127,127,140,.3)', '10')}</span><b>Free Trial</b><span>10 days left.</span>${plans ? `<br><a href="${link(ctx.role, '49-')}">View plans ${icon('arrowRight', 'sm')}</a>` : ''}</div>`;
-    const pill = st.preview ? `Preview Mode — <b>demo data</b>` : st.override ? `Plan managed by Bonuca${st.overrideEnd ? ` — <b>until ${st.overrideEnd}</b>` : ''}` : `Free Trial — <b>10 days left.</b>`;
+    const pill = st.preview ? `Preview Mode — <b>demo data</b>` : st.override ? `Free plan managed by Bonuca${st.overrideEnd ? ` — <b>until ${st.overrideEnd}</b>` : ''}` : st.plan !== 'trial' ? `<b>${PLAN_NAMES[st.plan]}</b>` : `Free Trial — <b>10 days left.</b>`;
     return `<div class="ambient"><i></i><i></i><i></i><div class="lines"></div></div>
 <div class="app">
   <aside class="sidebar" aria-label="Primary">
