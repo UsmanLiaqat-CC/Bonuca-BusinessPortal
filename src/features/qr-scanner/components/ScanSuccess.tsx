@@ -43,7 +43,7 @@ export function ScanSuccess({ onDone }: { onDone: () => void }) {
     <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center" aria-hidden data-testid="scan-success">
       <div className="relative">
         <div className="bn-flip flex h-28 w-44 items-center justify-center rounded-2xl shadow-card" style={{ background: 'linear-gradient(160deg, #0A112F 0%, #000000 100%)' }}>
-          <span className="bn-check flex size-14 items-center justify-center rounded-full bg-[#12805C] text-white">
+          <span className="bn-check success-burst size-14">
             <Check className="size-8" strokeWidth={3} />
           </span>
         </div>

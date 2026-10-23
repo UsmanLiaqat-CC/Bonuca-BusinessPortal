@@ -23,7 +23,7 @@ import type {
 } from '@/types/domain'
 import type { LifecycleAction } from '@/lib/lifecycle'
 import type { ScanContext, ScanInput, ScanResult } from '@/lib/scanEngine'
-import type { DashboardStats, AnalyticsStats } from '@/lib/metrics'
+import type { DashboardStats, AnalyticsStats, DateRange } from '@/lib/metrics'
 import type { LeaderboardEntry } from '@/lib/gamification'
 
 /**
@@ -159,7 +159,7 @@ export interface BusinessBackend {
   listRewards(): Promise<RewardInstance[]>
 
   // Insights (§4.1, §4.9)
-  getDashboard(): Promise<DashboardStats>
+  getDashboard(range?: DateRange): Promise<DashboardStats>
   getAnalytics(): Promise<AnalyticsStats>
 
   // Business settings & branding (§4.10, §4.12)

@@ -1,18 +1,23 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 
-export type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger'
+export type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'ink' | 'outline'
 const TONES: Record<BadgeTone, string> = {
-  neutral: 'bg-surface-2 text-muted border-line',
-  accent: 'bg-accent-soft text-accent border-transparent',
-  success: 'bg-success-soft text-success border-transparent',
-  warning: 'bg-warning-soft text-warning border-transparent',
-  danger: 'bg-danger-soft text-danger border-transparent',
+  neutral: '',
+  accent: 'blue',
+  success: 'green',
+  warning: 'amber',
+  danger: 'red',
+  ink: 'ink',
+  outline: 'outline',
 }
 
-export function Badge({ tone = 'neutral', children, className }: { tone?: BadgeTone; children: ReactNode; className?: string }) {
+/** Redesign pill badge. Coloured tones get a status dot; `live` adds the pulsing ring (e.g. Active). */
+export function Badge({ tone = 'neutral', live, dot, children, className }: { tone?: BadgeTone; live?: boolean; dot?: boolean; children: ReactNode; className?: string }) {
+  const showDot = dot ?? (tone !== 'neutral' && tone !== 'outline' && tone !== 'ink')
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap', TONES[tone], className)}>
+    <span className={cn('badge', TONES[tone], live && 'live', className)}>
+      {showDot && <i className="d" aria-hidden />}
       {children}
     </span>
   )

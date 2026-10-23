@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ShieldCheck } from 'lucide-react'
+import { CreditCard, FileText, History, Lock, Receipt, ShieldCheck, Sparkles } from 'lucide-react'
 import { useT } from '@/i18n'
 import { useAccess, useSession, SESSION_KEY } from '@/state/session'
 import { useBackend, useServices } from '@/state/services'
@@ -22,11 +22,11 @@ const MODE_LABEL = { preview: 'Preview Mode', free: 'Free Plan', trial: 'Free Tr
 const SOURCE_LABEL = { web_stripe: 'Web (Stripe)', app_store: 'iOS App Store', google_play: 'Google Play' } as const
 const OVERRIDE_LABEL = { free_access: 'Free access granted', billing_paused: 'Billing paused', custom_duration: 'Custom duration', unlimited: 'Unlimited access' } as const
 
-function BillingSection<T>({ title, queryKey, load, render }: { title: string; queryKey: string; load: () => Promise<T>; render: (d: T) => ReactNode }) {
+function BillingSection<T>({ title, icon, queryKey, load, render }: { title: string; icon: ReactNode; queryKey: string; load: () => Promise<T>; render: (d: T) => ReactNode }) {
   const q = useQuery({ queryKey: ['billing', queryKey], queryFn: load, retry: false })
   return (
-    <Card>
-      <CardHeader title={title} />
+    <Card className="reveal-up">
+      <CardHeader title={title} icon={icon} />
       <CardBody>
         {q.isPending ? (
           <Spinner />
@@ -75,16 +75,23 @@ export default function SubscriptionPage() {
 
   return (
     <>
-      <PageHeader title={t('nav.subscription')} />
-      <div className="flex flex-col gap-6">
-        <Card>
-          <CardHeader title="Current plan" actions={<Badge tone={plan.mode === 'preview' ? 'warning' : 'accent'}>{MODE_LABEL[plan.mode]}</Badge>} />
+      <PageHeader
+        title={t('nav.subscription')}
+        breadcrumb={
+          <>
+            <CreditCard className="size-[13px]" aria-hidden /> {t('nav.group.business')}
+          </>
+        }
+      />
+      <div className="flex flex-col gap-[18px]">
+        <Card className="reveal-up">
+          <CardHeader title="Current plan" icon={<Sparkles className="size-4" />} actions={<Badge tone={plan.mode === 'preview' ? 'warning' : 'accent'}>{MODE_LABEL[plan.mode]}</Badge>} />
           <CardBody className="flex flex-col gap-4">
             {managedByBonuca && plan.override && (
-              <div className="flex gap-3 rounded-lg border border-accent/40 bg-accent-soft p-4 text-sm" data-testid="override-readonly">
-                <ShieldCheck className="size-5 shrink-0 text-accent" aria-hidden />
+              <div className="callout info" data-testid="override-readonly">
+                <ShieldCheck className="size-[18px] shrink-0" aria-hidden />
                 <div>
-                  <p className="font-semibold">{t('override.banner')}</p>
+                  <b>{t('override.banner')}</b>
                   <p>
                     {OVERRIDE_LABEL[plan.override.kind]} · {plan.plan?.name} features{plan.override.endsAt ? ` until ${formatDate(plan.override.endsAt)}` : ''}.
                   </p>
@@ -92,32 +99,32 @@ export default function SubscriptionPage() {
                 </div>
               </div>
             )}
-            <dl className="grid gap-3 text-sm sm:grid-cols-3">
-              <div>
-                <dt className="text-xs text-muted">Plan</dt>
-                <dd className="font-medium">{plan.plan?.name ?? 'None selected'}</dd>
+            <dl className="setup-grid grid-cols-1 sm:grid-cols-3">
+              <div className="setup-item">
+                <dt className="mb-1 text-xs font-medium text-faint">Plan</dt>
+                <dd className="text-[14.5px] font-semibold">{plan.plan?.name ?? 'None selected'}</dd>
               </div>
               {plan.mode === 'trial' && plan.trialEndsAt && (
-                <div>
-                  <dt className="text-xs text-muted">Trial ends</dt>
-                  <dd className="font-medium">{formatDate(plan.trialEndsAt)} ({daysUntil(plan.trialEndsAt)} days)</dd>
+                <div className="setup-item">
+                  <dt className="mb-1 text-xs font-medium text-faint">Trial ends</dt>
+                  <dd className="text-[14.5px] font-semibold">{formatDate(plan.trialEndsAt)} ({daysUntil(plan.trialEndsAt)} days)</dd>
                 </div>
               )}
               {sub.source && (
-                <div>
-                  <dt className="text-xs text-muted">Purchased via</dt>
-                  <dd className="font-medium">{SOURCE_LABEL[sub.source]}</dd>
+                <div className="setup-item">
+                  <dt className="mb-1 text-xs font-medium text-faint">Purchased via</dt>
+                  <dd className="text-[14.5px] font-semibold">{SOURCE_LABEL[sub.source]}</dd>
                 </div>
               )}
               {sub.currentPeriodEnd && (
-                <div>
-                  <dt className="text-xs text-muted">{sub.cancelAtPeriodEnd ? 'Ends on' : 'Renews on'}</dt>
-                  <dd className="font-medium">{formatDate(sub.currentPeriodEnd)}</dd>
+                <div className="setup-item">
+                  <dt className="mb-1 text-xs font-medium text-faint">{sub.cancelAtPeriodEnd ? 'Ends on' : 'Renews on'}</dt>
+                  <dd className="text-[14.5px] font-semibold">{formatDate(sub.currentPeriodEnd)}</dd>
                 </div>
               )}
             </dl>
-            {plan.trialExpired && <p className="text-sm text-muted">{t('trial.expired')}</p>}
-            <p className="text-xs text-muted">Changing plans never deletes customers, programs or transactions — only feature access changes.</p>
+            {plan.trialExpired && <p className="callout">{t('trial.expired')}</p>}
+            <p className="hint">Changing plans never deletes customers, programs or transactions — only feature access changes.</p>
             {plan.mode === 'paid' && !locked && (
               <div className="flex flex-wrap gap-2">
                 <GuardedButton permission="subscription.manage" extra={lockDecision} variant="secondary" onClick={() => setConfirm('downgrade')}>Downgrade to Free</GuardedButton>
@@ -128,23 +135,27 @@ export default function SubscriptionPage() {
         </Card>
 
         <div>
-          <h2 className="mb-3 text-base font-semibold">{plan.mode === 'paid' ? 'Change plan' : 'Upgrade'}</h2>
-          {actionsDisabledNote && <p className="mb-3 text-sm text-muted">{actionsDisabledNote}</p>}
+          <h2 className="section-title mt-3.5">{plan.mode === 'paid' ? 'Change plan' : 'Upgrade'}</h2>
+          {actionsDisabledNote && (
+            <p className="lock-overlay mb-3.5">
+              <Lock className="size-4 shrink-0" aria-hidden /> {actionsDisabledNote}
+            </p>
+          )}
           <PlanOptions
             catalog={session.catalog}
             currentPlanId={plan.mode === 'preview' ? null : plan.plan?.id}
             renderFree={() =>
               plan.mode === 'free' ? null : plan.mode === 'paid' ? null : (
-                <GuardedButton permission="subscription.manage" extra={lockDecision} variant="secondary" className="w-full" loading={busy === 'free'} onClick={() => run('free', () => backend.choosePlan('free'), 'Free Plan activated.')}>
+                <GuardedButton permission="subscription.manage" extra={lockDecision} variant="secondary" className="btn-block" loading={busy === 'free'} onClick={() => run('free', () => backend.choosePlan('free'), 'Free Plan activated.')}>
                   Choose Free Plan
                 </GuardedButton>
               )
             }
             renderTrial={() =>
               sub.trialEndsAt ? (
-                <p className="text-xs text-muted">{plan.mode === 'trial' ? 'Trial in progress.' : 'The free trial has already been used.'}</p>
+                <p className="hint text-center">{plan.mode === 'trial' ? 'Trial in progress.' : 'The free trial has already been used.'}</p>
               ) : (
-                <GuardedButton permission="subscription.manage" extra={lockDecision} className="w-full" loading={busy === 'trial'} onClick={() => run('trial', () => backend.choosePlan('trial'), 'Free Trial started.')}>
+                <GuardedButton permission="subscription.manage" extra={lockDecision} className="btn-block" loading={busy === 'trial'} onClick={() => run('trial', () => backend.choosePlan('trial'), 'Free Trial started.')}>
                   Start Free Trial
                 </GuardedButton>
               )
@@ -153,7 +164,8 @@ export default function SubscriptionPage() {
               plan.mode === 'paid' && plan.plan?.id === p.id ? null : (
                 <GuardedButton
                   permission="subscription.manage"
-                  className="w-full"
+                  variant="secondary"
+                  className="btn-block"
                   loading={busy === p.id}
                   onClick={() =>
                     run(p.id, async () => {
@@ -167,7 +179,7 @@ export default function SubscriptionPage() {
               )
             }
           />
-          <div className="mt-4">
+          <div className="mt-[18px]">
             <IntegrationNotice title="Payment rails">
               Web purchases use Stripe checkout (not connected in this environment). Mobile purchases use the App Store / Google Play in-app purchase inside the Bonuca app. A subscription belongs to the business account and reads the same everywhere; cross-platform reconciliation is pending technical/legal review.
             </IntegrationNotice>
@@ -175,13 +187,15 @@ export default function SubscriptionPage() {
         </div>
 
         {access.can('settings.billing') ? (
-          <div className="grid gap-6 lg:grid-cols-3">
-            <BillingSection title="Invoices" queryKey="invoices" load={() => integrations.billing.listInvoices()} render={(list) => (list.length ? <ul className="text-sm">{list.map((i) => <li key={i.id}>{formatDate(i.date)} · {i.amount} · {i.status}</li>)}</ul> : <p className="text-sm text-muted">No invoices.</p>)} />
-            <BillingSection title="Payment history" queryKey="payments" load={() => integrations.billing.listPayments()} render={(list) => (list.length ? <ul className="text-sm">{list.map((p) => <li key={p.id}>{formatDate(p.date)} · {p.amount} · {p.status}</li>)}</ul> : <p className="text-sm text-muted">No payments.</p>)} />
-            <BillingSection title="Billing information" queryKey="info" load={() => integrations.billing.getBillingInfo()} render={(info) => (info ? <dl className="text-sm"><dt className="text-muted">Name</dt><dd>{info.name}</dd><dt className="text-muted">Email</dt><dd>{info.email}</dd><dt className="text-muted">Payment method</dt><dd>{info.paymentMethod}</dd></dl> : <p className="text-sm text-muted">No billing information on file.</p>)} />
+          <div className="grid gap-[18px] lg:grid-cols-3">
+            <BillingSection title="Invoices" icon={<FileText className="size-4" />} queryKey="invoices" load={() => integrations.billing.listInvoices()} render={(list) => (list.length ? <ul className="text-sm">{list.map((i) => <li key={i.id}>{formatDate(i.date)} · {i.amount} · {i.status}</li>)}</ul> : <p className="text-sm text-muted">No invoices.</p>)} />
+            <BillingSection title="Payment history" icon={<History className="size-4" />} queryKey="payments" load={() => integrations.billing.listPayments()} render={(list) => (list.length ? <ul className="text-sm">{list.map((p) => <li key={p.id}>{formatDate(p.date)} · {p.amount} · {p.status}</li>)}</ul> : <p className="text-sm text-muted">No payments.</p>)} />
+            <BillingSection title="Billing information" icon={<Receipt className="size-4" />} queryKey="info" load={() => integrations.billing.getBillingInfo()} render={(info) => (info ? <dl className="text-sm"><dt className="text-muted">Name</dt><dd>{info.name}</dd><dt className="text-muted">Email</dt><dd>{info.email}</dd><dt className="text-muted">Payment method</dt><dd>{info.paymentMethod}</dd></dl> : <p className="text-sm text-muted">No billing information on file.</p>)} />
           </div>
         ) : (
-          <p className="text-sm text-muted">Invoices, payment history and billing information are visible to the Owner.</p>
+          <p className="lock-overlay">
+            <Lock className="size-4 shrink-0" aria-hidden /> Invoices, payment history and billing information are visible to the Owner.
+          </p>
         )}
       </div>
       <ConfirmDialog

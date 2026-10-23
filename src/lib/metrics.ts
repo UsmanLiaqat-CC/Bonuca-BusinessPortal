@@ -1,5 +1,5 @@
 import type { BusinessDataset, Transaction } from '@/types/domain'
-import { addDays, dayKey, monthKey, startOfDay, startOfMonth, startOfWeek } from './dates'
+import { DAY_MS, addDays, dayKey, monthKey, startOfDay, startOfMonth, startOfWeek } from './dates'
 import { rewardStatus } from './rewards'
 
 /**
@@ -12,7 +12,54 @@ function visitKeys(txs: Transaction[]): Set<string> {
   return new Set(txs.map((t) => `${t.customerId}|${dayKey(new Date(t.createdAt))}`))
 }
 
+/** Inclusive calendar-day range, `YYYY-MM-DD` (the dashboard filter chips). */
+export interface DateRange {
+  from: string
+  to: string
+}
+
+export interface PeriodStats {
+  newMembers: number
+  scans: number
+  visits: number
+  returningCustomers: number
+  newWalletCards: number
+}
+
+function inRange(iso: string, r: DateRange): boolean {
+  const k = dayKey(new Date(iso))
+  return k >= r.from && k <= r.to
+}
+
+/** The equally long range that ends the day before `r` starts (trend baseline). */
+export function previousRange(r: DateRange): DateRange {
+  const from = new Date(`${r.from}T00:00:00`)
+  const to = new Date(`${r.to}T00:00:00`)
+  const days = Math.round((to.getTime() - from.getTime()) / DAY_MS) + 1
+  return { from: dayKey(addDays(from, -days)), to: dayKey(addDays(from, -1)) }
+}
+
+function periodStats(ds: BusinessDataset, r: DateRange): PeriodStats {
+  const txs = ds.transactions.filter((t) => inRange(t.createdAt, r))
+  const perCustomer = new Map<string, number>()
+  for (const key of visitKeys(txs)) {
+    const id = key.split('|')[0]!
+    perCustomer.set(id, (perCustomer.get(id) ?? 0) + 1)
+  }
+  return {
+    newMembers: ds.customers.filter((c) => inRange(c.createdAt, r)).length,
+    scans: txs.length,
+    visits: visitKeys(txs).size,
+    returningCustomers: [...perCustomer.values()].filter((n) => n >= 2).length,
+    newWalletCards: ds.memberships.filter((m) => inRange(m.joinedAt, r)).length,
+  }
+}
+
 export interface DashboardStats {
+  /** Figures for the selected filter range and the equally long range before it (trend baseline). */
+  range: DateRange
+  period: PeriodStats
+  previous: PeriodStats
   totalMembers: number
   newToday: number
   newThisWeek: number
@@ -29,7 +76,14 @@ export interface DashboardStats {
   topPrograms: { name: string; scans: number; members: number }[]
 }
 
-export function dashboardStats(ds: BusinessDataset, now: Date = new Date()): DashboardStats {
+/** Default dashboard filter: this month (matches the "This Month" chip). */
+export function defaultRange(now: Date): DateRange {
+  const from = startOfMonth(now)
+  const to = new Date(from.getFullYear(), from.getMonth() + 1, 0)
+  return { from: dayKey(from), to: dayKey(to) }
+}
+
+export function dashboardStats(ds: BusinessDataset, now: Date = new Date(), range: DateRange = defaultRange(now)): DashboardStats {
   const today = startOfDay(now)
   const week = startOfWeek(now)
   const month = startOfMonth(now)
@@ -44,7 +98,7 @@ export function dashboardStats(ds: BusinessDataset, now: Date = new Date()): Das
   const programName = new Map(ds.programs.map((p) => [p.id, p.name]))
   const membershipDistribution = ds.programs
     .filter((p) => p.status !== 'archived')
-    .map((p) => ({ name: p.name, value: ds.memberships.filter((m) => m.programId === p.id).length }))
+    .map((p) => ({ name: p.name, value: ds.memberships.filter((m) => m.programId === p.id && inRange(m.joinedAt, range)).length }))
     .filter((d) => d.value > 0)
 
   const growthStart = addDays(today, -29)
@@ -74,14 +128,17 @@ export function dashboardStats(ds: BusinessDataset, now: Date = new Date()): Das
   const topPrograms = ds.programs
     .map((p) => ({
       name: programName.get(p.id) ?? p.id,
-      scans: ds.transactions.filter((t) => t.programId === p.id).length,
-      members: ds.memberships.filter((m) => m.programId === p.id).length,
+      scans: ds.transactions.filter((t) => t.programId === p.id && inRange(t.createdAt, range)).length,
+      members: ds.memberships.filter((m) => m.programId === p.id && inRange(m.joinedAt, range)).length,
     }))
     .filter((p) => p.scans > 0 || p.members > 0)
     .sort((a, b) => b.scans - a.scans)
     .slice(0, 5)
 
   return {
+    range,
+    period: periodStats(ds, range),
+    previous: periodStats(ds, previousRange(range)),
     totalMembers: ds.customers.length,
     newToday: created.filter((d) => d >= today).length,
     newThisWeek: created.filter((d) => d >= week).length,

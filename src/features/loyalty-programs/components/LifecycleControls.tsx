@@ -19,16 +19,16 @@ export function LifecycleControls({ status, onAction, pending, noun = 'program' 
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex items-center gap-2 text-sm text-muted">
         Status: <LifecycleBadge status={status} />
       </div>
       {status === 'draft' && (
         <GuardedButton permission="programs.manage" onClick={() => setConfirm('publish')} loading={pending}>
-          <Send className="size-4" aria-hidden /> Publish
+          <Send className="size-[15px]" aria-hidden /> Publish
         </GuardedButton>
       )}
       {(status === 'active' || status === 'paused') && (
-        <div className="rounded-lg border border-line p-3">
+        <div className="flex flex-col gap-2">
           <Toggle
             label={status === 'active' ? 'Enabled' : 'Disabled (paused)'}
             description={status === 'active' ? 'Turn off to pause temporarily. Members keep their cards; scans show "temporarily unavailable".' : 'Turn on to resume enrolment and earning.'}
@@ -36,15 +36,15 @@ export function LifecycleControls({ status, onAction, pending, noun = 'program' 
             disabled={!manage.allowed || pending}
             onChange={(on) => onAction(on ? 'enable' : 'disable')}
           />
-          {!manage.allowed && <p className="mt-2 text-xs text-muted">{manage.message}</p>}
+          {!manage.allowed && <p className="lock-note inline-flex text-xs text-warning">{manage.message}</p>}
         </div>
       )}
       {status !== 'archived' && (
         <GuardedButton permission="programs.manage" variant="secondary" onClick={() => setConfirm('archive')}>
-          <Archive className="size-4" aria-hidden /> Archive
+          <Archive className="size-[15px]" aria-hidden /> Archive
         </GuardedButton>
       )}
-      {status === 'archived' && <p className="text-sm text-muted">This {noun} is permanently retired. Its data is kept.</p>}
+      {status === 'archived' && <p className="lock-overlay">This {noun} is permanently retired. Its data is kept.</p>}
       <ConfirmDialog
         open={confirm !== null}
         onClose={() => setConfirm(null)}

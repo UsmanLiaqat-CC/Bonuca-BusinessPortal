@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Gift } from 'lucide-react'
+import { Gift, Sparkles } from 'lucide-react'
 import type { RewardStatus } from '@/types/domain'
 import { useT } from '@/i18n'
 import { useBackend } from '@/state/services'
@@ -36,8 +36,15 @@ export default function RewardsPage() {
 
   return (
     <>
-      <PageHeader title={t('nav.rewards')} />
-      <div className="mb-6">
+      <PageHeader
+        title={t('nav.rewards')}
+        breadcrumb={
+          <>
+            <Gift className="size-[13px]" aria-hidden /> {t('nav.group.engagement')}
+          </>
+        }
+      />
+      <div>
         <Tabs label="Rewards sections" value={tab} onChange={setTab} items={[{ value: 'rewards', label: 'Rewards' }, { value: 'surprise', label: 'Surprise rewards' }]} />
       </div>
       {tab === 'rewards' ? (
@@ -46,8 +53,8 @@ export default function RewardsPage() {
             const counts = countByStatus(list)
             const shown = list.filter((r) => status === 'all' || rewardStatus(r) === status).sort((a, b) => b.issuedAt.localeCompare(a.issuedAt))
             return (
-              <Card>
-                <div className="px-4 pt-3">
+              <Card className="reveal-up overflow-hidden">
+                <div className="px-[22px] pt-4 [&_.tabs]:mb-4">
                   <Tabs label="Filter by state" value={status} onChange={setStatus} items={[{ value: 'all', label: 'All', count: list.length }, ...REWARD_STATUSES.map((s) => ({ value: s, label: LABEL[s], count: counts[s] }))]} />
                 </div>
                 {shown.length === 0 ? (
@@ -59,12 +66,12 @@ export default function RewardsPage() {
                     rowKey={(r) => r.id}
                     onRowClick={(r) => navigate(`/app/customers/${r.customerId}`)}
                     columns={[
-                      { key: 'reward', header: 'Reward', cell: (r) => <span className="font-medium">{r.name}</span> },
+                      { key: 'reward', header: 'Reward', cell: (r) => <span className="person"><span className="feed-ic bg-highlight-soft text-[#9A7300] dark:text-highlight" aria-hidden><Gift className="size-4" /></span>{r.name}</span> },
                       { key: 'customer', header: 'Customer', cell: (r) => names.get(r.customerId) ?? r.customerId },
                       { key: 'source', header: 'Source', hideOnMobile: true, cell: (r) => `${SOURCE[r.source]}${r.programId || r.campaignId ? ` · ${sources.get(r.programId ?? r.campaignId ?? '') ?? ''}` : ''}` },
                       { key: 'status', header: 'State', cell: (r) => <RewardBadge status={rewardStatus(r)} /> },
-                      { key: 'issued', header: 'Issued', hideOnMobile: true, cell: (r) => formatDate(r.issuedAt) },
-                      { key: 'expires', header: 'Expires', hideOnMobile: true, cell: (r) => formatDate(r.expiresAt) },
+                      { key: 'issued', header: 'Issued', hideOnMobile: true, cell: (r) => <span className="text-muted">{formatDate(r.issuedAt)}</span> },
+                      { key: 'expires', header: 'Expires', hideOnMobile: true, cell: (r) => <span className="text-muted">{formatDate(r.expiresAt)}</span> },
                     ]}
                   />
                 )}
@@ -77,9 +84,9 @@ export default function RewardsPage() {
           {(list) => {
             const editable = list.filter((p) => p.status !== 'archived')
             return editable.length === 0 ? (
-              <EmptyState title="No programs" body="Surprise rewards are configured per program and are off by default." />
+              <EmptyState icon={<Sparkles className="size-6" />} title="No programs" body="Surprise rewards are configured per program and are off by default." />
             ) : (
-              <div className="grid gap-6 lg:grid-cols-2">
+              <div className="grid gap-[18px] lg:grid-cols-2">
                 {editable.map((p) => (
                   <SurpriseEditor key={`${p.id}-${p.updatedAt}-${JSON.stringify(p.surprise)}`} program={p} />
                 ))}

@@ -22,14 +22,14 @@ export function ToggleNumber<T extends FieldValues>({
   const enabled = form.watch(toggleName) as boolean
   const error = (get(form.formState.errors, numberName) as { message?: string } | undefined)?.message
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-line p-3">
-      <Controller control={form.control} name={toggleName} render={({ field }) => <Toggle label={label} description={description} checked={!!field.value} onChange={field.onChange} />} />
+    <div className="flex flex-col gap-2 reveal">
+      <Controller control={form.control} name={toggleName} render={({ field }) => <Toggle plain label={label} description={description} checked={!!field.value} onChange={field.onChange} />} />
       {enabled && (
         <label className="flex flex-wrap items-center gap-2 text-sm">
           <span className="sr-only">{`${label} — ${unit}`}</span>
           <Input type="number" min={1} className="w-28" aria-label={`${label} (${unit})`} aria-invalid={error ? true : undefined} {...form.register(numberName, { setValueAs: toNullableNumber })} />
           <span className="text-muted">{unit}</span>
-          {error && <span className="w-full text-xs text-danger" role="alert">{error}</span>}
+          {error && <span className="w-full error-msg" role="alert">{error}</span>}
         </label>
       )}
     </div>

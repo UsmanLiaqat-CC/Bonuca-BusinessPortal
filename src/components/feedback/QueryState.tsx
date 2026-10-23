@@ -23,9 +23,11 @@ export function QueryState<T>({
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div role="alert" className="flex flex-col items-center gap-3 rounded-card border border-danger/30 bg-danger-soft px-6 py-8 text-center">
-      <AlertTriangle className="size-6 text-danger" aria-hidden />
-      <p className="max-w-md text-sm">{message}</p>
+    <div role="alert" className="card empty border-danger/30">
+      <span className="ill bg-danger-soft text-danger">
+        <AlertTriangle className="size-6" aria-hidden />
+      </span>
+      <p className="max-w-md text-sm text-fg">{message}</p>
       {onRetry && (
         <Button variant="secondary" size="sm" onClick={onRetry}>
           Try again
@@ -37,10 +39,14 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
 
 export function EmptyState({ icon, title, body, action }: { icon?: ReactNode; title: string; body?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-card border border-dashed border-line px-6 py-10 text-center">
-      {icon && <div className="text-muted">{icon}</div>}
-      <p className="font-medium">{title}</p>
-      {body && <div className="max-w-md text-sm text-muted">{body}</div>}
+    <div className="empty rounded-card border border-dashed border-line-strong bg-surface-muted py-10">
+      {icon && (
+        <span className="ill" aria-hidden>
+          {icon}
+        </span>
+      )}
+      <p className="font-display text-base font-semibold tracking-tight text-fg">{title}</p>
+      {body && <div className="max-w-md text-sm">{body}</div>}
       {action && <div className="mt-2">{action}</div>}
     </div>
   )

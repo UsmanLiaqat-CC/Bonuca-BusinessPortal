@@ -1,20 +1,23 @@
-import { forwardRef, type ButtonHTMLAttributes } from 'react'
+import { forwardRef, type ButtonHTMLAttributes, type PointerEvent } from 'react'
 import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
+/** Redesign button styles (`.btn-*` in redesign/styles/app.css). */
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'ink' | 'soft'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-accent text-on-accent hover:bg-accent-hover border border-transparent',
-  secondary: 'bg-surface text-fg border border-line hover:bg-surface-2',
-  ghost: 'bg-transparent text-fg border border-transparent hover:bg-surface-2',
-  danger: 'bg-danger text-white border border-transparent hover:opacity-90',
+  primary: 'btn-primary',
+  secondary: 'btn-ghost',
+  ghost: 'btn-text',
+  danger: 'btn-danger',
+  ink: 'btn-ink',
+  soft: 'btn-soft',
 }
 const SIZES: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-sm gap-1.5',
-  md: 'h-10 px-4 text-sm gap-2',
-  lg: 'h-12 px-6 text-base gap-2',
+  sm: 'btn-sm',
+  md: '',
+  lg: 'btn-lg',
 }
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -23,21 +26,37 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean
 }
 
-export const buttonClass = (variant: ButtonVariant = 'primary', size: ButtonSize = 'md', extra?: string) =>
-  cn(
-    'inline-flex items-center justify-center rounded-lg font-medium transition-colors select-none whitespace-nowrap',
-    'disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
-    VARIANTS[variant],
-    SIZES[size],
-    extra,
-  )
+export const buttonClass = (variant: ButtonVariant = 'primary', size: ButtonSize = 'md', extra?: string) => cn('btn', VARIANTS[variant], SIZES[size], extra)
+
+/** Click ripple from the redesign. Purely cosmetic; skipped when the user prefers reduced motion. */
+export function ripple(e: PointerEvent<HTMLElement>) {
+  const el = e.currentTarget
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+  const r = el.getBoundingClientRect()
+  const d = Math.max(r.width, r.height)
+  const s = document.createElement('span')
+  s.className = 'ripple'
+  s.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`
+  el.appendChild(s)
+  window.setTimeout(() => s.remove(), 600)
+}
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = 'primary', size = 'md', loading, className, children, disabled, type = 'button', ...rest },
+  { variant = 'primary', size = 'md', loading, className, children, disabled, type = 'button', onPointerDown, ...rest },
   ref,
 ) {
   return (
-    <button ref={ref} type={type} className={buttonClass(variant, size, className)} disabled={disabled || loading} {...rest}>
+    <button
+      ref={ref}
+      type={type}
+      className={buttonClass(variant, size, className)}
+      disabled={disabled || loading}
+      onPointerDown={(e) => {
+        ripple(e)
+        onPointerDown?.(e)
+      }}
+      {...rest}
+    >
       {loading && <Loader2 className="size-4 animate-spin" aria-hidden />}
       {children}
     </button>

@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/Field'
 import { useT } from '@/i18n'
 import { cn } from '@/lib/cn'
 
-/** Text input with a leading icon; password inputs get a show/hide toggle. */
+/** Text input with a leading icon (redesign `.input-wrap`); password inputs get a show/hide toggle. */
 export const IconInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & { icon: LucideIcon }>(function IconInput(
   { icon: Icon, type, className, ...rest },
   ref,
@@ -13,19 +13,15 @@ export const IconInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLIn
   const [visible, setVisible] = useState(false)
   const isPassword = type === 'password'
   return (
-    <div className="relative">
-      <Icon className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted" aria-hidden />
-      <Input ref={ref} type={isPassword && visible ? 'text' : type} className={cn('h-12 rounded-xl pl-10 text-[15px]', isPassword && 'pr-11', className)} {...rest} />
+    <div className="input-wrap">
+      <Icon className="pointer-events-none absolute top-1/2 left-3.5 size-[18px] -translate-y-1/2 text-faint" aria-hidden />
+      <Input ref={ref} type={isPassword && visible ? 'text' : type} className={cn('pl-[42px]', isPassword && 'pr-12', className)} {...rest} />
       {isPassword && (
-        <button
-          type="button"
-          onClick={() => setVisible((v) => !v)}
-          aria-pressed={visible}
-          aria-label={visible ? t('auth.hidePassword') : t('auth.showPassword')}
-          className="absolute top-1/2 right-2 -translate-y-1/2 rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-fg"
-        >
-          {visible ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
-        </button>
+        <span className="trail">
+          <button type="button" onClick={() => setVisible((v) => !v)} aria-pressed={visible} aria-label={visible ? t('auth.hidePassword') : t('auth.showPassword')} className="icon-btn">
+            {visible ? <EyeOff className="size-[15px]" aria-hidden /> : <Eye className="size-[15px]" aria-hidden />}
+          </button>
+        </span>
       )}
     </div>
   )

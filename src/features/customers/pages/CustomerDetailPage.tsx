@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { CalendarDays, ChevronRight, Gift, History, ScanLine, Stamp, StickyNote, UserRound } from 'lucide-react'
 import { useT } from '@/i18n'
 import { useAccess } from '@/state/session'
 import { useToast } from '@/state/toast'
@@ -64,27 +65,33 @@ export default function CustomerDetailPage() {
         const c = d.customer
         return (
           <>
-            <PageHeader title={c.name || c.customerNumber} description={`Customer ID ${c.customerNumber}`} breadcrumb={<Link to="/app/customers" className="hover:underline">{full ? t('nav.customers') : t('nav.customerInfo')}</Link>} />
-            <div className="mb-6 grid gap-4 sm:grid-cols-3">
-              <StatCard label="Number of scans" value={d.scanCount} />
-              <StatCard label="Last visit" value={<span className="text-lg">{formatDate(d.lastVisit)}</span>} />
-              <StatCard label="Available rewards" value={d.rewards.filter((r) => rewardStatus(r) === 'available').length} />
+            <PageHeader title={c.name || c.customerNumber} description={`Customer ID ${c.customerNumber}`} breadcrumb={
+                <>
+                  <Link to="/app/customers">{full ? t('nav.customers') : t('nav.customerInfo')}</Link>
+                  <ChevronRight className="size-[13px]" aria-hidden />
+                  <span className="mono">{c.customerNumber}</span>
+                </>
+              } />
+            <div className="mb-[18px] grid gap-[18px] sm:grid-cols-3">
+              <StatCard label="Number of scans" value={d.scanCount} icon={<ScanLine className="size-[15px]" />} feature />
+              <StatCard label="Last visit" value={<span className="text-2xl">{formatDate(d.lastVisit)}</span>} icon={<CalendarDays className="size-[15px]" />} />
+              <StatCard label="Available rewards" value={d.rewards.filter((r) => rewardStatus(r) === 'available').length} icon={<Gift className="size-[15px]" />} />
             </div>
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-[18px] lg:grid-cols-2">
               {full && (
                 <Card>
-                  <CardHeader title="Profile" />
+                  <CardHeader title="Profile" icon={<UserRound className="size-4" />} />
                   <CardBody>
-                    <dl className="grid gap-3 sm:grid-cols-2 text-sm">
+                    <dl className="setup-grid grid-cols-1 sm:grid-cols-2">
                       {[
                         ['Email', c.email],
                         ['Phone', c.phone],
                         ['Birthday', c.birthday ? formatDate(c.birthday) : ''],
                         ['Joined', formatDate(c.createdAt)],
                       ].map(([k, v]) => (
-                        <div key={k}>
-                          <dt className="text-xs text-muted">{k}</dt>
-                          <dd>{v || '—'}</dd>
+                        <div key={k} className="setup-item">
+                          <dt className="mb-1 text-xs font-medium text-faint">{k}</dt>
+                          <dd className="font-semibold break-words">{v || '—'}</dd>
                         </div>
                       ))}
                     </dl>
@@ -92,27 +99,27 @@ export default function CustomerDetailPage() {
                 </Card>
               )}
               <Card>
-                <CardHeader title="Memberships" description="Programs, current tier and balances." />
+                <CardHeader title="Memberships" icon={<Stamp className="size-4" />} description="Programs, current tier and balances." />
                 <CardBody>
                   {d.memberships.length === 0 ? (
                     <p className="text-sm text-muted">Not enrolled in any program.</p>
                   ) : (
                     <ul className="flex flex-col gap-3">
                       {d.memberships.map(({ membership: m, program: p }) => (
-                        <li key={m.id} className="rounded-lg border border-line p-3 text-sm">
-                          <p className="font-medium">{p.name}</p>
+                        <li key={m.id} className="reveal text-sm">
+                          <p className="font-display text-[15px] font-semibold">{p.name}</p>
                           <p className="text-muted">{membershipLine(m, p)}</p>
                           {p.type === 'points' && (
                             // Full multi-level breakdown lives here (OI-07 fallback).
                             <ul className="mt-2 flex flex-wrap gap-2 text-xs">
                               {sortedRewards(p.config).map((r) => (
-                                <li key={r.id} className={m.points >= r.pointsRequired ? 'rounded bg-success-soft px-2 py-0.5 text-success' : 'rounded bg-surface-2 px-2 py-0.5 text-muted'}>
+                                <li key={r.id} className={m.points >= r.pointsRequired ? 'badge green' : 'badge'}>
                                   {r.pointsRequired} pts · {r.name}
                                 </li>
                               ))}
                             </ul>
                           )}
-                          <p className="mt-1 font-mono text-xs text-muted">Pass {m.passCode}</p>
+                          <p className="mono mt-2 text-xs text-faint">Pass {m.passCode}</p>
                         </li>
                       ))}
                     </ul>
@@ -120,15 +127,15 @@ export default function CustomerDetailPage() {
                 </CardBody>
               </Card>
               <Card>
-                <CardHeader title="Rewards" />
+                <CardHeader title="Rewards" icon={<Gift className="size-4" />} />
                 <CardBody>
                   {d.rewards.length === 0 ? (
-                    <p className="text-sm text-muted">No rewards yet.</p>
+                    <p className="empty py-4">No rewards yet.</p>
                   ) : (
-                    <ul className="divide-y divide-line">
+                    <ul>
                       {d.rewards.map((r) => (
-                        <li key={r.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                          <span>
+                        <li key={r.id} className="kv">
+                          <span className="text-fg">
                             {r.name} <span className="text-xs text-muted">· {r.source.replace('_', ' ')}</span>
                           </span>
                           <RewardBadge status={rewardStatus(r)} />
@@ -140,21 +147,21 @@ export default function CustomerDetailPage() {
               </Card>
               {full && (
                 <Card>
-                  <CardHeader title="Notes" />
+                  <CardHeader title="Notes" icon={<StickyNote className="size-4" />} />
                   <CardBody>
                     <Notes key={`${c.id}-${c.notes}`} id={c.id} initial={c.notes} />
                   </CardBody>
                 </Card>
               )}
               <Card className="lg:col-span-2">
-                <CardHeader title="Visit history" />
+                <CardHeader title="Visit history" icon={<History className="size-4" />} />
                 <CardBody>
                   {d.transactions.length === 0 ? (
                     <EmptyState title="No visits yet" />
                   ) : (
-                    <ul className="divide-y divide-line">
+                    <ul className="timeline">
                       {d.transactions.map((tx) => (
-                        <li key={tx.id} className="flex flex-wrap justify-between gap-2 py-2 text-sm">
+                        <li key={tx.id} className="tl-item flex-wrap">
                           <span>
                             {TX_LABEL[tx.kind]}
                             {tx.pointsAdded ? ` · +${tx.pointsAdded} pts` : ''}

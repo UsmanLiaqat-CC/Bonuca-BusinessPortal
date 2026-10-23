@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useQueryClient } from '@tanstack/react-query'
+import { AlertCircle, ArrowRight, Lock, Mail, Sparkles } from 'lucide-react'
 import { useI18n } from '@/i18n'
 import { useBackend } from '@/state/services'
 import { SESSION_KEY } from '@/state/session'
@@ -8,10 +9,12 @@ import { DEV_CODE_KEY } from './VerifyEmailPage'
 import { registerSchema, type RegisterValues, PASSWORD_RULE_MESSAGE } from '@/schemas/auth'
 import { zodResolver } from '@/lib/forms'
 import { errorMessage } from '@/lib/errors'
+import { cn } from '@/lib/cn'
 import { COUNTRIES } from '@/mocks/countries'
 import { Field, Input, Select, Checkbox } from '@/components/ui/Field'
 import { Button } from '@/components/ui/Button'
 import { AuthLayout } from '../components/AuthLayout'
+import { IconInput } from '../components/IconInput'
 
 /** Spec §1.2 registration form. "Create Account" → verification email (§1.3). */
 export default function RegisterPage() {
@@ -41,50 +44,64 @@ export default function RegisterPage() {
   return (
     <AuthLayout
       title={t('auth.register.title')}
+      eyebrow={
+        <>
+          <Sparkles className="size-[13px]" aria-hidden /> {t('auth.register.eyebrow')}
+        </>
+      }
       footer={
         <>
           {t('auth.haveAccount')}{' '}
-          <Link to="/login" className="font-medium text-accent hover:underline">
+          <Link to="/login" className="link underline-hl text-fg">
             {t('landing.login')}
           </Link>
         </>
       }
     >
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-[18px]">
         <Field label={t('auth.fullName')} required error={e.fullName?.message}>
           {(p) => <Input {...p} autoComplete="name" {...register('fullName')} />}
         </Field>
         <Field label={t('auth.email')} required error={e.email?.message}>
-          {(p) => <Input {...p} type="email" autoComplete="email" {...register('email')} />}
+          {(p) => <IconInput {...p} icon={Mail} type="email" autoComplete="email" placeholder="you@business.com" {...register('email')} />}
         </Field>
         <Field label={t('auth.password')} required error={e.password?.message} hint={PASSWORD_RULE_MESSAGE}>
-          {(p) => <Input {...p} type="password" autoComplete="new-password" {...register('password')} />}
+          {(p) => <IconInput {...p} icon={Lock} type="password" autoComplete="new-password" {...register('password')} />}
         </Field>
-        <Field label={t('auth.country')} required error={e.country?.message} hint="Used to suggest your language and program currency later.">
-          {(p) => (
-            <Select
-              {...p}
-              {...register('country')}
-            >
-              <option value="">Select…</option>
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-        <Field label={t('auth.phone')} optional error={e.phone?.message}>
-          {(p) => <Input {...p} type="tel" autoComplete="tel" {...register('phone')} />}
-        </Field>
-        <div>
-          <Checkbox label={t('auth.acceptTerms')} {...register('acceptTerms')} aria-invalid={e.acceptTerms ? true : undefined} />
-          {e.acceptTerms && <p className="mt-1 text-xs text-danger" role="alert">{e.acceptTerms.message}</p>}
+        <div className="form-grid">
+          <Field label={t('auth.country')} required error={e.country?.message} hint="Used to suggest your language and program currency later.">
+            {(p) => (
+              <Select {...p} {...register('country')}>
+                <option value="">Select…</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+          <Field label={t('auth.phone')} optional error={e.phone?.message}>
+            {(p) => <Input {...p} type="tel" autoComplete="tel" placeholder="+49" {...register('phone')} />}
+          </Field>
         </div>
-        {e.root && <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">{e.root.message}</p>}
-        <Button type="submit" size="lg" loading={formState.isSubmitting}>
+        <div className={cn('field', e.acceptTerms && 'has-error')}>
+          <Checkbox label={t('auth.acceptTerms')} {...register('acceptTerms')} aria-invalid={e.acceptTerms ? true : undefined} />
+          {e.acceptTerms && (
+            <p className="error-msg" role="alert">
+              <AlertCircle className="size-3.5 shrink-0" aria-hidden />
+              {e.acceptTerms.message}
+            </p>
+          )}
+        </div>
+        {e.root && (
+          <p className="callout border-transparent bg-danger-soft text-danger" role="alert">
+            {e.root.message}
+          </p>
+        )}
+        <Button type="submit" size="lg" loading={formState.isSubmitting} className="btn-block">
           {t('auth.createAccount')}
+          <ArrowRight className="size-[15px]" aria-hidden />
         </Button>
       </form>
     </AuthLayout>

@@ -73,7 +73,7 @@ export function InviteDialog({ open, onClose }: { open: boolean; onClose: () => 
               </Select>
             )}
           </Field>
-          {formState.errors.root && <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">{formState.errors.root.message}</p>}
+          {formState.errors.root && <p className="callout border-transparent bg-danger-soft text-danger" role="alert">{formState.errors.root.message}</p>}
         </form>
       )}
     </Dialog>

@@ -1,3 +1,4 @@
+import { ChevronRight, LayoutTemplate, ListChecks, RefreshCw } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import type { DesignMode, Program } from '@/types/domain'
 import { useT } from '@/i18n'
@@ -56,13 +57,19 @@ export default function WalletDesignPage() {
         ]
         return (
           <>
-            <PageHeader title={`${program.name} — wallet pass`} breadcrumb={<Link to="/app/wallet-cards" className="hover:underline">{t('nav.wallet')}</Link>} actions={<Link to={`/app/programs/${program.id}/edit`} className={buttonClass('secondary')}>Edit master fields in program setup</Link>} />
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-              <div className="flex min-w-0 flex-col gap-6">
+            <PageHeader title={`${program.name} — wallet pass`} breadcrumb={
+                <>
+                  <Link to="/app/wallet-cards">{t('nav.wallet')}</Link>
+                  <ChevronRight className="size-[13px]" aria-hidden />
+                  <span>{program.name}</span>
+                </>
+              } actions={<Link to={`/app/programs/${program.id}/edit`} className={buttonClass('secondary')}>Edit master fields in program setup</Link>} />
+            <div className="layout-preview">
+              <div className="flex min-w-0 flex-col gap-[18px]">
                 <Card>
-                  <CardHeader title="Where the design starts" />
+                  <CardHeader title="Where the design starts" icon={<LayoutTemplate className="size-4" />} />
                   <CardBody>
-                    <div role="radiogroup" aria-label="Design start" className="grid gap-3 md:grid-cols-2">
+                    <div role="radiogroup" aria-label="Design start" className="type-grid">
                       {options.map((o) => (
                         <button
                           key={o.mode}
@@ -71,36 +78,36 @@ export default function WalletDesignPage() {
                           aria-checked={program.designMode === o.mode}
                           disabled={!canManage.allowed || setMode.isPending}
                           onClick={() => choose(o.mode)}
-                          className={cn('flex flex-col gap-1 rounded-lg border p-4 text-left disabled:cursor-not-allowed', program.designMode === o.mode ? 'border-accent bg-accent-soft' : 'border-line hover:bg-surface-2')}
+                          className={cn('type-card disabled:cursor-not-allowed disabled:opacity-70', program.designMode === o.mode && 'on')}
                         >
-                          <span className="flex flex-wrap items-center gap-2 font-medium">
+                          <b className="flex flex-wrap items-center gap-2">
                             {o.title}
                             {o.badge && <Badge tone="warning">{o.badge}</Badge>}
-                          </span>
-                          <span className="text-sm text-muted">{o.body}</span>
+                          </b>
+                          <small>{o.body}</small>
                         </button>
                       ))}
                     </div>
-                    {!canManage.allowed && <p className="mt-2 text-xs text-muted">{canManage.message}</p>}
+                    {!canManage.allowed && <p className="lock-overlay mt-3 text-xs">{canManage.message}</p>}
                   </CardBody>
                 </Card>
-                <Card>
-                  <CardHeader title="Master field list" description="Set once in the program setup screen." />
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                <Card className="overflow-hidden">
+                  <CardHeader title="Master field list" icon={<ListChecks className="size-4" />} description="Set once in the program setup screen." />
+                  <div className="table-wrap">
+                    <table className="t">
                       <thead>
-                        <tr className="border-b border-line text-left text-xs text-muted uppercase">
-                          <th className="px-4 py-2">Business sets</th>
-                          <th className="px-4 py-2">Current</th>
-                          <th className="px-4 py-2">Appears on the pass as</th>
+                        <tr>
+                          <th>Business sets</th>
+                          <th>Current</th>
+                          <th>Appears on the pass as</th>
                         </tr>
                       </thead>
                       <tbody>
                         {MASTER.map(([label, value, appears]) => (
-                          <tr key={label} className="border-b border-line last:border-0">
-                            <td className="px-4 py-2 font-medium">{label}</td>
-                            <td className="px-4 py-2">{value(program)}</td>
-                            <td className="px-4 py-2 text-muted">{appears}</td>
+                          <tr key={label}>
+                            <td className="font-semibold">{label}</td>
+                            <td>{value(program)}</td>
+                            <td className="text-muted">{appears}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -108,14 +115,14 @@ export default function WalletDesignPage() {
                   </div>
                 </Card>
                 <Card>
-                  <CardHeader title="Dynamic content" />
-                  <CardBody className="grid gap-3 text-sm sm:grid-cols-2">
-                    <div>
-                      <p className="text-xs text-muted">Shown besides the master fields</p>
+                  <CardHeader title="Dynamic content" icon={<RefreshCw className="size-4" />} />
+                  <CardBody className="setup-grid grid-cols-1 text-sm sm:grid-cols-2">
+                    <div className="setup-item">
+                      <p className="mb-1 text-xs font-medium text-faint">Shown besides the master fields</p>
                       <p>{program.designMode === 'custom' ? 'None — custom designs are identification-style passes.' : DYNAMIC[program.type].shows}</p>
                     </div>
-                    <div>
-                      <p className="text-xs text-muted">What triggers an update</p>
+                    <div className="setup-item">
+                      <p className="mb-1 text-xs font-medium text-faint">What triggers an update</p>
                       <p>{DYNAMIC[program.type].trigger}</p>
                     </div>
                   </CardBody>
@@ -124,7 +131,7 @@ export default function WalletDesignPage() {
                   Editing a master field of an Active program applies to every issued pass; the backend would push updates via APNs / Google Wallet API. No wallet integration is available in this environment.
                 </IntegrationNotice>
               </div>
-              <aside className="xl:sticky xl:top-20 xl:self-start">
+              <aside className="xl:sticky xl:top-24 xl:self-start">
                 <WalletPassPreview content={buildPassContent(program)} />
               </aside>
             </div>

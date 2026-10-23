@@ -175,7 +175,7 @@ Roles: O = Owner, M = Manager, E = Employee. Plan modes: PV = Preview, FR = Free
 | ID | Requirement | Screen / route | Roles / plan | Status | Verification | Dependency / open item |
 |---|---|---|---|---|---|---|
 | BRD-01 | Business Logo, Primary, Secondary, Background, Fonts propagate across dashboard, wallet cards, customer-facing surfaces. | `/app/branding` | O/M | Implemented | BrandingPage / Settings (code review) | OI-32 |
-| BRD-02 | Bonuca tokens: Light bg #FBFBFB / text #0A0A0A / accent #1747F8; Dark bg #010414 / text #FFFFFF / accent #1747F8. | `styles/tokens.css` | — | Implemented | tokens.css matches spec values (code review); OI-10 | OI-10 |
+| BRD-02 | Bonuca tokens: Light bg #FBFBFB / text #0A0A0A / accent #1747F8; Dark bg #010414 / text #FFFFFF / accent #1747F8. Superseded by the redesign colours (Light bg #F3F3F1, Dark accent #2F5BFF, highlight #FFD43B), client decision 2026-10-21. | `styles/redesign/design-tokens/tokens.css`, `styles/tokens.css` | `qa-phase8-insights-settings.spec.ts` (Branding tokens table) | Implemented | Branding screen lists the final values; e2e checks them | OI-10, OI-45 |
 | BRD-03 | Bonuca Blue is the primary accent (buttons, active nav, links, chart highlight, toggle ON, selected border). | components | — | Verified | Browser screenshots | — |
 | BRD-04 | Light/Dark mode. | `ThemeProvider` | — | Verified | integration: scannerAndTheme.test.tsx; dark screenshot | — |
 | BRD-05 | Card/Panel surface colour. | `tokens.css` (provisional) | — | Awaiting Clarification | — | OI-09 |

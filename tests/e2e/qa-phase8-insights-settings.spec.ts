@@ -6,7 +6,7 @@ test.describe('Phase 8 · insights, branding, subscription, settings', () => {
   test.beforeEach(async ({ page }) => login(page, 'owner'))
 
   test('Dashboard: every stat card and chart, chart/table toggle', async ({ page }) => {
-    for (const s of ['Total Members', 'New Members Today', 'New This Week', 'New This Month', 'Total Scans', 'Active Programs', 'Wallet Cards', 'Visits', 'Returning Customers']) await expect(page.getByRole('main').getByText(s, { exact: true })).toBeVisible()
+    for (const s of ['Total Members', 'New Members', 'New Wallet Cards', 'Total Scans', 'Active Programs', 'Wallet Cards', 'Visits', 'Returning Customers']) await expect(page.getByRole('main').getByText(s, { exact: true })).toBeVisible()
     for (const c of ['Customer Growth', 'Daily Scans', 'Monthly Growth', 'Top Programs', 'Membership Distribution']) await expect(page.getByRole('heading', { name: c })).toBeVisible()
     await page.getByRole('tab', { name: 'Table' }).first().click()
     await expect(page.getByRole('table', { name: 'Customer Growth' })).toBeVisible()
@@ -32,7 +32,7 @@ test.describe('Phase 8 · insights, branding, subscription, settings', () => {
     await page.getByLabel('Font').selectOption('serif')
     await page.getByRole('button', { name: 'Save' }).click()
     await expect(page.getByText('Branding saved.')).toBeVisible()
-    for (const v of ['#FBFBFB', '#010414', '#0A0A0A', '#1747F8']) await expect(page.getByText(v).first()).toBeVisible()
+    for (const v of ['#F3F3F1', '#010414', '#0A0A0A', '#1747F8', '#2F5BFF', '#FFD43B']) await expect(page.getByText(v).first()).toBeVisible()
     await expect(page.getByText(/Auto Branding/i)).toHaveCount(0)
     await shot(page, 'p8-03-branding')
   })

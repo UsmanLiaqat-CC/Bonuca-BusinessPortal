@@ -15,13 +15,13 @@ export function QrDownload({ text, filename, title, subtitle, placements }: { te
   const [placement, setPlacement] = useState<Placement>(placements[0]!)
   const run = (fn: () => Promise<void>) => fn().catch((e: unknown) => toast.error(errorMessage(e)))
   return (
-    <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
-      <div className="w-40 shrink-0 rounded-lg border border-line bg-white p-2">{url && <img src={url} alt={`QR code: ${title}`} className="w-full" />}</div>
-      <div className="flex min-w-0 flex-col gap-2">
-        <p className="text-xs break-all text-muted">{text}</p>
-        {!env.joinBaseUrl && <p className="text-xs text-warning">Development URL — set VITE_JOIN_BASE_URL to the customer join site before printing.</p>}
-        <label className="flex items-center gap-2 text-sm">
-          <span className="text-muted">Print format</span>
+    <div className="qr-panel items-center sm:items-start">
+      <div className="qr-box">{url && <img src={url} alt={`QR code: ${title}`} className="w-full" />}</div>
+      <div className="qr-meta w-full">
+        <p className="url-line"><span>{text}</span></p>
+        {!env.joinBaseUrl && <p className="dev-url">Development URL — set VITE_JOIN_BASE_URL to the customer join site before printing.</p>}
+        <label className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="label">Print format</span>
           <Select className="w-40" value={placement} onChange={(e) => setPlacement(e.target.value as Placement)}>
             {placements.map((p) => (
               <option key={p} value={p}>
@@ -32,10 +32,10 @@ export function QrDownload({ text, filename, title, subtitle, placements }: { te
         </label>
         <div className="flex flex-wrap gap-2">
           <GuardedButton permission="qr.manage" size="sm" variant="secondary" onClick={() => run(() => downloadQrPng(text, filename))}>
-            <Download className="size-4" aria-hidden /> PNG
+            <Download className="size-[15px]" aria-hidden /> PNG
           </GuardedButton>
           <GuardedButton permission="qr.manage" size="sm" variant="secondary" onClick={() => run(() => downloadQrPdf(text, filename, placement, title, subtitle))}>
-            <FileDown className="size-4" aria-hidden /> PDF
+            <FileDown className="size-[15px]" aria-hidden /> PDF
           </GuardedButton>
         </div>
       </div>

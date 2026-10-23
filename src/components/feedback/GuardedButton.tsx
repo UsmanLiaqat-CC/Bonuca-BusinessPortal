@@ -1,9 +1,8 @@
 import { useId, useState, type ReactNode } from 'react'
-import { Lock } from 'lucide-react'
+import { Loader2, Lock } from 'lucide-react'
 import type { Permission, Decision } from '@/lib/access'
 import { useAccess } from '@/state/session'
-import { buttonClass, type ButtonSize, type ButtonVariant } from '@/components/ui/Button'
-import { Loader2 } from 'lucide-react'
+import { buttonClass, ripple, type ButtonSize, type ButtonVariant } from '@/components/ui/Button'
 
 export interface GuardedButtonProps {
   permission: Permission
@@ -32,7 +31,7 @@ export function GuardedButton({ permission, extra, onClick, children, variant = 
 
   if (decision.allowed) {
     return (
-      <button type={type} form={form} onClick={loading ? undefined : onClick} aria-busy={loading || undefined} className={buttonClass(variant, size, className)}>
+      <button type={type} form={form} onClick={loading ? undefined : onClick} onPointerDown={ripple} aria-busy={loading || undefined} className={buttonClass(variant, size, className)}>
         {loading && <Loader2 className="size-4 animate-spin" aria-hidden />}
         {children}
       </button>
@@ -63,7 +62,7 @@ export function GuardedButton({ permission, extra, onClick, children, variant = 
         role="tooltip"
         className={
           showReason
-            ? 'absolute top-full right-0 z-40 mt-2 w-64 rounded-lg border border-line bg-surface p-3 text-xs text-fg shadow-card'
+            ? 'absolute top-full right-0 z-40 mt-2 w-64 rounded-xl bg-ink p-3 text-xs leading-relaxed font-medium text-on-ink shadow-[var(--shadow-pop)] [animation:fadeUp_.25s_var(--ease-out)_both]'
             : 'sr-only'
         }
       >

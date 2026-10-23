@@ -40,8 +40,9 @@ export function AiDraftPanel({ kind, onDraft }: { kind: 'campaign' | 'bonus'; on
   }
 
   return (
-    <Card>
+    <Card className="ai-card reveal-up">
       <CardHeader
+        icon={<Sparkles className="spark size-4" />}
         title={isCampaign ? 'AI Campaigns' : 'AI Bonus Generator'}
         description={isCampaign ? 'Type a plain prompt and the AI drafts a ready-to-send campaign — message and suggested offer.' : 'State a goal and the AI generates offer terms, notification copy and duration for you to review and edit.'}
       />
@@ -51,14 +52,14 @@ export function AiDraftPanel({ kind, onDraft }: { kind: 'campaign' | 'bonus'; on
         </Field>
         <div>
           <GuardedButton permission="notifications.ai" onClick={generate} loading={busy}>
-            <Sparkles className="size-4" aria-hidden /> Generate draft
+            <Sparkles className="size-[15px]" aria-hidden /> Generate draft
           </GuardedButton>
         </div>
         {error &&
           (error.notConnected ? (
             <IntegrationNotice title="AI service not connected">{error.message} No draft was generated — nothing is simulated.</IntegrationNotice>
           ) : (
-            <p className="text-sm text-danger" role="alert">{error.message}</p>
+            <p className="error-msg" role="alert">{error.message}</p>
           ))}
       </CardBody>
     </Card>

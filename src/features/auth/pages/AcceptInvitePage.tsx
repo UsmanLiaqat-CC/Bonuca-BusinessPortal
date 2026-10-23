@@ -2,6 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
+import { ArrowRight, Lock, UserPlus } from 'lucide-react'
 import { useBackend } from '@/state/services'
 import { SESSION_KEY } from '@/state/session'
 import { acceptInviteSchema, PASSWORD_RULE_MESSAGE } from '@/schemas/auth'
@@ -12,6 +13,7 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { ErrorState } from '@/components/feedback/QueryState'
 import { AuthLayout } from '../components/AuthLayout'
+import { IconInput } from '../components/IconInput'
 
 type Values = z.infer<typeof acceptInviteSchema>
 
@@ -35,7 +37,12 @@ export default function AcceptInvitePage() {
   })
 
   if (invite.isPending) return <Spinner />
-  if (invite.isError) return <ErrorState message={errorMessage(invite.error)} />
+  if (invite.isError)
+    return (
+      <div className="mx-auto max-w-[520px] px-4 py-16">
+        <ErrorState message={errorMessage(invite.error)} />
+      </div>
+    )
   if (!invite.data) {
     return (
       <AuthLayout title="Invitation not found">
@@ -53,20 +60,37 @@ export default function AcceptInvitePage() {
   }
 
   return (
-    <AuthLayout title={`Join ${businessName}`} subtitle={<>You were invited as <strong className="capitalize">{inv.role}</strong> ({inv.email}). Set your password to get started.</>}>
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+    <AuthLayout
+      title={`Join ${businessName}`}
+      eyebrow={
+        <>
+          <UserPlus className="size-[13px]" aria-hidden /> Invitation
+        </>
+      }
+      subtitle={
+        <>
+          You were invited as <strong className="text-fg capitalize">{inv.role}</strong> ({inv.email}). Set your password to get started.
+        </>
+      }
+    >
+      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-[18px]">
         <Field label="Full Name" required error={formState.errors.fullName?.message}>
           {(p) => <Input {...p} autoComplete="name" {...register('fullName')} />}
         </Field>
         <Field label="Password" required error={formState.errors.password?.message} hint={PASSWORD_RULE_MESSAGE}>
-          {(p) => <Input {...p} type="password" autoComplete="new-password" {...register('password')} />}
+          {(p) => <IconInput {...p} icon={Lock} type="password" autoComplete="new-password" {...register('password')} />}
         </Field>
         <Field label="Confirm password" required error={formState.errors.confirm?.message}>
-          {(p) => <Input {...p} type="password" autoComplete="new-password" {...register('confirm')} />}
+          {(p) => <IconInput {...p} icon={Lock} type="password" autoComplete="new-password" {...register('confirm')} />}
         </Field>
-        {formState.errors.root && <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">{formState.errors.root.message}</p>}
-        <Button type="submit" size="lg" loading={formState.isSubmitting}>
+        {formState.errors.root && (
+          <p className="callout border-transparent bg-danger-soft text-danger" role="alert">
+            {formState.errors.root.message}
+          </p>
+        )}
+        <Button type="submit" size="lg" loading={formState.isSubmitting} className="btn-block">
           Set password and continue
+          <ArrowRight className="size-[15px]" aria-hidden />
         </Button>
       </form>
     </AuthLayout>

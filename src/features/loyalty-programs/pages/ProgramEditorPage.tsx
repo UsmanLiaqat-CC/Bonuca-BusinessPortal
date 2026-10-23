@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PROGRAM_TYPES, type ProgramType } from '@/types/domain'
 import { useT } from '@/i18n'
@@ -14,7 +15,13 @@ export default function ProgramEditorPage() {
   const { session } = useSession()
   const { id, type } = useParams()
   const programs = usePrograms()
-  const back = <Link to="/app/programs" className="hover:underline">{t('nav.programs')}</Link>
+  const back = (
+    <>
+      <Link to="/app/programs">{t('nav.programs')}</Link>
+      <ChevronRight className="size-[13px]" aria-hidden />
+      <span>{id ? 'Edit' : 'New'}</span>
+    </>
+  )
 
   if (!id) {
     if (!PROGRAM_TYPES.includes(type as ProgramType)) return <ErrorState message="Unknown program type." />

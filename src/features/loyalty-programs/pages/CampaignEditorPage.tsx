@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { CampaignDraft } from '@/services/backend'
 import { PageHeader } from '@/components/data-display/PageHeader'
@@ -20,7 +21,13 @@ export default function CampaignEditorPage() {
   const navigate = useNavigate()
   const programs = usePrograms()
   const campaigns = useCampaigns()
-  const back = <Link to="/app/programs" className="hover:underline">Loyalty Programs</Link>
+  const back = (
+    <>
+      <Link to="/app/programs">Loyalty Programs</Link>
+      <ChevronRight className="size-[13px]" aria-hidden />
+      <span>Campaign</span>
+    </>
+  )
 
   return (
     <QueryState query={programs}>

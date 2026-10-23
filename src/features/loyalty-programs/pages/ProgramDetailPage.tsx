@@ -1,5 +1,5 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Pencil, Palette } from 'lucide-react'
+import { ArrowRight, ChevronRight, Pencil, Palette, QrCode, Settings2, Power } from 'lucide-react'
 import type { Program } from '@/types/domain'
 import { useT } from '@/i18n'
 import { useToast } from '@/state/toast'
@@ -40,11 +40,11 @@ function Summary({ program }: { program: Program }) {
   }
   rows.push(['Surprise rewards', program.surprise.enabled ? `On (${program.surprise.probabilityPercent}%)` : 'Off'])
   return (
-    <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+    <dl className="setup-grid grid-cols-1 sm:grid-cols-2">
       {rows.map(([k, v]) => (
-        <div key={k}>
-          <dt className="text-xs text-muted">{k}</dt>
-          <dd className="text-sm font-medium">{v}</dd>
+        <div key={k} className="setup-item">
+          <dt className="mb-1 text-xs font-medium text-faint">{k}</dt>
+          <dd className="text-[14.5px] font-semibold">{v}</dd>
         </div>
       ))}
     </dl>
@@ -71,24 +71,30 @@ export default function ProgramDetailPage() {
             <PageHeader
               title={program.name}
               description={t(`type.${program.type}`)}
-              breadcrumb={<Link to="/app/programs" className="hover:underline">{t('nav.programs')}</Link>}
+              breadcrumb={
+                <>
+                  <Link to="/app/programs">{t('nav.programs')}</Link>
+                  <ChevronRight className="size-[13px]" aria-hidden />
+                  <span>{t(`type.${program.type}`)}</span>
+                </>
+              }
               actions={
                 <>
                   <Link to={`/app/wallet-cards/${program.id}`} className={buttonClass('secondary')}>
-                    <Palette className="size-4" aria-hidden /> Wallet design
+                    <Palette className="size-[15px]" aria-hidden /> Wallet design
                   </Link>
                   {program.status !== 'archived' && (
                     <GuardedButton permission="programs.manage" onClick={() => navigate(`/app/programs/${program.id}/edit`)}>
-                      <Pencil className="size-4" aria-hidden /> {t('common.edit')}
+                      <Pencil className="size-[15px]" aria-hidden /> {t('common.edit')}
                     </GuardedButton>
                   )}
                 </>
               }
             />
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-              <div className="flex min-w-0 flex-col gap-6">
+            <div className="layout-preview">
+              <div className="flex min-w-0 flex-col gap-[18px]">
                 <Card>
-                  <CardHeader title="Lifecycle" />
+                  <CardHeader title="Lifecycle" icon={<Power className="size-4" />} />
                   <CardBody>
                     <LifecycleControls
                       status={program.status}
@@ -103,11 +109,11 @@ export default function ProgramDetailPage() {
                   </CardBody>
                 </Card>
                 <Card>
-                  <CardHeader title="Join QR code" description="Generated the first time the program is published." />
+                  <CardHeader title="Join QR code" icon={<QrCode className="size-4" />} description="Generated the first time the program is published." />
                   <CardBody>
                     {program.joinQrToken ? (
                       <>
-                        {program.status === 'paused' && <p className="mb-3 rounded-lg bg-warning-soft px-3 py-2 text-sm">Program paused — this QR does not enrol new members until it is enabled again.</p>}
+                        {program.status === 'paused' && <p className="callout warn mb-3">Program paused — this QR does not enrol new members until it is enabled again.</p>}
                         <QrDownload
                           text={joinUrl('program', program.joinQrToken)}
                           filename={`join-${program.name.toLowerCase().replace(/\W+/g, '-')}`}
@@ -115,23 +121,23 @@ export default function ProgramDetailPage() {
                           subtitle={program.type === 'membership' || program.type === 'tier' ? 'Scan to join our membership' : 'Scan to add our card to your wallet'}
                           placements={['table', 'counter', 'sticker', 'flyer', 'window']}
                         />
-                        <Link to="/app/scanner/qr-codes" className="mt-3 inline-block text-sm text-accent hover:underline">
-                          All printable QR codes →
+                        <Link to="/app/scanner/qr-codes" className="link mt-3.5 text-sm">
+                          All printable QR codes <ArrowRight className="size-[15px]" aria-hidden />
                         </Link>
                       </>
                     ) : (
-                      <p className="text-sm text-muted">No QR exists yet — Draft programs are invisible to customers.</p>
+                      <p className="lock-overlay">No QR exists yet — Draft programs are invisible to customers.</p>
                     )}
                   </CardBody>
                 </Card>
                 <Card>
-                  <CardHeader title="Setup" />
+                  <CardHeader title="Setup" icon={<Settings2 className="size-4" />} />
                   <CardBody>
                     <Summary program={program} />
                   </CardBody>
                 </Card>
               </div>
-              <aside className="xl:sticky xl:top-20 xl:self-start">
+              <aside className="xl:sticky xl:top-24 xl:self-start">
                 <WalletPassPreview content={buildPassContent(program)} label="Wallet pass preview (sample customer)" />
               </aside>
             </div>

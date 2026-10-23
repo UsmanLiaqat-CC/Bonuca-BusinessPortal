@@ -9,9 +9,8 @@ import { zodResolver } from '@/lib/forms'
 import { errorMessage } from '@/lib/errors'
 import { env } from '@/lib/env'
 import { Field } from '@/components/ui/Field'
-import { ArrowRight, Lock, Mail } from 'lucide-react'
+import { ArrowRight, Lock, Mail, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { DevCallout } from '../components/AuthLayout'
 import { AuthSplitLayout } from '../components/AuthSplitLayout'
 import { IconInput } from '../components/IconInput'
 
@@ -38,46 +37,52 @@ export default function LoginPage() {
       footer={
         <>
           {t('auth.noAccount')}{' '}
-          <Link to="/register" className="font-semibold text-accent hover:underline">
+          <Link to="/register" className="link underline-hl text-fg">
             {t('landing.startFree')}
           </Link>
         </>
       }
     >
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-[18px]">
         <Field label={t('auth.email')} required error={formState.errors.email?.message}>
           {(p) => <IconInput {...p} icon={Mail} type="email" autoComplete="email" placeholder="you@business.com" {...register('email')} />}
         </Field>
         <Field label={t('auth.password')} required error={formState.errors.password?.message}>
           {(p) => <IconInput {...p} icon={Lock} type="password" autoComplete="current-password" placeholder="••••••••" {...register('password')} />}
         </Field>
-        {formState.errors.root && <p className="rounded-xl border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger" role="alert">{formState.errors.root.message}</p>}
-        <Button type="submit" size="lg" loading={formState.isSubmitting} className="group h-12 rounded-xl shadow-[0_8px_24px_-8px_rgba(23,71,248,0.6)]">
+        {formState.errors.root && (
+          <p className="callout border-transparent bg-danger-soft text-danger" role="alert">
+            {formState.errors.root.message}
+          </p>
+        )}
+        <Button type="submit" size="lg" loading={formState.isSubmitting} className="btn-block">
           {t('auth.login.submit')}
-          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+          <ArrowRight className="size-[15px]" aria-hidden />
         </Button>
         {env.devTools && backend.dev && (
-          <DevCallout title="Development sample accounts">
-            <ul className="flex flex-col gap-1">
-              {backend.dev.seedAccounts.map((a) => (
-                <li key={a.email} className="flex items-center justify-between gap-2">
-                  <span>
-                    <span className="capitalize">{a.role}</span>: <code className="font-mono text-xs">{a.email}</code>
-                  </span>
-                  <button
-                    type="button"
-                    className="text-xs font-medium text-accent hover:underline"
-                    onClick={() => {
-                      setValue('email', a.email)
-                      setValue('password', a.password)
-                    }}
-                  >
-                    Use
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </DevCallout>
+          <div className="callout dev dev-accounts block" role="note" data-testid="dev-callout">
+            <b className="mb-1.5 flex items-center gap-2">
+              <Zap className="size-[15px]" aria-hidden />
+              Development sample accounts
+            </b>
+            {backend.dev.seedAccounts.map((a) => (
+              <div key={a.email} className="acc gap-2">
+                <span className="min-w-0">
+                  <span className="capitalize">{a.role}</span>: <span className="mono break-all">{a.email}</span>
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-text btn-sm text-accent"
+                  onClick={() => {
+                    setValue('email', a.email)
+                    setValue('password', a.password)
+                  }}
+                >
+                  Use
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </form>
     </AuthSplitLayout>

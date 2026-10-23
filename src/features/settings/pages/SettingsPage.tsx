@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink, useParams } from 'react-router-dom'
+import { ArrowRight, Bell, Clock, CreditCard, Image as ImageIcon, Languages, MapPin, Palette, Settings as SettingsIcon, Store, UsersRound, WalletCards, type LucideIcon } from 'lucide-react'
 import { BUSINESS_CATEGORIES, type Address, type OpeningHours } from '@/types/domain'
 import { useT } from '@/i18n'
 import { useAccess, useSession } from '@/state/session'
@@ -23,17 +24,17 @@ import { WinBackSettings } from '@/features/notifications/components/WinBackSett
 import { useUpdatePermissions } from '@/features/employees/hooks'
 
 /** Spec §4.12 settings sections. Manager access is "limited" (OI-15). */
-const SECTIONS: { id: string; label: string; permission: Permission }[] = [
-  { id: 'business', label: 'Business information', permission: 'settings.view' },
-  { id: 'address', label: 'Address', permission: 'settings.view' },
-  { id: 'hours', label: 'Opening hours', permission: 'settings.view' },
-  { id: 'logo', label: 'Logo', permission: 'settings.view' },
-  { id: 'brand-colors', label: 'Brand colors', permission: 'settings.view' },
-  { id: 'employees', label: 'Employees', permission: 'employees.view' },
-  { id: 'notifications', label: 'Notifications', permission: 'notifications.view' },
-  { id: 'billing', label: 'Billing', permission: 'settings.billing' },
-  { id: 'wallet', label: 'Wallet customization', permission: 'wallet.view' },
-  { id: 'language', label: 'Language', permission: 'settings.view' },
+const SECTIONS: { id: string; label: string; permission: Permission; icon: LucideIcon }[] = [
+  { id: 'business', label: 'Business information', permission: 'settings.view', icon: Store },
+  { id: 'address', label: 'Address', permission: 'settings.view', icon: MapPin },
+  { id: 'hours', label: 'Opening hours', permission: 'settings.view', icon: Clock },
+  { id: 'logo', label: 'Logo', permission: 'settings.view', icon: ImageIcon },
+  { id: 'brand-colors', label: 'Brand colors', permission: 'settings.view', icon: Palette },
+  { id: 'employees', label: 'Employees', permission: 'employees.view', icon: UsersRound },
+  { id: 'notifications', label: 'Notifications', permission: 'notifications.view', icon: Bell },
+  { id: 'billing', label: 'Billing', permission: 'settings.billing', icon: CreditCard },
+  { id: 'wallet', label: 'Wallet customization', permission: 'wallet.view', icon: WalletCards },
+  { id: 'language', label: 'Language', permission: 'settings.view', icon: Languages },
 ]
 
 function BusinessInfo() {
@@ -44,7 +45,7 @@ function BusinessInfo() {
   const [name, setName] = useState(session.business.name)
   const [category, setCategory] = useState(session.business.category)
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="form-grid">
       <Field label={t('onb.businessName')} required error={name.trim() ? undefined : 'Business name is required.'}>
         {(p) => <Input {...p} value={name} onChange={(e) => setName(e.target.value)} />}
       </Field>
@@ -71,7 +72,7 @@ function AddressSection() {
     <Field label={label}>{(p) => <Input {...p} value={a[k]} onChange={(e) => setA({ ...a, [k]: e.target.value })} />}</Field>
   )
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="form-grid">
       {field('street', 'Street')}
       {field('postalCode', 'Postal code')}
       {field('city', 'City')}
@@ -93,7 +94,7 @@ function HoursSection() {
   if (!hours) {
     return (
       <div className="flex flex-col items-start gap-3">
-        <p className="text-sm text-muted">Opening hours are not set yet.</p>
+        <p className="lock-overlay">Opening hours are not set yet.</p>
         <GuardedButton permission="settings.edit" variant="secondary" onClick={() => setHours(defaultOpeningHours())}>Add opening hours</GuardedButton>
       </div>
     )
@@ -119,7 +120,7 @@ function EmployeeSettings() {
     <div className="flex flex-col gap-4">
       <Toggle label="Managers may manage employees" description="Owner-only." checked={p.managersCanManageEmployees} disabled={!access.can('employees.permissions')} onChange={(v) => set({ managersCanManageEmployees: v })} />
       <Toggle label="Show leaderboard to employees" checked={p.showLeaderboardToEmployees} disabled={!access.can('leaderboard.visibility')} onChange={(v) => set({ showLeaderboardToEmployees: v })} />
-      <Link to="/app/employees" className="text-sm text-accent hover:underline">Manage team and invitations →</Link>
+      <Link to="/app/employees" className="link text-sm">Manage team and invitations <ArrowRight className="size-[15px]" aria-hidden /></Link>
     </div>
   )
 }
@@ -134,17 +135,30 @@ export default function SettingsPage() {
 
   return (
     <>
-      <PageHeader title={t('nav.settings')} />
-      <div className="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)]">
-        <nav aria-label="Settings sections" className="flex gap-1 overflow-x-auto md:flex-col">
-          {visible.map((s) => (
-            <NavLink key={s.id} to={`/app/settings/${s.id}`} className={() => cn('rounded-lg px-3 py-2 text-sm whitespace-nowrap', s.id === current.id ? 'bg-accent-soft font-medium text-accent' : 'text-muted hover:bg-surface-2 hover:text-fg')}>
-              {s.label}
-            </NavLink>
-          ))}
-        </nav>
-        <Card>
-          <CardHeader title={current.label} />
+      <PageHeader
+        title={t('nav.settings')}
+        breadcrumb={
+          <>
+            <SettingsIcon className="size-[13px]" aria-hidden /> {t('nav.group.business')}
+          </>
+        }
+      />
+      <div className="grid items-start gap-[18px] md:grid-cols-[240px_minmax(0,1fr)]">
+        <div className="card reveal-up p-2 md:sticky md:top-24">
+          <nav aria-label="Settings sections" className="nav mt-0 flex-row overflow-x-auto md:flex-col">
+            {visible.map((s) => {
+              const Icon = s.icon
+              return (
+                <NavLink key={s.id} to={`/app/settings/${s.id}`} className={() => cn('whitespace-nowrap', s.id === current.id && 'active')}>
+                  <Icon className="size-[17px] shrink-0" aria-hidden />
+                  {s.label}
+                </NavLink>
+              )
+            })}
+          </nav>
+        </div>
+        <Card className="reveal-up">
+          <CardHeader title={current.label} icon={<current.icon className="size-4" />} />
           <CardBody>
             {current.id === 'business' && <BusinessInfo />}
             {current.id === 'address' && <AddressSection />}
@@ -154,23 +168,23 @@ export default function SettingsPage() {
             {current.id === 'employees' && <EmployeeSettings />}
             {current.id === 'notifications' && <WinBackSettings />}
             {current.id === 'billing' && (
-              <div className="flex flex-col items-start gap-2 text-sm">
+              <div className="flex flex-col items-start gap-3 text-sm">
                 <p className="text-muted">Plans, invoices, payment history and billing information.</p>
                 <Link to="/app/subscription" className={buttonClass('secondary')}>Open Subscription & Billing</Link>
               </div>
             )}
             {current.id === 'wallet' && (
-              <div className="flex flex-col items-start gap-2 text-sm">
+              <div className="flex flex-col items-start gap-3 text-sm">
                 <p className="text-muted">Choose base templates or custom designs and preview each program's pass.</p>
                 <Link to="/app/wallet-cards" className={buttonClass('secondary')}>Open Wallet Cards</Link>
               </div>
             )}
             {current.id === 'language' && (
               <div className="flex flex-col gap-4">
-                <p className="text-sm text-muted">Interface language for the dashboard. Supported at launch: English, German, Turkish, French, Italian. Customer-facing content language handling is pending confirmation.</p>
+                <p className="callout">Interface language for the dashboard. Supported at launch: English, German, Turkish, French, Italian. Customer-facing content language handling is pending confirmation.</p>
                 <LanguageSelect onChange={(l) => void backend.setLanguage(l)} />
                 <div className="flex items-center gap-3 text-sm">
-                  <span className="text-muted">{t('theme.label')}</span>
+                  <span className="label">{t('theme.label')}</span>
                   <ThemeToggle />
                 </div>
               </div>

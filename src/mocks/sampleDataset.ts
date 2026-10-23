@@ -306,7 +306,7 @@ export function buildSampleDataset(opts: SampleOptions): BusinessDataset {
       country: 'DE',
       address: { street: 'Sample Street 1', postalCode: '10115', city: 'Berlin', country: 'DE' },
       openingHours: defaultOpeningHours(),
-      branding: { logo: null, primaryColor: '#1747F8', secondaryColor: '#0A112F', backgroundColor: '#FBFBFB', font: 'system' },
+      branding: { logo: null, primaryColor: '#1747F8', secondaryColor: '#0A112F', backgroundColor: '#F3F3F1', font: 'system' },
       signupFields: { ...DEFAULT_SIGNUP_FIELDS },
       permissions: { managersCanManageEmployees: false, showLeaderboardToEmployees: true },
       onboardingStep: 'done',

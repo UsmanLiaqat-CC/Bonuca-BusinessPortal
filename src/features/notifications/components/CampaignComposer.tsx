@@ -76,7 +76,7 @@ export function CampaignComposer({ open, onClose, editing, initial, programs }: 
           name="programIds"
           render={({ field }) => (
             <fieldset className="flex flex-col gap-2 sm:col-span-2">
-              <legend className="mb-1 text-sm font-medium">Audience <span className="text-xs font-normal text-muted">— no selection = members of all active programs</span></legend>
+              <legend className="label mb-2 flex-wrap">Audience <span className="opt">— no selection = members of all active programs</span></legend>
               {active.length === 0 && <p className="text-sm text-muted">No active programs.</p>}
               {active.map((p) => (
                 <Checkbox key={p.id} label={p.name} checked={field.value.includes(p.id)} onChange={(e) => field.onChange(e.target.checked ? [...field.value, p.id] : field.value.filter((x) => x !== p.id))} />

@@ -1,8 +1,6 @@
 import { forwardRef, useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/cn'
-
-const control =
-  'w-full rounded-lg border border-line bg-surface px-3 text-sm text-fg placeholder:text-muted/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 disabled:opacity-60 aria-[invalid=true]:border-danger'
 
 export interface FieldProps {
   label: ReactNode
@@ -14,24 +12,31 @@ export interface FieldProps {
   children: (props: { id: string; 'aria-describedby'?: string; 'aria-invalid'?: boolean }) => ReactNode
 }
 
-/** Label + control + hint/error wiring with accessible ids. */
+/** Label + control + hint/error wiring with accessible ids (redesign `.field`). */
 export function Field({ label, hint, error, required, optional, className, children }: FieldProps) {
   const id = useId()
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined
   return (
-    <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={id} className="text-sm font-medium">
-        {label}
-        {required && <span className="ml-0.5 text-danger" aria-hidden>*</span>}
-        {optional && <span className="ml-1 text-xs font-normal text-muted">(optional)</span>}
+    <div className={cn('field', error && 'has-error', className)}>
+      <label htmlFor={id} className="label">
+        <span>
+          {label}
+          {required && (
+            <span className="req ml-0.5" aria-hidden>
+              *
+            </span>
+          )}
+        </span>
+        {optional && <span className="opt">(optional)</span>}
       </label>
       {children({ id, 'aria-describedby': describedBy, 'aria-invalid': error ? true : undefined })}
       {error ? (
-        <p id={`${id}-error`} className="text-xs text-danger" role="alert">
+        <p id={`${id}-error`} className="error-msg" role="alert">
+          <AlertCircle className="size-3.5 shrink-0" aria-hidden />
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="text-xs text-muted">
+        <p id={`${id}-hint`} className="hint">
           {hint}
         </p>
       ) : null}
@@ -40,15 +45,15 @@ export function Field({ label, hint, error, required, optional, className, child
 }
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input({ className, ...rest }, ref) {
-  return <input ref={ref} className={cn(control, 'h-10', className)} {...rest} />
+  return <input ref={ref} className={cn('input', className)} {...rest} />
 })
 
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(function Select({ className, ...rest }, ref) {
-  return <select ref={ref} className={cn(control, 'h-10 pr-8', className)} {...rest} />
+  return <select ref={ref} className={cn('select', className)} {...rest} />
 })
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea({ className, ...rest }, ref) {
-  return <textarea ref={ref} className={cn(control, 'min-h-24 py-2', className)} {...rest} />
+  return <textarea ref={ref} className={cn('textarea', className)} {...rest} />
 })
 
 export const Checkbox = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & { label: ReactNode }>(function Checkbox(
@@ -56,9 +61,9 @@ export const Checkbox = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInp
   ref,
 ) {
   return (
-    <label className={cn('flex cursor-pointer items-start gap-2 text-sm', className)}>
-      <input ref={ref} type="checkbox" className="mt-0.5 size-4 shrink-0 accent-[var(--bn-accent)]" {...rest} />
-      <span>{label}</span>
+    <label className={cn('check items-start', className)}>
+      <input ref={ref} type="checkbox" {...rest} />
+      <span className="pt-px">{label}</span>
     </label>
   )
 })
@@ -70,19 +75,21 @@ export interface ToggleProps {
   description?: ReactNode
   disabled?: boolean
   id?: string
+  /** Render without the redesign's option-row box (e.g. inside a card header). */
+  plain?: boolean
 }
 
 /** Switch — toggle-ON state uses Bonuca Blue (spec §4.10 token mapping). */
-export function Toggle({ checked, onChange, label, description, disabled, id }: ToggleProps) {
+export function Toggle({ checked, onChange, label, description, disabled, id, plain }: ToggleProps) {
   const auto = useId()
   const toggleId = id ?? auto
   return (
-    <div className="flex items-start justify-between gap-4">
+    <div className={cn(plain ? 'flex items-center justify-between gap-4' : 'option-row', disabled && 'locked')}>
       <div className="min-w-0">
-        <label id={`${toggleId}-label`} htmlFor={toggleId} className="text-sm font-medium">
+        <label id={`${toggleId}-label`} htmlFor={toggleId} className="block text-sm font-semibold">
           {label}
         </label>
-        {description && <p className="text-xs text-muted">{description}</p>}
+        {description && <small className="block text-[12.5px] text-muted">{description}</small>}
       </div>
       <button
         id={toggleId}
@@ -93,11 +100,16 @@ export function Toggle({ checked, onChange, label, description, disabled, id }: 
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50',
-          checked ? 'bg-accent' : 'bg-line',
+          'relative inline-flex h-[26px] w-[46px] shrink-0 rounded-full transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-45',
+          checked ? 'bg-accent' : 'bg-line-strong',
         )}
       >
-        <span className={cn('inline-block size-5 rounded-full bg-white shadow transition-transform', checked ? 'translate-x-5' : 'translate-x-0.5')} />
+        <span
+          className={cn(
+            'absolute top-[3px] left-[3px] size-5 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,.25)] transition-transform duration-[240ms] ease-[cubic-bezier(.34,1.56,.64,1)]',
+            checked && 'translate-x-5',
+          )}
+        />
       </button>
     </div>
   )

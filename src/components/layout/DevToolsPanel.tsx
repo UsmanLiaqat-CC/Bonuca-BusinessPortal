@@ -41,7 +41,7 @@ export function DevToolsPanel() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="no-print fixed bottom-4 left-4 z-40 inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-2 text-xs font-medium shadow-card hover:bg-surface-2"
+        className="no-print btn btn-ghost btn-sm fixed bottom-4 left-4 z-40 rounded-full text-xs shadow-[var(--shadow-card)] min-[901px]:left-[290px]"
       >
         <Wrench className="size-3.5" aria-hidden /> Dev tools
       </button>

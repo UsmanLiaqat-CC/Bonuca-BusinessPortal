@@ -19,9 +19,9 @@ export function BackgroundControl({ value, onChange, required, error, allowDefau
   ]
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="mb-1.5 text-sm font-medium">
-        Background{required && <span className="ml-0.5 text-danger" aria-hidden>*</span>}
-        <span className="ml-1 text-xs font-normal text-muted">— a colour or an image, not both</span>
+      <legend className="label mb-2 flex-wrap">
+        Background{required && <span className="req ml-0.5" aria-hidden>*</span>}
+        <span className="opt ml-1">— a colour or an image, not both</span>
       </legend>
       <div role="radiogroup" aria-label="Background type" className="flex flex-wrap gap-2">
         {options.map((o) => (
@@ -31,7 +31,7 @@ export function BackgroundControl({ value, onChange, required, error, allowDefau
             role="radio"
             aria-checked={value.kind === o.kind}
             onClick={() => onChange(o.kind === 'default' ? { kind: 'default' } : o.kind === 'color' ? { kind: 'color', color: value.kind === 'color' ? value.color : '#0A112F' } : { kind: 'image', image: value.kind === 'image' ? value.image : '' })}
-            className={cn('rounded-lg border px-3 py-1.5 text-sm', value.kind === o.kind ? 'border-accent bg-accent-soft text-accent' : 'border-line hover:bg-surface-2')}
+            className={cn('chip', value.kind === o.kind && 'on')}
           >
             {o.label}
           </button>
@@ -39,7 +39,7 @@ export function BackgroundControl({ value, onChange, required, error, allowDefau
       </div>
       {value.kind === 'color' && <ColorField label="Background colour" value={value.color} onChange={(color) => onChange({ kind: 'color', color })} />}
       {value.kind === 'image' && <ImageUpload label="Background image" shape="wide" required value={value.image || null} onChange={(image) => onChange({ kind: 'image', image: image ?? '' })} />}
-      {error && <p className="text-xs text-danger" role="alert">{error}</p>}
+      {error && <p className="error-msg" role="alert">{error}</p>}
     </fieldset>
   )
 }

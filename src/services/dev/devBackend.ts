@@ -29,7 +29,7 @@ import { assertWithinLimit, authorize, type AccessContext, type Permission } fro
 import { resolvePlanState, type PlanState } from '@/lib/plan'
 import { nextStatus, type LifecycleAction } from '@/lib/lifecycle'
 import { applyScan, buildScanContext, evaluateWinBack } from '@/lib/scanEngine'
-import { analyticsStats, dashboardStats } from '@/lib/metrics'
+import { analyticsStats, dashboardStats, type DateRange } from '@/lib/metrics'
 import { buildLeaderboard } from '@/lib/gamification'
 import { AuthError, NotFoundError, ValidationError } from '@/lib/errors'
 import { createId, createToken, createVerificationCode } from '@/lib/ids'
@@ -354,7 +354,7 @@ export class DevBackend implements BusinessBackend {
       country: user.country,
       address: input.address,
       openingHours: input.openingHours,
-      branding: { logo: input.logo, primaryColor: input.primaryColor, secondaryColor: '#0A112F', backgroundColor: '#FBFBFB', font: 'system' },
+      branding: { logo: input.logo, primaryColor: input.primaryColor, secondaryColor: '#0A112F', backgroundColor: '#F3F3F1', font: 'system' },
       signupFields: { ...DEFAULT_SIGNUP_FIELDS },
       permissions: { managersCanManageEmployees: false, showLeaderboardToEmployees: false },
       onboardingStep: 'plan',
@@ -764,8 +764,8 @@ export class DevBackend implements BusinessBackend {
 
   /* ------------------------------------------------------------------ insights & settings */
 
-  getDashboard() {
-    return this.read('dashboard.view', (ds) => dashboardStats(ds, this.now()))
+  getDashboard(range?: DateRange) {
+    return this.read('dashboard.view', (ds) => dashboardStats(ds, this.now(), range))
   }
 
   getAnalytics() {

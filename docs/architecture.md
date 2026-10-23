@@ -66,9 +66,12 @@ URL to the correct step; `AppRoute` provides the `BusinessSessionProvider` for `
 
 ## Design tokens & theming
 
-`src/styles/tokens.css` defines Bonuca platform tokens for light (`#FBFBFB / #0A0A0A / #1747F8`) and dark
-(`#010414 / #FFFFFF / #1747F8`), the wallet gradient `#0A112F → #000000`, and **provisional** surface,
-border, muted and status colours (OI-09). `global.css` maps them to Tailwind utilities via `@theme inline`.
+The visual system is the UI redesign: `src/styles/redesign/design-tokens/tokens.css` and
+`src/styles/redesign/styles/app.css` (copied from `Bonuca-UI-Redesign/shared/`). Platform colours are final per the
+client (2026-10-21, OI-45): light (`#F3F3F1 / #0A0A0A / #1747F8`), dark (`#010414 / #FFFFFF / #2F5BFF`), highlight
+`#FFD43B`, wallet gradient `#0A112F → #000000`; surface, border, muted and status colours stay provisional (OI-09).
+`src/styles/tokens.css` maps the portal's `--bn-*` names onto these tokens and `global.css` exposes them as
+Tailwind utilities via `@theme inline`.
 `ThemeProvider` resolves System/Light/Dark and sets `data-theme` on `<html>`. Business branding (logo,
 primary/secondary/background, font) is stored per business and used on business-branded surfaces and wallet
 previews; it never overrides Bonuca chrome tokens.

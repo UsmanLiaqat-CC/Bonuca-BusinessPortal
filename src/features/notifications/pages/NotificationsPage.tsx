@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bell, Plus, Send } from 'lucide-react'
+import { Bell, Lock, Plus, Send, Sparkles } from 'lucide-react'
 import type { NotificationCampaign } from '@/types/domain'
 import type { NotificationValues } from '@/schemas/notification'
 import { useT } from '@/i18n'
@@ -37,8 +37,22 @@ export default function NotificationsPage() {
 
   return (
     <>
-      <PageHeader title={t('nav.notifications')} actions={tab === 'campaigns' && <GuardedButton permission="notifications.manage" onClick={() => setComposer({ editing: null })}><Plus className="size-4" aria-hidden /> New campaign</GuardedButton>} />
-      <div className="mb-6">
+      <PageHeader
+        title={t('nav.notifications')}
+        breadcrumb={
+          <>
+            <Bell className="size-[13px]" aria-hidden /> {t('nav.group.engagement')}
+          </>
+        }
+        actions={
+          tab === 'campaigns' && (
+            <GuardedButton permission="notifications.manage" onClick={() => setComposer({ editing: null })}>
+              <Plus className="size-[15px]" aria-hidden /> New campaign
+            </GuardedButton>
+          )
+        }
+      />
+      <div>
         <Tabs
           label="Notification sections"
           value={tab}
@@ -51,9 +65,9 @@ export default function NotificationsPage() {
         />
       </div>
       {tab === 'campaigns' && (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-[18px]">
           <IntegrationNotice title="Wallet push delivery not connected">Campaigns can be drafted and reviewed. Sending requires the push notification service, which is not available in this environment — campaigns stay drafts until delivery is confirmed.</IntegrationNotice>
-          <Card>
+          <Card className="reveal-up overflow-hidden">
             <QueryState query={notifications}>
               {(list) =>
                 list.length === 0 ? (
@@ -61,18 +75,21 @@ export default function NotificationsPage() {
                     <EmptyState icon={<Bell className="size-6" />} title="No campaigns yet" body="Happy Hour, New Item, Double Stamps, Birthday Reward, Holiday Campaign, Limited Offers and similar wallet push notifications." />
                   </div>
                 ) : (
-                  <ul className="divide-y divide-line">
+                  <ul>
                     {list.map((n) => (
-                      <li key={n.id} className="flex flex-wrap items-center gap-3 px-5 py-4">
+                      <li key={n.id} className="list-row flex-wrap py-4">
+                        <span className={n.origin === 'manual' ? 'feed-ic bg-accent-soft text-accent' : 'feed-ic bg-[color-mix(in_srgb,var(--color-lilac)_14%,transparent)] text-[var(--color-lilac)]'} aria-hidden>
+                          {n.origin === 'manual' ? <Bell className="size-4" /> : <Sparkles className="size-4" />}
+                        </span>
                         <div className="min-w-0 flex-1">
-                          <p className="flex flex-wrap items-center gap-2 font-medium">
+                          <p className="flex flex-wrap items-center gap-2 font-semibold">
                             {n.title}
-                            <Badge>{CAMPAIGN_TYPE_LABELS[n.type]}</Badge>
+                            <Badge tone="outline">{CAMPAIGN_TYPE_LABELS[n.type]}</Badge>
                             {n.origin !== 'manual' && <Badge tone="accent">{n.origin === 'ai_bonus' ? 'AI bonus' : 'AI campaign'}</Badge>}
-                            <Badge tone={n.status === 'sent' ? 'success' : 'neutral'}>{n.status === 'sent' ? 'Sent' : 'Draft'}</Badge>
+                            <Badge tone={n.status === 'sent' ? 'success' : 'neutral'} dot>{n.status === 'sent' ? 'Sent' : 'Draft'}</Badge>
                           </p>
-                          <p className="truncate text-sm text-muted">{n.message}</p>
-                          <p className="text-xs text-muted">{n.status === 'sent' ? `Sent ${formatDateTime(n.sentAt)}` : `Updated ${formatDateTime(n.updatedAt)}`}</p>
+                          <p className="mt-0.5 truncate text-sm text-muted">{n.message}</p>
+                          <p className="mt-0.5 text-xs text-faint">{n.status === 'sent' ? `Sent ${formatDateTime(n.sentAt)}` : `Updated ${formatDateTime(n.updatedAt)}`}</p>
                         </div>
                         {n.status === 'draft' && (
                           <div className="flex gap-2">
@@ -95,9 +112,11 @@ export default function NotificationsPage() {
       )}
       {tab === 'winback' && <WinBackSettings />}
       {tab === 'ai' && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-[18px] lg:grid-cols-2">
           {access.role !== 'owner' && (
-            <p className="text-sm text-muted lg:col-span-2">AI Campaigns and the AI Bonus Generator are available to the business Owner.</p>
+            <p className="lock-overlay lg:col-span-2">
+              <Lock className="size-4 shrink-0" aria-hidden /> AI Campaigns and the AI Bonus Generator are available to the business Owner.
+            </p>
           )}
           <AiDraftPanel kind="campaign" onDraft={(initial) => setComposer({ editing: null, initial })} />
           <AiDraftPanel kind="bonus" onDraft={(initial) => setComposer({ editing: null, initial })} />

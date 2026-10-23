@@ -6,10 +6,14 @@ const LIFECYCLE_TONE: Record<LifecycleStatus, BadgeTone> = { draft: 'neutral', a
 
 export function LifecycleBadge({ status }: { status: LifecycleStatus }) {
   const t = useT()
-  return <Badge tone={LIFECYCLE_TONE[status]}>{t(`status.${status}`)}</Badge>
+  return (
+    <Badge tone={LIFECYCLE_TONE[status]} live={status === 'active'}>
+      {t(`status.${status}`)}
+    </Badge>
+  )
 }
 
-const REWARD_TONE: Record<RewardStatus, BadgeTone> = { available: 'success', redeemed: 'neutral', pending: 'warning', expired: 'danger' }
+const REWARD_TONE: Record<RewardStatus, BadgeTone> = { available: 'success', redeemed: 'accent', pending: 'warning', expired: 'danger' }
 const REWARD_LABEL: Record<RewardStatus, string> = { available: 'Available', redeemed: 'Redeemed', pending: 'Pending', expired: 'Expired' }
 
 export function RewardBadge({ status }: { status: RewardStatus }) {

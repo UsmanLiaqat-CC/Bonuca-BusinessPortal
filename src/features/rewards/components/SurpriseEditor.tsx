@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { useState, type CSSProperties } from 'react'
+import { Plus, Sparkles, X } from 'lucide-react'
 import type { Program, SurpriseConfig } from '@/types/domain'
 import { useToast } from '@/state/toast'
 import { errorMessage } from '@/lib/errors'
@@ -27,27 +27,49 @@ export function SurpriseEditor({ program }: { program: Program }) {
   }
 
   return (
-    <Card>
-      <CardHeader title={program.name} actions={<LifecycleBadge status={program.status} />} />
-      <CardBody className="flex flex-col gap-4">
+    <Card className="reveal-up">
+      <CardHeader title={program.name} icon={<Sparkles className="size-4" />} actions={<LifecycleBadge status={program.status} />} />
+      <CardBody className="flex flex-col gap-[18px]">
         <Toggle label="Surprise rewards" description="Random, unannounced rewards after a confirmed scan. Customers never see a schedule." checked={cfg.enabled} onChange={(enabled) => setCfg({ ...cfg, enabled })} />
-        <label className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="font-medium">Probability per scan</span>
-          <Input type="number" min={0.1} max={100} step={0.1} className="w-24" value={cfg.probabilityPercent} onChange={(e) => setCfg({ ...cfg, probabilityPercent: Number(e.target.value) })} />
-          <span className="text-muted">%{oneIn ? ` · about 1 in ${oneIn} scans` : ''}</span>
-        </label>
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium">Reward pool</p>
+        <div className={cfg.enabled ? 'flex flex-col gap-[18px]' : 'flex flex-col gap-[18px] opacity-55 transition-opacity'}>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <label htmlFor={`prob-${program.id}`} className="label">Probability per scan</label>
+            <Input id={`prob-${program.id}`} type="number" min={0.1} max={100} step={0.1} className="h-9 w-24" value={cfg.probabilityPercent} onChange={(e) => setCfg({ ...cfg, probabilityPercent: Number(e.target.value) })} />
+            <span className="text-muted">%</span>
+          </div>
+          <input
+            type="range"
+            min={0.1}
+            max={100}
+            step={0.1}
+            aria-hidden
+            tabIndex={-1}
+            value={cfg.probabilityPercent}
+            onChange={(e) => setCfg({ ...cfg, probabilityPercent: Number(e.target.value) })}
+            className="range"
+            style={{ '--p': `${Math.min(100, Math.max(0, cfg.probabilityPercent))}%` } as CSSProperties}
+          />
+          {oneIn && (
+            <p className="prob-display">
+              <span className="text-sm text-muted">about</span>
+              <b>1 in {oneIn}</b>
+              <span className="text-sm text-muted">scans</span>
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col gap-2.5">
+          <p className="label">Reward pool</p>
           <ul className="flex flex-wrap gap-2">
             {cfg.pool.map((r, i) => (
-              <li key={`${r}-${i}`} className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-3 py-1 text-sm">
+              <li key={`${r}-${i}`} className="pool-chip">
                 {r}
-                <button type="button" aria-label={`Remove ${r}`} onClick={() => setCfg({ ...cfg, pool: cfg.pool.filter((_, j) => j !== i) })} className="text-muted hover:text-danger">
-                  <X className="size-3.5" />
+                <button type="button" aria-label={`Remove ${r}`} onClick={() => setCfg({ ...cfg, pool: cfg.pool.filter((_, j) => j !== i) })}>
+                  <X className="size-3" />
                 </button>
               </li>
             ))}
-            {cfg.pool.length === 0 && <li className="text-sm text-muted">No rewards in the pool.</li>}
+            {cfg.pool.length === 0 && <li className="hint">No rewards in the pool.</li>}
           </ul>
           <form
             className="flex gap-2"
@@ -61,11 +83,12 @@ export function SurpriseEditor({ program }: { program: Program }) {
           >
             <Input aria-label={`Add reward to ${program.name} pool`} placeholder="e.g. Free cookie" value={item} onChange={(e) => setItem(e.target.value)} />
             <Button type="submit" variant="secondary">
-              <Plus className="size-4" aria-hidden /> Add
+              <Plus className="size-[15px]" aria-hidden /> Add
             </Button>
           </form>
         </div>
-        {error && <p className="text-sm text-danger" role="alert">{error}</p>}
+        </div>
+        {error && <p className="error-msg" role="alert">{error}</p>}
         <div>
           <GuardedButton permission="rewards.manage" onClick={save} loading={update.isPending}>
             Save

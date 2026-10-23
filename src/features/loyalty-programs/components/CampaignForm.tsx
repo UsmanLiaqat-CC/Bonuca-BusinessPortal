@@ -51,11 +51,11 @@ export function CampaignForm({ initial, campaignId, status, programs, onDone }: 
   )
 
   return (
-    <div className={preview ? 'grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]' : ''}>
-      <form className="flex min-w-0 flex-col gap-6" noValidate onSubmit={(ev) => ev.preventDefault()}>
-        <Card>
-          <CardHeader title={initial.kind === 'voucher' ? 'One-time voucher campaign' : 'Stamp card acquisition campaign'} description={initial.kind === 'voucher' ? 'Standalone — not linked to any stamp card. One shared QR; each claim is tracked per customer and redeemable once.' : 'A special join QR layered on top of an existing Stamp Card program.'} />
-          <CardBody className="grid gap-5 sm:grid-cols-2">
+    <div className={preview ? 'layout-preview' : ''}>
+      <form className="flex min-w-0 flex-col gap-[18px]" noValidate onSubmit={(ev) => ev.preventDefault()}>
+        <Card className="reveal-up">
+          <CardHeader step={1} title={initial.kind === 'voucher' ? 'One-time voucher campaign' : 'Stamp card acquisition campaign'} description={initial.kind === 'voucher' ? 'Standalone — not linked to any stamp card. One shared QR; each claim is tracked per customer and redeemable once.' : 'A special join QR layered on top of an existing Stamp Card program.'} />
+          <CardBody className="form-grid">
             <Field label="Campaign Name" required error={e('name')} hint={initial.kind === 'voucher' ? 'e.g. "Free Coffee Campaign"' : 'Internal label, e.g. "Cup-lid Campaign"'}>
               {(p) => <Input {...p} {...register('name')} />}
             </Field>
@@ -106,8 +106,8 @@ export function CampaignForm({ initial, campaignId, status, programs, onDone }: 
                     </div>
                   )}
                 />
-                <div className="flex flex-col gap-4 rounded-lg border border-line p-4 sm:col-span-2">
-                  <Controller control={control} name="welcomeGift.enabled" render={({ field }) => <Toggle label="Welcome Gift (optional)" description="If on, reveals Reward Name, Description, Validity Period and Redemption Conditions." checked={!!field.value} onChange={field.onChange} />} />
+                <div className="flex flex-col gap-4 reveal sm:col-span-2">
+                  <Controller control={control} name="welcomeGift.enabled" render={({ field }) => <Toggle plain label="Welcome Gift (optional)" description="If on, reveals Reward Name, Description, Validity Period and Redemption Conditions." checked={!!field.value} onChange={field.onChange} />} />
                   {values.kind === 'stamp_acquisition' && values.welcomeGift?.enabled && (
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field label="Reward Name" required error={e('welcomeGift.rewardName')}>
@@ -144,7 +144,7 @@ export function CampaignForm({ initial, campaignId, status, programs, onDone }: 
             )}
           </CardBody>
         </Card>
-        <div className="flex flex-wrap gap-2">
+        <div className="card reveal-up flex flex-wrap items-center gap-2.5 p-4">
           {isDraft ? (
             <>
               <GuardedButton permission="programs.manage" onClick={form.handleSubmit((d) => persist(d, true))} loading={lifecycle.isPending}>
@@ -162,7 +162,7 @@ export function CampaignForm({ initial, campaignId, status, programs, onDone }: 
         </div>
       </form>
       {preview && (
-        <aside className="xl:sticky xl:top-20 xl:self-start">
+        <aside className="xl:sticky xl:top-24 xl:self-start">
           <WalletPassPreview content={preview} label="Voucher pass preview" />
         </aside>
       )}

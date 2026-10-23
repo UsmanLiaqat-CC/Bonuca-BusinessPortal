@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analyticsStats, dashboardStats } from '@/lib/metrics'
+import { analyticsStats, dashboardStats, previousRange } from '@/lib/metrics'
 import { buildLeaderboard } from '@/lib/gamification'
 import { buildPassContent } from '@/lib/walletContent'
 import { translate, LANGUAGES } from '@/i18n'
@@ -18,6 +18,16 @@ describe('dashboard & analytics metrics (spec §4.1, §4.9)', () => {
     expect(s.customerGrowth).toHaveLength(30)
     expect(s.monthlyGrowth).toHaveLength(12)
     expect(s.returningCustomers).toBeLessThanOrEqual(s.totalMembers)
+  })
+  it('filters the KPIs by range and compares with the equally long previous range', () => {
+    const wide = dashboardStats(ds, NOW, { from: '2000-01-01', to: '2100-01-01' })
+    expect(wide.period.scans).toBe(ds.transactions.length)
+    expect(wide.period.newMembers).toBe(ds.customers.length)
+    expect(wide.previous.scans).toBe(0)
+    const empty = dashboardStats(ds, NOW, { from: '2000-01-01', to: '2000-01-02' })
+    expect(empty.period).toEqual({ newMembers: 0, scans: 0, visits: 0, returningCustomers: 0, newWalletCards: 0 })
+    expect(empty.topPrograms).toEqual([])
+    expect(previousRange({ from: '2026-10-08', to: '2026-10-14' })).toEqual({ from: '2026-10-01', to: '2026-10-07' })
   })
   it('heatmap is 7×24 and sums to the scans in the window', () => {
     const a = analyticsStats(ds, NOW)

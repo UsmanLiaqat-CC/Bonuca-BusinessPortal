@@ -14,6 +14,7 @@ export interface DialogProps {
   size?: 'sm' | 'md' | 'lg'
 }
 
+/** Redesign modal: blurred backdrop, spring scale-in; closes on Esc, × or backdrop click. */
 export function Dialog({ open, onClose, title, description, children, footer, size = 'md' }: DialogProps) {
   const titleId = useId()
   const panel = useRef<HTMLDivElement>(null)
@@ -53,31 +54,28 @@ export function Dialog({ open, onClose, title, description, children, footer, si
 
   if (!open) return null
   return createPortal(
-    <div role="presentation" className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div role="presentation" className="backdrop px-3 pt-16 sm:px-5 sm:pt-24" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div
         ref={panel}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={cn(
-          'flex max-h-[92vh] w-full flex-col rounded-t-2xl border border-line bg-surface text-fg shadow-card sm:rounded-2xl',
-          size === 'sm' ? 'sm:max-w-md' : size === 'md' ? 'sm:max-w-xl' : 'sm:max-w-3xl',
-        )}
+        className={cn('modal flex max-h-[calc(100vh-6rem)] flex-col text-fg', size === 'sm' ? 'max-w-[440px]' : size === 'lg' && 'wide')}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
-          <div>
-            <h2 id={titleId} className="text-base font-semibold">
+        <div className="modal-head">
+          <div className="min-w-0">
+            <h2 id={titleId} className="text-xl tracking-[-0.025em]">
               {title}
             </h2>
-            {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
+            {description && <p className="mt-1 text-[13.5px] text-muted">{description}</p>}
           </div>
-          <button type="button" data-close onClick={onClose} className="rounded p-1 text-muted hover:bg-surface-2 hover:text-fg" aria-label="Close dialog">
-            <X className="size-4" />
+          <button type="button" data-close onClick={onClose} className="icon-btn" aria-label="Close dialog">
+            <X className="size-[18px]" />
           </button>
         </div>
-        {children && <div className="overflow-y-auto px-5 py-4">{children}</div>}
-        {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-line px-5 py-3">{footer}</div>}
+        {children && <div className="modal-body overflow-y-auto">{children}</div>}
+        {footer && <div className="modal-foot flex-wrap">{footer}</div>}
       </div>
     </div>,
     document.body,

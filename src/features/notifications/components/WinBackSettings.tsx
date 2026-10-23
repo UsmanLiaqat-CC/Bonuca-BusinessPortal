@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
-import { Plus, Trash2 } from 'lucide-react'
+import { History, Plus, RotateCcw, Trash2 } from 'lucide-react'
 import { winBackSchema, type WinBackValues } from '@/schemas/notification'
 import { zodResolver, toNullableNumber } from '@/lib/forms'
 import { errorMessage } from '@/lib/errors'
@@ -28,9 +28,9 @@ export function WinBackSettings() {
   const errs = form.formState.errors.stages
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-[18px]">
       <Card>
-        <CardHeader title="Win-back automation" description="Automatic drip sequence triggered by customer inactivity. Each notification also creates a matching active reward, redeemable on the customer's next scan." />
+        <CardHeader icon={<RotateCcw className="size-4" />} title="Win-back automation" description="Automatic drip sequence triggered by customer inactivity. Each notification also creates a matching active reward, redeemable on the customer's next scan." />
         <CardBody>
           <form
             noValidate
@@ -40,16 +40,16 @@ export function WinBackSettings() {
             <Controller control={form.control} name="enabled" render={({ field }) => <Toggle label="Enable win-back automation" checked={field.value} onChange={field.onChange} />} />
             <ol className="flex flex-col gap-3">
               {stages.fields.map((f, i) => (
-                <li key={f.id} className="grid items-start gap-3 rounded-lg border border-line p-3 sm:grid-cols-[9rem_1fr_auto]">
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="font-medium">Stage {i + 1} — days inactive</span>
+                <li key={f.id} className="grid items-start gap-3 reveal sm:grid-cols-[9rem_1fr_auto]">
+                  <label className="field">
+                    <span className="label">Stage {i + 1} — days inactive</span>
                     <Input type="number" min={1} {...form.register(`stages.${i}.days`, { setValueAs: toNullableNumber })} aria-invalid={errs?.[i]?.days ? true : undefined} />
-                    {errs?.[i]?.days && <span className="text-xs text-danger">{errs[i]?.days?.message}</span>}
+                    {errs?.[i]?.days && <span className="error-msg">{errs[i]?.days?.message}</span>}
                   </label>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="font-medium">Offer (becomes the active reward)</span>
+                  <label className="field">
+                    <span className="label">Offer (becomes the active reward)</span>
                     <Input placeholder="e.g. Free coffee" {...form.register(`stages.${i}.offer`)} aria-invalid={errs?.[i]?.offer ? true : undefined} />
-                    {errs?.[i]?.offer && <span className="text-xs text-danger">{errs[i]?.offer?.message}</span>}
+                    {errs?.[i]?.offer && <span className="error-msg">{errs[i]?.offer?.message}</span>}
                   </label>
                   <Button variant="ghost" className="sm:mt-6" onClick={() => stages.remove(i)} disabled={stages.fields.length <= 1} aria-label={`Remove stage ${i + 1}`}>
                     <Trash2 className="size-4" />
@@ -69,17 +69,17 @@ export function WinBackSettings() {
         </CardBody>
       </Card>
       <Card>
-        <CardHeader title="Automation log" description="Win-back rewards created by the automation." />
+        <CardHeader icon={<History className="size-4" />} title="Automation log" description="Win-back rewards created by the automation." />
         <CardBody className="flex flex-col gap-3">
           <IntegrationNotice title="Push delivery not connected">Rewards are created, but notifications are not delivered to customers in this environment.</IntegrationNotice>
           <QueryState query={winback}>
             {(d) =>
               d.events.length === 0 ? (
-                <p className="text-sm text-muted">No win-back events yet.</p>
+                <p className="empty py-4">No win-back events yet.</p>
               ) : (
-                <ul className="divide-y divide-line text-sm">
+                <ul className="timeline text-sm">
                   {[...d.events].reverse().slice(0, 25).map((ev) => (
-                    <li key={ev.id} className="flex flex-wrap justify-between gap-2 py-2">
+                    <li key={ev.id} className="tl-item flex-wrap">
                       <span>
                         Stage {ev.stage + 1} · customer {ev.customerId}
                       </span>

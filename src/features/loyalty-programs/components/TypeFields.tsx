@@ -31,14 +31,14 @@ export function StampFields({ form }: { form: Form }) {
         name="config.stampIcon"
         render={({ field }) => (
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1.5 text-sm font-medium">
-              Stamp Icon <span className="text-xs font-normal text-muted">(optional — default coffee cup)</span>
+            <legend className="label mb-2 flex-wrap">
+              Stamp Icon <span className="opt">(optional — default coffee cup)</span>
             </legend>
             <div role="radiogroup" aria-label="Stamp icon" className="flex flex-wrap gap-1.5">
               {STAMP_PRESETS.map(({ value, label, icon: Icon }) => {
                 const selected = field.value.kind === 'preset' && field.value.preset === value
                 return (
-                  <button key={value} type="button" role="radio" aria-checked={selected} aria-label={label} title={label} onClick={() => field.onChange({ kind: 'preset', preset: value })} className={cn('rounded-lg border p-2', selected ? 'border-accent bg-accent-soft text-accent' : 'border-line hover:bg-surface-2')}>
+                  <button key={value} type="button" role="radio" aria-checked={selected} aria-label={label} title={label} onClick={() => field.onChange({ kind: 'preset', preset: value })} className={cn('grid size-[42px] place-items-center rounded-xl border transition hover:-translate-y-0.5', selected ? 'border-transparent bg-accent text-white shadow-[var(--shadow-cta)]' : 'border-line-strong bg-surface')}>
                     <Icon className="size-4" aria-hidden />
                   </button>
                 )
@@ -75,7 +75,7 @@ export function MembershipFields({ form }: { form: Form }) {
   const benefitType = watch('config.benefitType')
   return (
     <div className="grid gap-5 sm:grid-cols-2">
-      <p className="rounded-lg bg-surface-2 px-3 py-2 text-xs text-muted sm:col-span-2">Membership Cards never track stamps or points — they identify the customer and state their benefit at checkout.</p>
+      <p className="callout text-xs text-muted sm:col-span-2">Membership Cards never track stamps or points — they identify the customer and state their benefit at checkout.</p>
       <Field label="Benefit Description" required error={e('config.benefitDescription')} hint='Main line on the pass, e.g. "10% off every visit".' className="sm:col-span-2">
         {(p) => <Input {...p} {...register('config.benefitDescription')} />}
       </Field>
@@ -163,7 +163,7 @@ export function TierFields({ form }: { form: Form }) {
           </div>
           <ol className="flex flex-col gap-3">
             {tiers.fields.map((f, i) => (
-              <li key={f.id} className="grid gap-4 rounded-lg border border-line p-4 sm:grid-cols-2">
+              <li key={f.id} className="grid gap-4 reveal sm:grid-cols-2">
                 <p className="text-sm font-semibold sm:col-span-2">Tier {i + 1}</p>
                 <Field label="Tier Name" required error={e(`config.tiers.${i}.name`)}>
                   {(p) => <Input {...p} {...register(`config.tiers.${i}.name` as 'config.tiers.0.name')} />}
@@ -217,8 +217,8 @@ export function PointsFields({ form }: { form: Form }) {
           </Field>
         )}
         <fieldset className="flex flex-col gap-1.5 sm:col-span-2">
-          <legend className="text-sm font-medium">
-            Calculation Basis / Ratio<span className="ml-0.5 text-danger" aria-hidden>*</span>
+          <legend className="label mb-2 flex-wrap">
+            Calculation Basis / Ratio<span className="req ml-0.5" aria-hidden>*</span>
           </legend>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <Input type="number" min={0} step="0.01" className="w-28" aria-label="Spend amount" {...register('config.ratio.spend', num)} />
@@ -226,7 +226,7 @@ export function PointsFields({ form }: { form: Form }) {
             <Input type="number" min={0} step="0.01" className="w-28" aria-label="Points earned" {...register('config.ratio.points', num)} />
             <span>points</span>
           </div>
-          {(e('config.ratio.spend') || e('config.ratio.points')) && <p className="text-xs text-danger" role="alert">{e('config.ratio.spend') ?? e('config.ratio.points')}</p>}
+          {(e('config.ratio.spend') || e('config.ratio.points')) && <p className="error-msg" role="alert">{e('config.ratio.spend') ?? e('config.ratio.points')}</p>}
         </fieldset>
         <Field label="Awarding Method" required hint="Fixed = same points every scan. Manual = employee enters the purchase amount.">
           {(p) => (
@@ -258,11 +258,11 @@ export function PointsFields({ form }: { form: Form }) {
         </Field>
       </div>
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-1 text-sm font-medium">
-          Rewards List<span className="ml-0.5 text-danger" aria-hidden>*</span> <span className="text-xs font-normal text-muted">— at least one reward</span>
+        <legend className="label mb-2 flex-wrap">
+          Rewards List<span className="req ml-0.5" aria-hidden>*</span> <span className="opt">— at least one reward</span>
         </legend>
         {rewards.fields.map((f, i) => (
-          <div key={f.id} className="grid items-end gap-3 rounded-lg border border-line p-3 sm:grid-cols-[1fr_9rem_auto]">
+          <div key={f.id} className="grid items-end gap-3 reveal sm:grid-cols-[1fr_9rem_auto]">
             <Field label={`Reward ${i + 1} name`} required error={e(`config.rewards.${i}.name`)}>
               {(p) => <Input {...p} placeholder="e.g. Free Coffee" {...register(`config.rewards.${i}.name` as 'config.rewards.0.name')} />}
             </Field>
@@ -277,7 +277,7 @@ export function PointsFields({ form }: { form: Form }) {
             </div>
           </div>
         ))}
-        {e('config.rewards') && <p className="text-xs text-danger" role="alert">{e('config.rewards')}</p>}
+        {e('config.rewards') && <p className="error-msg" role="alert">{e('config.rewards')}</p>}
         <div>
           <Button variant="secondary" size="sm" onClick={() => rewards.append({ id: createId('prw'), name: '', pointsRequired: 0, icon: null })}>
             <Plus className="size-4" aria-hidden /> Add reward

@@ -71,10 +71,10 @@ export function ProgramForm({ initial, programId, status, onDone }: { initial: P
 
   const showBackground = type !== 'tier'
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <form className="flex min-w-0 flex-col gap-6" noValidate onSubmit={(e) => e.preventDefault()}>
+    <div className="layout-preview">
+      <form className="flex min-w-0 flex-col gap-[18px]" noValidate onSubmit={(e) => e.preventDefault()}>
         <Card>
-          <CardHeader title="Basics" description={`${t(`type.${type}`)} · program type cannot be changed after creation`} />
+          <CardHeader step={1} title="Basics" description={`${t(`type.${type}`)} · program type cannot be changed after creation`} />
           <CardBody>
             <Field label="Program Name" required error={form.formState.errors.name?.message} hint="Internal name and the header text on the wallet pass.">
               {(p) => <Input {...p} {...form.register('name')} />}
@@ -82,13 +82,13 @@ export function ProgramForm({ initial, programId, status, onDone }: { initial: P
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="Wallet design" description={type === 'tier' ? 'Shared across every tier’s pass. The background switches to each tier’s wallet colour.' : 'These master fields render on the wallet pass.'} />
+          <CardHeader step={2} title="Wallet design" description={type === 'tier' ? 'Shared across every tier’s pass. The background switches to each tier’s wallet colour.' : 'These master fields render on the wallet pass.'} />
           <CardBody>
             <VisualFields form={form} show={{ background: showBackground, textColor: type !== 'tier' }} logoRequired={initial.designMode === 'template'} />
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="Program rules" />
+          <CardHeader step={3} title="Program rules" />
           <CardBody>
             {type === 'stamp' && <StampFields form={form} />}
             {type === 'membership' && <MembershipFields form={form} />}
@@ -97,11 +97,12 @@ export function ProgramForm({ initial, programId, status, onDone }: { initial: P
           </CardBody>
         </Card>
         <Card>
+          <CardHeader step={4} title="Terms" />
           <CardBody>
             <TermsField form={form} />
           </CardBody>
         </Card>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="card reveal-up flex flex-wrap items-center gap-2.5 p-4">
           {isDraft ? (
             <>
               <GuardedButton permission="programs.manage" extra={limit} onClick={publish} loading={lifecycle.isPending}>
@@ -116,10 +117,10 @@ export function ProgramForm({ initial, programId, status, onDone }: { initial: P
               {t('common.save')}
             </GuardedButton>
           )}
-          {Object.keys(form.formState.errors).length > 0 && <p className="text-sm text-danger" role="alert">Some fields need attention.</p>}
+          {Object.keys(form.formState.errors).length > 0 && <p className="error-msg ml-auto" role="alert">Some fields need attention.</p>}
         </div>
       </form>
-      <aside className="xl:sticky xl:top-20 xl:self-start">
+      <aside className="xl:sticky xl:top-24 xl:self-start">
         <WalletPassPreview content={preview} />
       </aside>
       <ConfirmDialog

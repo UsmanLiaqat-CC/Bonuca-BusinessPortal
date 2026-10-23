@@ -62,3 +62,18 @@ export function formatDateTime(iso: string | null, locale = 'en'): string {
     minute: '2-digit',
   })
 }
+
+export type RangePreset = 'today' | 'week' | 'month' | 'quarter' | 'custom'
+
+/** Inclusive `YYYY-MM-DD` range for a dashboard filter chip (week starts Monday). */
+export function presetRange(preset: Exclude<RangePreset, 'custom'>, now: Date = new Date()): { from: string; to: string } {
+  const today = startOfDay(now)
+  if (preset === 'today') return { from: dayKey(today), to: dayKey(today) }
+  if (preset === 'week') {
+    const from = startOfWeek(now)
+    return { from: dayKey(from), to: dayKey(addDays(from, 6)) }
+  }
+  if (preset === 'month') return { from: dayKey(startOfMonth(now)), to: dayKey(new Date(now.getFullYear(), now.getMonth() + 1, 0)) }
+  const q = Math.floor(now.getMonth() / 3)
+  return { from: dayKey(new Date(now.getFullYear(), q * 3, 1)), to: dayKey(new Date(now.getFullYear(), q * 3 + 3, 0)) }
+}

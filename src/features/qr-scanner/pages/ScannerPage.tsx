@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle2, QrCode, ScanLine } from 'lucide-react'
+import { ArrowRight, CheckCircle2, History, QrCode, ScanLine } from 'lucide-react'
 import type { ScanAction, ScanContext, ScanResult } from '@/lib/scanEngine'
 import { useT } from '@/i18n'
 import { useAccess } from '@/state/session'
@@ -84,31 +84,45 @@ export default function ScannerPage() {
     <>
       <PageHeader
         title={t('nav.scanner')}
+        breadcrumb={
+          <>
+            <ScanLine className="size-[13px]" aria-hidden /> {t('nav.group.operations')}
+          </>
+        }
         description="Scan a customer's wallet pass, confirm the action, and the pass updates."
-        actions={access.can('programs.view') && <Link to="/app/scanner/qr-codes" className={buttonClass('secondary')}><QrCode className="size-4" aria-hidden /> Printable QR codes</Link>}
+        actions={
+          access.can('programs.view') && (
+            <Link to="/app/scanner/qr-codes" className={buttonClass('secondary')}>
+              <QrCode className="size-[15px]" aria-hidden /> Printable QR codes
+            </Link>
+          )
+        }
       />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="flex min-w-0 flex-col gap-4">
+      <div className="grid items-start gap-[18px] lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="flex min-w-0 flex-col gap-[18px]">
           {result && (
-            <Card className="border-success/40" role="status" data-testid="scan-result">
-              <CardBody className="flex flex-col gap-2">
-                <p className="flex items-center gap-2 font-semibold text-success">
-                  <CheckCircle2 className="size-5" aria-hidden /> Confirmed
-                </p>
+            <Card className="reveal-up border-success/40" role="status" data-testid="scan-result">
+              <CardBody className="flex items-start gap-4">
+                <span className="success-burst" aria-hidden>
+                  <CheckCircle2 className="size-6" />
+                </span>
+                <div className="flex min-w-0 flex-col gap-1.5">
+                <p className="font-display text-xl font-bold tracking-tight text-success">Confirmed</p>
                 <p className="text-sm">{result.summary}</p>
                 {result.issuedRewards.filter((r) => r.source !== 'surprise').map((r) => (
                   <p key={r.id} className="text-sm">Reward now available: <strong>{r.name}</strong></p>
                 ))}
                 {result.surprise && <p className="text-sm">Surprise reward issued: <strong>{result.surprise.name}</strong></p>}
-                <p className="text-xs text-muted">Wallet pass update: not sent — the Apple/Google Wallet integration is not connected in this environment.</p>
+                <p className="hint">Wallet pass update: not sent — the Apple/Google Wallet integration is not connected in this environment.</p>
+                </div>
               </CardBody>
             </Card>
           )}
           {context ? (
             <ScanPanel context={context} onConfirm={onConfirm} pending={confirm.isPending} onReset={reset} />
           ) : (
-            <Card>
-              <CardBody className="flex flex-col gap-4">
+            <Card className="reveal-up">
+              <CardBody className="flex flex-col gap-[18px]">
                 {cameraOpen ? (
                   <CameraScanner
                     onCode={identify}
@@ -118,29 +132,44 @@ export default function ScannerPage() {
                     }}
                   />
                 ) : (
-                  <Button
-                    size="lg"
-                    className="h-16 text-base"
+                  <button
+                    type="button"
+                    aria-label="Scan"
+                    className="scan-hero flex-wrap sm:flex-nowrap"
                     onClick={() => {
                       startedAt.current = performance.now()
                       setCameraOpen(true)
                     }}
                   >
-                    <ScanLine className="size-5" aria-hidden /> Scan
-                  </Button>
+                    <span className="frame" aria-hidden>
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                      <i className="beam" />
+                      <QrCode />
+                    </span>
+                    <span className="min-w-0" aria-hidden>
+                      <span className="block font-display text-[28px] font-bold tracking-[-0.03em]">Scan</span>
+                      <span className="mt-1.5 block opacity-70">Point the camera at the customer’s wallet pass.</span>
+                    </span>
+                    <span className="go" aria-hidden>
+                      <ArrowRight className="size-[22px]" />
+                    </span>
+                  </button>
                 )}
                 <form
-                  className="flex flex-col gap-2 border-t border-line pt-4"
+                  className="field border-t border-line pt-[18px]"
                   onSubmit={(e) => {
                     e.preventDefault()
                     if (code.trim()) void identify(code)
                   }}
                 >
-                  <label htmlFor="pass-code" className="text-sm font-medium">
-                    Manual code entry <span className="text-xs font-normal text-muted">(camera unavailable / development)</span>
+                  <label htmlFor="pass-code" className="label">
+                    Manual code entry <span className="opt">(camera unavailable / development)</span>
                   </label>
                   <div className="flex gap-2">
-                    <Input id="pass-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="BNC-XXXXXXXX" className="font-mono uppercase" />
+                    <Input id="pass-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="BNC-XXXXXXXX" className="mono uppercase" />
                     <Button type="submit" variant="secondary" loading={lookup.isPending}>
                       Find
                     </Button>
@@ -152,26 +181,31 @@ export default function ScannerPage() {
           )}
           {access.isPreview && <IntegrationNotice title="Preview Mode">You can look up demo passes, but confirming transactions requires a plan.</IntegrationNotice>}
         </div>
-        <Card>
-          <CardHeader title="Recent scans" />
+        <Card className="scan-feed reveal-up overflow-hidden lg:sticky lg:top-24">
+          <CardHeader title="Recent scans" icon={<History className="size-4" />} />
           <QueryState query={recent}>
             {(rows) =>
               rows.length === 0 ? (
                 <div className="p-5">
-                  <EmptyState title="No scans yet" />
+                  <EmptyState icon={<ScanLine className="size-6" />} title="No scans yet" />
                 </div>
               ) : (
-                <ul className="divide-y divide-line">
+                <ul>
                   {rows.map(({ transaction: tx, customerName, programName }) => (
-                    <li key={tx.id} className="px-5 py-3 text-sm">
+                    <li key={tx.id} className="list-row items-start justify-start text-sm">
+                      <span className="feed-ic bg-accent-soft text-accent" aria-hidden>
+                        <ScanLine className="size-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
                       <div className="flex justify-between gap-2">
-                        <span className="font-medium">{customerName}</span>
-                        <span className="text-xs text-muted">{formatDateTime(tx.createdAt)}</span>
+                        <span className="font-semibold">{customerName}</span>
+                        <span className="shrink-0 text-xs text-faint">{formatDateTime(tx.createdAt)}</span>
                       </div>
-                      <p className="text-xs text-muted">
+                      <p className="mt-0.5 text-xs text-muted">
                         {KIND_LABEL[tx.kind]}
                         {tx.pointsAdded ? ` · +${tx.pointsAdded} pts` : ''} · {programName}
                       </p>
+                      </div>
                     </li>
                   ))}
                 </ul>

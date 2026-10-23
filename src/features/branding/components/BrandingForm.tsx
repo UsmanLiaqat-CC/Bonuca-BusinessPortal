@@ -29,7 +29,7 @@ export function BrandingForm({ sections = ['logo', 'colors', 'font'] }: { sectio
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-[18px]">
         {sections.includes('logo') && <ImageUpload label="Logo" value={b.logo} onChange={(logo) => setB({ ...b, logo })} />}
         {sections.includes('colors') && (
           <div className="grid gap-4 sm:grid-cols-3">
@@ -55,15 +55,18 @@ export function BrandingForm({ sections = ['logo', 'colors', 'font'] }: { sectio
           </GuardedButton>
         </div>
       </div>
-      <div className="rounded-card border border-line p-4" style={{ background: b.backgroundColor, fontFamily: font.stack }} aria-label="Branding preview">
+      <div className="flex flex-col gap-2 lg:sticky lg:top-24 lg:self-start">
+      <div className="eyebrow mb-0 justify-center">Live preview</div>
+      <div className="rounded-[20px] border border-line-strong p-5 shadow-[var(--shadow-card)] transition-colors" style={{ background: b.backgroundColor, fontFamily: font.stack }} aria-label="Branding preview">
         <div className="flex items-center gap-2">
           {b.logo ? <img src={b.logo} alt="" className="size-10 rounded-lg object-cover" /> : <span className="flex size-10 items-center justify-center rounded-lg text-white" style={{ background: b.primaryColor }}>{session.business.name.slice(0, 1)}</span>}
           <span className="font-semibold" style={{ color: b.secondaryColor }}>{session.business.name}</span>
         </div>
-        <button type="button" tabIndex={-1} className="mt-4 rounded-lg px-4 py-2 text-sm font-medium text-white" style={{ background: b.primaryColor }}>
+        <button type="button" tabIndex={-1} className="mt-5 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-12px_rgba(0,0,0,.5)]" style={{ background: b.primaryColor }}>
           Sample button
         </button>
         <p className="mt-3 text-xs" style={{ color: b.secondaryColor }}>Preview of your business colours on customer-facing surfaces.</p>
+      </div>
       </div>
     </div>
   )

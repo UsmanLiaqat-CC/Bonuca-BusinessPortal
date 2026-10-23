@@ -149,4 +149,13 @@ describe('dev backend enforces access in logic (spec §2)', () => {
     await b.login('employee@sample.dev', 'Bonuca123')
     await expect(b.finishOnboarding()).rejects.toThrow(/role/)
   })
+
+  it('adds sample accounts to existing data saved by a build without dev tools', async () => {
+    const store = memoryStore()
+    const plain = new DevBackend({ store, integrations: createDisconnectedIntegrations(), catalog: DEV_PLAN_CATALOG, seed: false })
+    await expect(plain.login('owner@sample.dev', 'Bonuca123')).rejects.toThrow(/incorrect/)
+    const withTools = new DevBackend({ store, integrations: createDisconnectedIntegrations(), catalog: DEV_PLAN_CATALOG, seed: true })
+    const s = await withTools.login('owner@sample.dev', 'Bonuca123')
+    expect(s.user.role).toBe('owner')
+  })
 })
