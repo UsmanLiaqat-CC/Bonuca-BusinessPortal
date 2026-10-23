@@ -1,4 +1,9 @@
 {
+  "redirects": [
+    { "source": "/", "destination": "/prototype/common/pages/01-landing.html", "permanent": false },
+    { "source": "/login", "destination": "/prototype/common/pages/03-login.html", "permanent": false },
+    { "source": "/register", "destination": "/prototype/common/pages/04-register.html", "permanent": false }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
