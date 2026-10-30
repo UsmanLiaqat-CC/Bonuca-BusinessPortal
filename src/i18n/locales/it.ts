@@ -14,6 +14,7 @@ export const it: Dictionary = {
   'nav.notifications': 'Notifiche',
   'nav.rewards': 'Premi',
   'nav.analytics': 'Analisi',
+  'nav.leaderboard': 'Classifica',
   'nav.branding': 'Branding',
   'nav.subscription': 'Abbonamento e fatturazione',
   'nav.settings': 'Impostazioni',

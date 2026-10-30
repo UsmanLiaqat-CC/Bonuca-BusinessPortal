@@ -20,6 +20,12 @@ export function useInvalidateCampaigns() {
     Promise.all(['campaign-rows', 'campaign-linked', 'campaigns', 'winback', 'rewards'].map((k) => qc.invalidateQueries({ queryKey: [k] })))
 }
 
+export function useLinkCampaignCustomer() {
+  const backend = useBackend()
+  const invalidate = useInvalidateCampaigns()
+  return useMutation({ mutationFn: ({ campaignId, customerId }: { campaignId: string; customerId: string }) => backend.linkCampaignCustomer(campaignId, customerId), onSuccess: invalidate })
+}
+
 /** Win-back campaign: Pause / Resume / End. */
 export function useWinbackLifecycle() {
   const backend = useBackend()

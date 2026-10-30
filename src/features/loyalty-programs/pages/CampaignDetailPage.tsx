@@ -23,14 +23,46 @@ import { IntegrationNotice } from '@/components/feedback/Banners'
 import { QrDownload } from '@/features/qr-scanner/components/QrDownload'
 import { WalletPassPreview } from '@/features/wallet-cards/components/WalletPassPreview'
 import { useSaveWinBack, useWinBack } from '@/features/notifications/hooks'
-import { useCampaignLinked, useCampaignRows, useWinbackLifecycle } from '@/features/campaigns/hooks'
+import { useCampaignLinked, useCampaignRows, useLinkCampaignCustomer, useWinbackLifecycle } from '@/features/campaigns/hooks'
+import { useCustomers } from '@/features/customers/hooks'
+import { searchCustomers } from '@/lib/customerSearch'
+import { Dialog } from '@/components/ui/Dialog'
+import { Button } from '@/components/ui/Button'
 import { useCampaignLifecycle, useCampaigns, usePrograms } from '../hooks'
 
 const REWARD_LABEL: Record<LinkedRewardStatus, string> = { not_redeemed: 'Not redeemed', redeemed: 'Redeemed', expired: 'Expired', none: 'No reward' }
 const REWARD_TONE: Record<LinkedRewardStatus, BadgeTone> = { not_redeemed: 'accent', redeemed: 'success', expired: 'outline', none: 'neutral' }
 
 /** Linked customers: who claimed (QR types) or was triggered (win-back), and whether they redeemed. */
+function AddCustomerDialog({ campaignId, open, onClose }: { campaignId: string; open: boolean; onClose: () => void }) {
+  const toast = useToast()
+  const customers = useCustomers()
+  const link = useLinkCampaignCustomer()
+  const linked = useCampaignLinked(campaignId)
+  const [q, setQ] = useState('')
+  const taken = new Set((linked.data ?? []).map((r) => r.customerId))
+  const list = searchCustomers(customers.data ?? [], q).filter((c) => !taken.has(c.id)).slice(0, 10)
+  return (
+    <Dialog open={open} onClose={onClose} title="Add linked customer" description="Pick an existing customer. They get this campaign's voucher or stamp card, and appear in Linked customers." footer={<Button onClick={onClose}>Done</Button>}>
+      <div className="flex flex-col gap-3">
+        <label htmlFor="link-search" className="sr-only">Search customers</label>
+        <Input id="link-search" placeholder="Search by name, email, phone or number" value={q} onChange={(e) => setQ(e.target.value)} />
+        <ul className="flex max-h-72 flex-col overflow-y-auto" aria-label="Customers to add">
+          {list.length === 0 && <li className="py-4 text-center text-sm text-muted">No customers to add.</li>}
+          {list.map((c) => (
+            <li key={c.id} className="flex items-center justify-between gap-3 border-b border-line py-2 last:border-0">
+              <span className="min-w-0"><b className="block truncate">{c.name || c.customerNumber}</b><span className="text-xs text-muted">{c.customerNumber}{c.email ? ` · ${c.email}` : ''}</span></span>
+              <Button size="sm" loading={link.isPending} onClick={() => link.mutate({ campaignId, customerId: c.id }, { onSuccess: () => toast.success(`${c.name || c.customerNumber} added.`), onError: (e) => toast.error(errorMessage(e)) })}>Add</Button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Dialog>
+  )
+}
+
 function LinkedCustomers({ id, kind }: { id: string; kind: CampaignKind }) {
+  const [adding, setAdding] = useState(false)
   const navigate = useNavigate()
   const linked = useCampaignLinked(id)
   const [q, setQ] = useState('')
@@ -42,6 +74,7 @@ function LinkedCustomers({ id, kind }: { id: string; kind: CampaignKind }) {
         icon={<Users className="size-4" />}
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            {kind !== 'winback' && <GuardedButton permission="programs.manage" size="sm" onClick={() => setAdding(true)}>Add customer</GuardedButton>}
             <div className="relative w-56 max-w-full">
               <label htmlFor="linked-search" className="sr-only">Search linked customers</label>
               <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" aria-hidden />
@@ -56,6 +89,7 @@ function LinkedCustomers({ id, kind }: { id: string; kind: CampaignKind }) {
           </div>
         }
       />
+      <AddCustomerDialog campaignId={id} open={adding} onClose={() => setAdding(false)} />
       <QueryState query={linked}>
         {(rows) => {
           const shown = rows.filter((r) => r.customerName.toLowerCase().includes(q.trim().toLowerCase()) && (status === 'all' || r.rewardStatus === status))

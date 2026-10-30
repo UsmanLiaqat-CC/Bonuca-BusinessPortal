@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/Dialog'
 import { ColorField } from '@/components/forms/ColorField'
 import { ImageUpload } from '@/components/forms/ImageUpload'
+import { PlaceSearch } from '@/components/forms/PlaceSearch'
 import { GuardedButton } from '@/components/feedback/GuardedButton'
 import { IntegrationNotice } from '@/components/feedback/Banners'
 import { WalletPassPreview } from '@/features/wallet-cards/components/WalletPassPreview'
@@ -208,8 +209,18 @@ export function ProgramForm({ initial, programId, status, onDone }: { initial: P
               />
               {location && (
                 <div className="form-grid">
-                  <Field label="Address" required error={err('location.address')}>
-                    {(p) => <Input {...p} {...form.register('location.address')} />}
+                  <Field label="Search a place" required error={err('location.address')} hint="Type to search; pick a result so the exact spot is saved.">
+                    {(p) => (
+                      <PlaceSearch
+                        id={p.id}
+                        value={location.address}
+                        onPick={(pl) => {
+                          form.setValue('location.address', pl.address, { shouldDirty: true })
+                          form.setValue('location.lat', pl.lat, { shouldDirty: true })
+                          form.setValue('location.lng', pl.lng, { shouldDirty: true })
+                        }}
+                      />
+                    )}
                   </Field>
                   <Field label="Notification radius (metres)" required error={err('location.radiusMeters')}>
                     {(p) => <Input {...p} type="number" min={50} max={5000} step={50} {...form.register('location.radiusMeters', { valueAsNumber: true })} />}
@@ -226,6 +237,12 @@ export function ProgramForm({ initial, programId, status, onDone }: { initial: P
             <CardHeader step={5} title="Sign-up page details" description="The page customers see after scanning the join QR for the first time." />
             <CardBody className="flex flex-col gap-5">
               <div className="grid gap-5 sm:grid-cols-2">
+                <Field label="Page title" optional error={err('signupPage.headline')} hint="Big title on the page. Empty = your business name (set in Settings → Business information).">
+                  {(p) => <Input {...p} placeholder={businessName} {...form.register('signupPage.headline')} />}
+                </Field>
+                <Field label="Subtitle" optional error={err('signupPage.tagline')} hint="Small line under the title. Empty = the program name.">
+                  {(p) => <Input {...p} placeholder="e.g. Rewards membership" {...form.register('signupPage.tagline')} />}
+                </Field>
                 <Controller control={form.control} name="signupPage.backgroundColor" render={({ field }) => <ColorField label="Background colour" required value={field.value} onChange={field.onChange} error={err('signupPage.backgroundColor')} />} />
                 <Controller control={form.control} name="signupPage.fontColor" render={({ field }) => <ColorField label="Font colour" required value={field.value} onChange={field.onChange} error={err('signupPage.fontColor')} />} />
                 <Controller control={form.control} name="signupPage.heroImage" render={({ field }) => <ImageUpload label="Hero image" shape="wide" value={field.value} onChange={field.onChange} hint="Large image at the top of the page." />} />

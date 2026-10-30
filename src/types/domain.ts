@@ -193,12 +193,19 @@ export interface SignupPageConfig {
   heroImage: ImageRef
   logo: ImageRef
   fields: { email: SignupPageFieldMode; birthday: SignupPageFieldMode }
+  /** Big title on the page. Empty = the business name. */
+  headline?: string
+  /** Small line under the title. Empty = the program name. */
+  tagline?: string
 }
 
 /** Optional valid location; used for nearby notifications once a push service is connected. */
 export interface ProgramLocation {
   address: string
   radiusMeters: number
+  /** Set when picked from the place search. */
+  lat?: number
+  lng?: number
 }
 
 /** §4.3 — Base template (default) or Start from Scratch (scope pending, OI-06). */
@@ -508,6 +515,8 @@ export interface NotificationCampaign {
   duration: string
   /** Empty = all active programs. */
   programIds: string[]
+  /** Who receives it: everyone, customers of programs, customers inactive for N days, or chosen customers. */
+  audience?: { kind: 'all' | 'programs' | 'inactive' | 'customers'; inactiveDays?: number; customerIds?: string[] }
   status: 'draft' | 'sent'
   createdAt: ISODate
   updatedAt: ISODate

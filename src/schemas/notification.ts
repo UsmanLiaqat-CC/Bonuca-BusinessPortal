@@ -10,6 +10,7 @@ export const notificationSchema = z.object({
   offer: z.string(),
   duration: z.string(),
   programIds: z.array(z.string()),
+  audience: z.object({ kind: z.enum(['all', 'programs', 'inactive', 'customers']), inactiveDays: z.number().int().min(1).optional(), customerIds: z.array(z.string()).optional() }).optional(),
 })
 export type NotificationValues = z.infer<typeof notificationSchema>
 

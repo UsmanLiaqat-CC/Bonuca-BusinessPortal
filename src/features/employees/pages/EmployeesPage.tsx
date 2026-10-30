@@ -1,20 +1,18 @@
 import { useState } from 'react'
-import { Lock, ShieldCheck, UserPlus, Users, UsersRound } from 'lucide-react'
+import { Info, UserPlus, Users, UsersRound } from 'lucide-react'
 import { useT } from '@/i18n'
-import { useAccess, useSession } from '@/state/session'
+import { useAccess } from '@/state/session'
 import { useToast } from '@/state/toast'
 import { errorMessage } from '@/lib/errors'
 import { formatDate } from '@/lib/dates'
 import { PageHeader } from '@/components/data-display/PageHeader'
 import { DataTable, Initials } from '@/components/data-display/Table'
-import { Card, CardBody, CardHeader } from '@/components/ui/Card'
+import { Card, CardHeader } from '@/components/ui/Card'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
-import { Toggle } from '@/components/ui/Field'
 import { GuardedButton } from '@/components/feedback/GuardedButton'
 import { QueryState } from '@/components/feedback/QueryState'
 import { InviteDialog } from '../components/InviteDialog'
-import { Leaderboard } from '../components/Leaderboard'
-import { useEmployees, useUpdateMemberAccess, useUpdatePermissions } from '../hooks'
+import { useEmployees, useUpdateMemberAccess } from '../hooks'
 import { AccessFields } from '../components/AccessFields'
 import { presetFor, USER_TYPE_LABEL, type TeamPermission, type UserType } from '@/lib/teamPermissions'
 import { Dialog } from '@/components/ui/Dialog'
@@ -33,18 +31,13 @@ export default function EmployeesPage() {
   const t = useT()
   const toast = useToast()
   const access = useAccess()
-  const { session } = useSession()
   const employees = useEmployees()
-  const permissions = useUpdatePermissions()
   const [inviting, setInviting] = useState(false)
+  const [rolesOpen, setRolesOpen] = useState(false)
   const [editing, setEditing] = useState<{ userId: string; name: string; role: UserType; permissions: TeamPermission[] } | null>(null)
   const memberAccess = useUpdateMemberAccess()
-  const perms = session.business.permissions
   const staffCount = (employees.data?.users.filter((u) => u.role !== 'owner').length ?? 0) + (employees.data?.invites.filter((i) => !i.acceptedAt).length ?? 0)
 
-  const setPerm = (patch: Partial<typeof perms>) => permissions.mutate(patch, { onSuccess: () => toast.success('Saved.'), onError: (e) => toast.error(errorMessage(e)) })
-  const ownerPerm = access.evaluate('employees.permissions')
-  const visibilityPerm = access.evaluate('leaderboard.visibility')
 
   return (
     <>
@@ -56,9 +49,14 @@ export default function EmployeesPage() {
           </>
         }
         actions={
-          <GuardedButton permission="employees.invite" extra={access.limit('employees', staffCount)} onClick={() => setInviting(true)}>
-            <UserPlus className="size-[15px]" aria-hidden /> Invite Employee
-          </GuardedButton>
+          <>
+            <Button variant="secondary" aria-label="Roles information" onClick={() => setRolesOpen(true)}>
+              <Info className="size-[16px]" aria-hidden /> Roles
+            </Button>
+            <GuardedButton permission="employees.invite" extra={access.limit('employees', staffCount)} onClick={() => setInviting(true)}>
+              <UserPlus className="size-[15px]" aria-hidden /> Invite Employee
+            </GuardedButton>
+          </>
         }
       />
       <div className="flex flex-col gap-[18px]">
@@ -117,48 +115,19 @@ export default function EmployeesPage() {
             )}
           </QueryState>
         </Card>
-        <div className="grid gap-[18px] lg:grid-cols-2">
-          <Card className="reveal-up">
-            <CardHeader title="Roles" icon={<ShieldCheck className="size-4" />} />
-            <CardBody>
-              <dl className="flex flex-col gap-2.5">
-                {(Object.keys(ROLE_ACCESS) as (keyof typeof ROLE_ACCESS)[]).map((r) => (
-                  <div key={r} className="setup-item">
-                    <dt className="mb-1.5">
-                      <Badge tone={ROLE_TONE[r]} dot={false} className="capitalize">
-                        {r}
-                      </Badge>
-                    </dt>
-                    <dd className="text-[13.5px] text-muted">{ROLE_ACCESS[r]}</dd>
-                  </div>
-                ))}
-              </dl>
-            </CardBody>
-          </Card>
-          <Card className="reveal-up">
-            <CardHeader title="Permissions & visibility" icon={<Lock className="size-4" />} />
-            <CardBody className="flex flex-col gap-3">
-              <div>
-                <Toggle label="Managers may manage employees" description="Owner-only setting. Lets Managers view the team and invite Employees." checked={perms.managersCanManageEmployees} disabled={!ownerPerm.allowed || permissions.isPending} onChange={(v) => setPerm({ managersCanManageEmployees: v })} />
-                {!ownerPerm.allowed && (
-                  <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-warning">
-                    <Lock className="size-3" aria-hidden /> {ownerPerm.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Toggle label="Show leaderboard to employees" description="Gamification is motivational only and never affects permissions or transactions." checked={perms.showLeaderboardToEmployees} disabled={!visibilityPerm.allowed || permissions.isPending} onChange={(v) => setPerm({ showLeaderboardToEmployees: v })} />
-                {!visibilityPerm.allowed && (
-                  <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-warning">
-                    <Lock className="size-3" aria-hidden /> {visibilityPerm.message}
-                  </p>
-                )}
-              </div>
-            </CardBody>
-          </Card>
-        </div>
-        {access.can('leaderboard.view') && <Leaderboard />}
       </div>
+      <Dialog open={rolesOpen} onClose={() => setRolesOpen(false)} title="Roles and access" description="What each user type can do. Presets can be adjusted per person in Permissions." size="lg">
+        <dl className="flex flex-col gap-2.5">
+          {(Object.keys(ROLE_ACCESS) as (keyof typeof ROLE_ACCESS)[]).map((r) => (
+            <div key={r} className="setup-item">
+              <dt className="mb-1.5">
+                <Badge tone={ROLE_TONE[r]} dot={false}>{r === 'owner' ? 'Owner' : USER_TYPE_LABEL[r]}</Badge>
+              </dt>
+              <dd className="text-[13.5px] text-muted">{ROLE_ACCESS[r]}</dd>
+            </div>
+          ))}
+        </dl>
+      </Dialog>
       <InviteDialog open={inviting} onClose={() => setInviting(false)} />
       <Dialog
         open={!!editing}

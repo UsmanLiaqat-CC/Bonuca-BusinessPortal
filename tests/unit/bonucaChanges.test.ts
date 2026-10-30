@@ -127,7 +127,7 @@ describe('customer sign-up after the first scan of a join QR', () => {
   it('shows the program page, validates the form and creates the customer with a card', async () => {
     const owner = await as('owner')
     const page = await owner.getJoinPage('join-prg_coffee')
-    expect(page).toMatchObject({ businessName: 'Sample Business (development)', program: { name: 'Coffee Card' } })
+    expect(page).toMatchObject({ businessName: 'Brew & Bean Café', program: { name: 'Coffee Card' } })
     await expect(owner.joinProgram('join-prg_coffee', { name: '', email: '', birthday: '', acceptTerms: true })).rejects.toThrow(/Name is required/)
     await expect(owner.joinProgram('join-prg_coffee', { name: 'Sarah Cole', email: '', birthday: '', acceptTerms: false })).rejects.toThrow(/terms/)
     const before = (await owner.programCardCounts()).prg_coffee ?? 0

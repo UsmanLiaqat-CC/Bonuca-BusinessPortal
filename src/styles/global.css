@@ -264,13 +264,14 @@ body {
 
   /* Customer sign-up page (doc images 4 and 6). */
   .join-page { --jbg: #f6f1e9; --jfg: #2b1a0e; min-height: 100%; display: flex; flex-direction: column; background: var(--jbg); color: var(--jfg); padding: 40px 18px 18px; font-size: 13px; }
-  .join-hero { position: relative; height: 150px; border-radius: 22px; overflow: hidden; display: grid; place-items: center; text-align: center; color: #fff; background: #3b2a1e center / cover no-repeat; border: 1px solid rgba(0,0,0,.35); }
-  .join-hero::before { content: ''; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45); }
-  .join-hero > * { position: relative; }
-  .join-hero .jh-logo { width: 38px; height: 38px; margin: 0 auto 6px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.6); }
+  .join-hero { position: relative; height: 176px; border-radius: 26px; overflow: hidden; display: grid; place-items: center; text-align: center; color: #fff; padding: 0 16px; background: linear-gradient(145deg, #2b1a0e, #5a3a22 60%, #8a6a45) center / cover no-repeat; box-shadow: 0 24px 40px -24px rgba(43, 26, 14, 0.65); }
+  .join-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.62)); }
+  .join-hero > * { position: relative; max-width: 100%; }
+  .join-hero .jh-logo { width: 42px; height: 42px; margin: 0 auto 10px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.55); background: rgba(255,255,255,.12); backdrop-filter: blur(6px); }
   .join-hero .jh-logo img { width: 100%; height: 100%; object-fit: cover; }
-  .join-hero h2 { font-family: Georgia, 'Times New Roman', serif; font-size: 26px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.05; }
-  .join-hero p { margin-top: 6px; font-family: var(--font-mono, monospace); font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: #e2b86b; }
+  .join-hero h2 { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(18px, 6.2vw, 24px); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.15; overflow-wrap: anywhere; text-wrap: balance; }
+  .join-hero h2::after { content: ''; display: block; width: 34px; height: 2px; margin: 10px auto 0; border-radius: 2px; background: #e2b86b; }
+  .join-hero p { margin-top: 9px; font-family: var(--font-mono, monospace); font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: #e8c98d; }
   .join-earn { display: flex; align-items: center; gap: 12px; margin: 26px 10px 0; padding: 12px; border-radius: 18px; background: #fff; border: 1px solid rgba(0,0,0,.25); }
   .join-earn .ji { width: 40px; height: 40px; flex: none; border-radius: 10px; display: grid; place-items: center; background: #f1e4dd; font-size: 18px; }
   .join-earn b { display: block; font-size: 14px; }

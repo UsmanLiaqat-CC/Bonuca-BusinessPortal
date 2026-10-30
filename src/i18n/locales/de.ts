@@ -14,6 +14,7 @@ export const de: Dictionary = {
   'nav.notifications': 'Benachrichtigungen',
   'nav.rewards': 'Prämien',
   'nav.analytics': 'Analysen',
+  'nav.leaderboard': 'Bestenliste',
   'nav.branding': 'Branding',
   'nav.subscription': 'Abo & Abrechnung',
   'nav.settings': 'Einstellungen',

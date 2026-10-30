@@ -24,6 +24,14 @@ import { useNotifications, useSendNotification } from '../hooks'
 // Win-back automation moved to the Campaigns tab; Notifications keeps manual push messages.
 type Tab = 'campaigns' | 'ai'
 
+function audienceLabel(n: NotificationCampaign, programs: { id: string; name: string }[]): string {
+  const a = n.audience
+  if (a?.kind === 'customers') return `${a.customerIds?.length ?? 0} selected customers`
+  if (a?.kind === 'inactive') return `Customers inactive for ${a.inactiveDays ?? 30}+ days`
+  if (a?.kind === 'programs' || n.programIds.length) return n.programIds.map((id) => programs.find((p) => p.id === id)?.name ?? '—').join(', ') || 'Selected programs'
+  return 'All customers'
+}
+
 export default function NotificationsPage() {
   const t = useT()
   const toast = useToast()
@@ -66,7 +74,7 @@ export default function NotificationsPage() {
       </div>
       {tab === 'campaigns' && (
         <div className="flex flex-col gap-[18px]">
-          <IntegrationNotice title="Wallet push delivery not connected">Campaigns can be drafted and reviewed. Sending requires the push notification service, which is not available in this environment — campaigns stay drafts until delivery is confirmed.</IntegrationNotice>
+          <IntegrationNotice title="Wallet push delivery not connected">Notifications can be drafted and reviewed. Sending requires the push notification service, which is not available in this environment — notifications stay drafts until delivery is confirmed.</IntegrationNotice>
           <Card className="reveal-up overflow-hidden">
             <QueryState query={notifications}>
               {(list) =>
@@ -89,6 +97,7 @@ export default function NotificationsPage() {
                             <Badge tone={n.status === 'sent' ? 'success' : 'neutral'} dot>{n.status === 'sent' ? 'Sent' : 'Draft'}</Badge>
                           </p>
                           <p className="mt-0.5 truncate text-sm text-muted">{n.message}</p>
+                          <p className="mt-0.5 text-xs text-faint">To: {audienceLabel(n, programs.data ?? [])}</p>
                           <p className="mt-0.5 text-xs text-faint">{n.status === 'sent' ? `Sent ${formatDateTime(n.sentAt)}` : `Updated ${formatDateTime(n.updatedAt)}`}</p>
                         </div>
                         {n.status === 'draft' && (
@@ -125,14 +134,14 @@ export default function NotificationsPage() {
       <ConfirmDialog
         open={!!confirmSend}
         onClose={() => setConfirmSend(null)}
-        title="Send this campaign?"
+        title="Send this notification?"
         confirmLabel="Send"
         loading={send.isPending}
         body={`"${confirmSend?.title}" will be pushed to the selected customers' wallet passes.`}
         onConfirm={() => {
           const n = confirmSend
           setConfirmSend(null)
-          if (n) send.mutate(n.id, { onSuccess: () => toast.success('Campaign sent.'), onError: (e) => toast.error(errorMessage(e)) })
+          if (n) send.mutate(n.id, { onSuccess: () => toast.success('Notification sent.'), onError: (e) => toast.error(errorMessage(e)) })
         }}
       />
     </>

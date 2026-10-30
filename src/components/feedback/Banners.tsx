@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, Eye, FlaskConical, Info, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Eye, Info, ShieldCheck } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useT } from '@/i18n'
 import { useAccess, useSession } from '@/state/session'
@@ -20,12 +20,8 @@ function Bar({ tone, icon, children, testId }: { tone: 'accent' | 'warning' | 'n
 
 /** Shown in development builds: no backend is connected (truthful integration status). */
 export function DevBanner() {
-  const t = useT()
-  return (
-    <Bar tone="dev" icon={<FlaskConical className="size-[18px] shrink-0" aria-hidden />} testId="dev-banner">
-      <span className="text-xs text-muted">{t('dev.banner')}</span>
-    </Bar>
-  )
+  // Removed from the UI (client request): the "Development build" tag is no longer shown on any page.
+  return null
 }
 
 export function PreviewBanner() {

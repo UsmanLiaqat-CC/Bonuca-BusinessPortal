@@ -3,6 +3,8 @@ export const env = {
   dataSource: (import.meta.env.VITE_DATA_SOURCE as string | undefined) ?? 'dev',
   devTools: import.meta.env.VITE_ENABLE_DEV_TOOLS === 'true' || (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEV_TOOLS !== 'false'),
   joinBaseUrl: (import.meta.env.VITE_JOIN_BASE_URL as string | undefined)?.replace(/\/$/, '') || null,
+  /** Optional: enables Google Places in the location picker. Without it the free OpenStreetMap search is used. */
+  googleMapsKey: (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined) || null,
   appStoreUrl: (import.meta.env.VITE_APP_STORE_URL as string | undefined) || null,
   playStoreUrl: (import.meta.env.VITE_PLAY_STORE_URL as string | undefined) || null,
 }

@@ -216,6 +216,8 @@ export interface BusinessBackend {
   /** Campaigns tab: every campaign plus the win-back campaign, with offer, period and counts. */
   listCampaignRows(): Promise<CampaignRow[]>
   getCampaignLinked(id: string): Promise<CampaignLinkedRow[]>
+  /** Campaign view → Add customer: links an existing customer (creates the voucher, or the stamp card with starting stamps and gift). */
+  linkCampaignCustomer(campaignId: string, customerId: string): Promise<void>
   /** Win-back campaign Pause / Resume / End. */
   winbackLifecycle(action: 'enable' | 'disable' | 'end'): Promise<void>
 
@@ -251,6 +253,8 @@ export interface BusinessBackend {
   updateMemberAccess(userId: string, role: Invite['role'], permissions: TeamPermission[]): Promise<void>
   updatePermissions(patch: Partial<Business['permissions']>): Promise<void>
   getLeaderboard(): Promise<LeaderboardEntry[]>
+  /** Leaderboard tab: per-transaction rows for every team member (owner included) and the programs, filtered in the UI. */
+  getTeamActivity(): Promise<{ users: User[]; programs: Program[]; rows: { userId: string; customerId: string; programId: string | null; kind: string; stampsAdded: number; pointsAdded: number; createdAt: string }[] }>
 
   // Notifications & rewards (§4.7, §4.8)
   listNotifications(): Promise<NotificationCampaign[]>

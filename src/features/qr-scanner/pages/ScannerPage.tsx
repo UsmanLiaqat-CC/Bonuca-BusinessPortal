@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { CheckCircle2, ChevronRight, History, QrCode, ScanLine, Search } from 'lucide-react'
+import { CheckCircle2, ChevronRight, History, ScanLine, Search } from 'lucide-react'
 import type { ScanAction, ScanContext, ScanResult } from '@/lib/scanEngine'
 import { useAccess } from '@/state/session'
 import { useToast } from '@/state/toast'
@@ -10,7 +9,6 @@ import { formatDateTime } from '@/lib/dates'
 import { searchCustomers } from '@/lib/customerSearch'
 import { PageHeader } from '@/components/data-display/PageHeader'
 import { Card, CardBody, CardHeader } from '@/components/ui/Card'
-import { buttonClass } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Field'
 import { Tabs } from '@/components/ui/Tabs'
 import { Initials } from '@/components/data-display/Table'
@@ -121,15 +119,8 @@ export default function ScannerPage() {
           </>
         }
         description="Scan a customer’s card or search for them, then award or redeem."
-        actions={
-          access.can('programs.view') && (
-            <Link to="/app/scanner/qr-codes" className={buttonClass('secondary')}>
-              <QrCode className="size-[15px]" aria-hidden /> Printable QR codes
-            </Link>
-          )
-        }
       />
-      <div className="grid items-start gap-[18px] lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className={found ? 'grid items-start gap-[18px]' : 'grid items-start gap-[18px] lg:grid-cols-[minmax(0,1fr)_340px]'}>
         <div className="flex min-w-0 flex-col gap-[18px]">
           {voucherResult && (
             <Card className="reveal-up border-success/40" role="status" data-testid="scan-result">
@@ -173,7 +164,8 @@ export default function ScannerPage() {
           )}
           {access.isPreview && <IntegrationNotice title="Preview Mode">You can look up demo customers, but awarding and redeeming require a plan.</IntegrationNotice>}
         </div>
-        <Card className="scan-feed reveal-up overflow-hidden lg:sticky lg:top-24">
+        {/* Recent activity is hidden while a customer is open, so the customer screen uses the full width. */}
+        {!found && <Card className="scan-feed reveal-up overflow-hidden lg:sticky lg:top-24">
           <CardHeader title="Recent activity" icon={<History className="size-4" />} />
           <QueryState query={recent}>
             {(rows) =>
@@ -206,7 +198,7 @@ export default function ScannerPage() {
               )
             }
           </QueryState>
-        </Card>
+        </Card>}
       </div>
     </>
   )

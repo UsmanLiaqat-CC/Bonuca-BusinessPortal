@@ -14,6 +14,7 @@ export const tr: Dictionary = {
   'nav.notifications': 'Bildirimler',
   'nav.rewards': 'Ödüller',
   'nav.analytics': 'Analizler',
+  'nav.leaderboard': 'Liderlik Tablosu',
   'nav.branding': 'Marka',
   'nav.subscription': 'Abonelik ve Faturalandırma',
   'nav.settings': 'Ayarlar',

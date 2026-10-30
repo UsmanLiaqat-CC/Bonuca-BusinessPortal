@@ -22,11 +22,15 @@ const signupPageSchema = z.object({
   heroImage: optionalImage,
   logo: optionalImage,
   fields: z.object({ email: z.enum(['required', 'optional', 'off']), birthday: z.enum(['required', 'optional', 'off']) }),
+  headline: z.string().max(60, 'Maximum 60 characters.').optional(),
+  tagline: z.string().max(40, 'Maximum 40 characters.').optional(),
 })
 
 const locationSchema = z
   .object({
     address: requiredText('Enter the address of the location.'),
+    lat: z.number().optional(),
+    lng: z.number().optional(),
     radiusMeters: z.number({ error: 'Enter a radius.' }).int('Whole metres only.').min(50, 'Minimum 50 m.').max(5000, 'Maximum 5,000 m.'),
   })
   .nullable()

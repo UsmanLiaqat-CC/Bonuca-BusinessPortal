@@ -14,6 +14,7 @@ export const fr: Dictionary = {
   'nav.notifications': 'Notifications',
   'nav.rewards': 'Récompenses',
   'nav.analytics': 'Statistiques',
+  'nav.leaderboard': 'Classement',
   'nav.branding': 'Image de marque',
   'nav.subscription': 'Abonnement et facturation',
   'nav.settings': 'Paramètres',

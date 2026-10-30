@@ -63,6 +63,7 @@ export const routes: RouteObject[] = [
       { path: 'employees', element: guarded('employees.view', page(() => import('@/features/employees/pages/EmployeesPage'))) },
       { path: 'notifications', element: guarded('notifications.view', page(() => import('@/features/notifications/pages/NotificationsPage'))) },
       { path: 'rewards', element: guarded('rewards.view', page(() => import('@/features/rewards/pages/RewardsPage'))) },
+      { path: 'leaderboard', element: guarded('leaderboard.view', page(() => import('@/features/leaderboard/pages/LeaderboardPage'))) },
       { path: 'analytics', element: guarded('analytics.view', page(() => import('@/features/analytics/pages/AnalyticsPage'))) },
       { path: 'branding', element: guarded('settings.view', page(() => import('@/features/branding/pages/BrandingPage'))) },
       { path: 'subscription', element: guarded('subscription.view', page(() => import('@/features/subscriptions/pages/SubscriptionPage'))) },

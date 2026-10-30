@@ -153,7 +153,7 @@ export class DevBackend implements BusinessBackend {
   private async seed(db: DevDb): Promise<void> {
     const businessId = 'biz_sample'
     const staff = SEED_ACCOUNTS.map((a, i) => ({ id: `usr_seed_${i}`, fullName: a.name, email: a.email, role: a.role }))
-    const ds = buildSampleDataset({ businessId, businessName: 'Sample Business (development)', seed: 7, now: this.now(), staff })
+    const ds = buildSampleDataset({ businessId, businessName: 'Brew & Bean Café', seed: 7, now: this.now(), staff })
     ds.business.permissions.managersCanManageEmployees = true
     db.datasets[businessId] = ds
     for (const s of staff) {
@@ -639,6 +639,33 @@ export class DevBackend implements BusinessBackend {
     })
   }
 
+  async linkCampaignCustomer(campaignId: string, customerId: string): Promise<void> {
+    await this.mutate((c) => {
+      const campaign = c.ds.campaigns.find((x) => x.id === campaignId)
+      const customer = c.ds.customers.find((x) => x.id === customerId)
+      if (!campaign) throw new NotFoundError('Campaign not found.')
+      if (!customer) throw new NotFoundError('Customer not found.')
+      if (campaign.status !== 'active') throw new ValidationError('Customers can be added to an Active campaign only.')
+      if (campaignLinked(c.ds, campaignId, this.now()).some((r) => r.customerId === customerId)) throw new ValidationError('This customer is already linked to the campaign.')
+      const now = this.now()
+      const nowIso = now.toISOString()
+      const code = () => `BNC-${createToken().slice(0, 8).toUpperCase()}`
+      const base = { businessId: c.ds.business.id, customerId, description: '', pointsRewardId: null, pointsCost: null, winbackStage: null, issuedAt: nowIso, redeemedAt: null, status: 'available' as const }
+      if (campaign.kind === 'voucher') {
+        c.ds.rewards.push({ ...base, id: createId('rwd'), programId: null, campaignId, source: 'voucher', name: campaign.voucherReward, passCode: code(), availableFrom: new Date(`${campaign.validFrom}T00:00:00`).toISOString(), expiresAt: new Date(`${campaign.validTo}T23:59:59`).toISOString() })
+      } else if (campaign.kind === 'stamp_acquisition') {
+        const program = c.ds.programs.find((p) => p.id === campaign.linkedProgramId)
+        if (!program || program.status !== 'active') throw new ValidationError('The linked stamp card must be active.')
+        if (c.ds.memberships.some((m) => m.customerId === customerId && m.programId === program.id)) throw new ValidationError('This customer already has the stamp card.')
+        c.ds.memberships.push({ id: createId('mem'), customerId, programId: program.id, passCode: code(), joinedAt: nowIso, stamps: campaign.startingStamps, points: 0, visits: 0, totalSpend: 0, tierIndex: 0, lastActivityAt: null, viaCampaignId: campaignId })
+        if (campaign.welcomeGift.enabled) {
+          c.ds.rewards.push({ ...base, id: createId('rwd'), programId: program.id, campaignId, source: 'welcome_gift', name: campaign.welcomeGift.rewardName, description: campaign.welcomeGift.description, passCode: null, availableFrom: null, expiresAt: campaign.welcomeGift.validityDays ? addDays(now, campaign.welcomeGift.validityDays).toISOString() : null })
+        }
+      }
+      this.audit(c, 'Campaigns', 'Linked customer', `${customer.name} → ${campaign.name}`)
+    }, 'programs.manage')
+  }
+
   async winbackLifecycle(action: 'enable' | 'disable' | 'end'): Promise<void> {
     await this.mutate((c) => {
       const w = c.ds.winback
@@ -1040,6 +1067,14 @@ export class DevBackend implements BusinessBackend {
       if (patch.showLeaderboardToEmployees !== undefined) authorize(c.access, 'leaderboard.visibility')
       Object.assign(c.ds.business.permissions, patch)
     })
+  }
+
+  getTeamActivity() {
+    return this.read('leaderboard.view', (ds) => ({
+      users: ds.users,
+      programs: ds.programs,
+      rows: ds.transactions.map((t) => ({ userId: t.employeeId, customerId: t.customerId, programId: t.programId, kind: t.kind, stampsAdded: t.stampsAdded, pointsAdded: t.pointsAdded, createdAt: t.createdAt })),
+    }))
   }
 
   getLeaderboard() {

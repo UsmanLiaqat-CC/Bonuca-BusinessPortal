@@ -12,6 +12,7 @@ export const en = {
   'nav.notifications': 'Notifications',
   'nav.rewards': 'Rewards',
   'nav.analytics': 'Analytics',
+  'nav.leaderboard': 'Leaderboard',
   'nav.branding': 'Branding',
   'nav.subscription': 'Subscription & Billing',
   'nav.settings': 'Settings',

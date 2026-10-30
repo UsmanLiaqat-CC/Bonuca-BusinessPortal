@@ -28,8 +28,8 @@ export function JoinLanding({ program, businessName, onStart }: { program: Progr
       <div className="join-hero" style={hero ? { backgroundImage: `url("${hero}")` } : undefined}>
         <div>
           <span className="jh-logo">{page.logo ? <img src={page.logo} alt="" /> : <ShoppingBag className="size-4" aria-hidden />}</span>
-          <h2>{businessName}</h2>
-          <p>{program.name}</p>
+          <h2>{page.headline?.trim() || businessName}</h2>
+          <p>{page.tagline?.trim() || program.name}</p>
         </div>
       </div>
       <div className="join-earn">
