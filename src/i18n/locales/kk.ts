@@ -195,4 +195,5 @@ export const kk: Dictionary = {
   'ui.chart.monthlyDesc': 'Соңғы 12 айдағы айлық жаңа клиенттер',
   'ui.chart.top': 'Үздік бағдарламалар',
   'ui.chart.perProgram': 'Бағдарлама бойынша клиенттер',
+  'ui.settings.languageNote': 'Басқару тақтасының интерфейс тілі. Қолжетімді: {list}. Клиентке арналған мазмұн тілі әлі нақтылануда.',
 }

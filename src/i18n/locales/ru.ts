@@ -195,4 +195,5 @@ export const ru: Dictionary = {
   'ui.chart.monthlyDesc': 'Новые клиенты по месяцам за 12 месяцев',
   'ui.chart.top': 'Лучшие программы',
   'ui.chart.perProgram': 'Клиенты по программам',
+  'ui.settings.languageNote': 'Язык интерфейса панели. Доступно: {list}. Язык содержимого для клиентов ещё уточняется.',
 }

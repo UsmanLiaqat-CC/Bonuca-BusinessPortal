@@ -193,6 +193,7 @@ export const en = {
   'ui.chart.monthlyDesc': 'New customers per month, last 12 months',
   'ui.chart.top': 'Top Programs',
   'ui.chart.perProgram': 'Customers per Program',
+  'ui.settings.languageNote': 'Interface language for the dashboard. Supported: {list}. Customer-facing content language handling is pending confirmation.',
 } as const
 
 export type MessageKey = keyof typeof en

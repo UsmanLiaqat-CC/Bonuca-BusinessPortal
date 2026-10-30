@@ -3,7 +3,7 @@ import { NavLink, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Clock, History, Image as ImageIcon, Languages, MapPin, Palette, Settings as SettingsIcon, Store, type LucideIcon } from 'lucide-react'
 import { BUSINESS_CATEGORIES, type Address, type AuditEntry, type OpeningHours } from '@/types/domain'
-import { useT, type MessageKey } from '@/i18n'
+import { LANGUAGES, useT, type MessageKey } from '@/i18n'
 import { useAccess, useSession } from '@/state/session'
 import { useBackend } from '@/state/services'
 import { useToast } from '@/state/toast'
@@ -236,7 +236,7 @@ export default function SettingsPage() {
             {current.id === 'audit' && <AuditLog />}
             {current.id === 'language' && (
               <div className="flex flex-col gap-4">
-                <p className="callout">Interface language for the dashboard. Supported: English, German, Turkish, French, Italian, Russian, Kazakh. Customer-facing content language handling is pending confirmation.</p>
+                <p className="callout">{t('ui.settings.languageNote', { list: LANGUAGES.map((l) => l.label).join(', ') })}</p>
                 <LanguageSelect onChange={(l) => void backend.setLanguage(l)} />
                 <div className="flex items-center gap-3 text-sm">
                   <span className="label">{t('theme.label')}</span>
