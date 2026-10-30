@@ -140,6 +140,24 @@ describe('customer sign-up after the first scan of a join QR', () => {
   })
 })
 
+describe('new campaigns start with demo linked customers', () => {
+  it('publishing a voucher or stamp acquisition campaign links demo customers (some already redeemed)', async () => {
+    const b = await as('owner')
+    const voucher = await b.createCampaign({ kind: 'voucher', name: 'Spring voucher', voucherReward: 'Free muffin', validFrom: inDays(-1), validTo: inDays(30), visuals: { logo: 'data:image/png;base64,AAAA', background: { kind: 'default' }, textColor: '#FFFFFF' } })
+    expect(await b.getCampaignLinked(voucher.id)).toHaveLength(0)
+    await b.campaignLifecycle(voucher.id, 'publish')
+    const linked = await b.getCampaignLinked(voucher.id)
+    expect(linked).toHaveLength(6)
+    expect(linked.some((r) => r.rewardStatus === 'redeemed' && r.redeemedBy)).toBe(true)
+    expect((await b.listCampaignRows()).find((r) => r.id === voucher.id)).toMatchObject({ customers: 6 })
+    const acq = await b.createCampaign({ kind: 'stamp_acquisition', name: 'Window poster', linkedProgramId: 'prg_coffee', startingStamps: 1, welcomeGift: { enabled: true, rewardName: 'Free cookie', description: '', validityDays: 30, redemptionConditions: '' } })
+    await b.campaignLifecycle(acq.id, 'publish')
+    const rows = await b.getCampaignLinked(acq.id)
+    expect(rows).toHaveLength(6)
+    expect(rows.every((r) => r.stampsGiven === 1)).toBe(true)
+  })
+})
+
 describe('Campaigns tab', () => {
   it('lists stamp acquisition, one-time voucher and win-back with offer, period and counts', async () => {
     const b = await as('owner')

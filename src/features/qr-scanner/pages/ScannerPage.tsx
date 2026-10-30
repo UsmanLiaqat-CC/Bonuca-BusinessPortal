@@ -1,27 +1,24 @@
 import { useCallback, useState } from 'react'
-import { CheckCircle2, ChevronRight, History, ScanLine, Search } from 'lucide-react'
+import { CheckCircle2, ChevronRight, ScanLine, Search } from 'lucide-react'
 import type { ScanAction, ScanContext, ScanResult } from '@/lib/scanEngine'
 import { useAccess } from '@/state/session'
 import { useToast } from '@/state/toast'
 import { errorMessage } from '@/lib/errors'
 import { env } from '@/lib/env'
-import { formatDateTime } from '@/lib/dates'
 import { searchCustomers } from '@/lib/customerSearch'
 import { PageHeader } from '@/components/data-display/PageHeader'
-import { Card, CardBody, CardHeader } from '@/components/ui/Card'
+import { Card, CardBody } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Field'
 import { Tabs } from '@/components/ui/Tabs'
 import { Initials } from '@/components/data-display/Table'
-import { EmptyState, QueryState } from '@/components/feedback/QueryState'
+import { QueryState } from '@/components/feedback/QueryState'
 import { IntegrationNotice } from '@/components/feedback/Banners'
 import { useCustomers } from '@/features/customers/hooks'
 import { CameraScanner } from '../components/CameraScanner'
 import { ScanPanel } from '../components/ScanPanel'
 import { AwardCustomer } from '../components/AwardCustomer'
 import { SamplePassPicker } from '../components/SamplePassPicker'
-import { useConfirmScan, useLookupPass, useRecentScans } from '../hooks'
-
-const KIND_LABEL = { stamp: 'Stamp added', stamp_removed: 'Stamp removed', points: 'Points credited', visit: 'Visit', reward_redeemed: 'Reward redeemed', voucher_redeemed: 'Voucher redeemed', winback_redeemed: 'Win-back redeemed', gift_redeemed: 'Gift redeemed' } as const
+import { useConfirmScan, useLookupPass } from '../hooks'
 
 type Mode = 'scan' | 'search'
 type Found = { customerId: string; entry: Mode; scannedPass: string | null } | { voucher: ScanContext }
@@ -76,7 +73,6 @@ export default function ScannerPage() {
   const access = useAccess()
   const lookup = useLookupPass()
   const confirm = useConfirmScan()
-  const recent = useRecentScans(10)
   const [mode, setMode] = useState<Mode>('scan')
   const [found, setFound] = useState<Found | null>(null)
   const [voucherResult, setVoucherResult] = useState<ScanResult | null>(null)
@@ -120,7 +116,7 @@ export default function ScannerPage() {
         }
         description="Scan a customer’s card or search for them, then award or redeem."
       />
-      <div className={found ? 'grid items-start gap-[18px]' : 'grid items-start gap-[18px] lg:grid-cols-[minmax(0,1fr)_340px]'}>
+      <div className="grid items-start gap-[18px]">
         <div className="flex min-w-0 flex-col gap-[18px]">
           {voucherResult && (
             <Card className="reveal-up border-success/40" role="status" data-testid="scan-result">
@@ -164,41 +160,6 @@ export default function ScannerPage() {
           )}
           {access.isPreview && <IntegrationNotice title="Preview Mode">You can look up demo customers, but awarding and redeeming require a plan.</IntegrationNotice>}
         </div>
-        {/* Recent activity is hidden while a customer is open, so the customer screen uses the full width. */}
-        {!found && <Card className="scan-feed reveal-up overflow-hidden lg:sticky lg:top-24">
-          <CardHeader title="Recent activity" icon={<History className="size-4" />} />
-          <QueryState query={recent}>
-            {(rows) =>
-              rows.length === 0 ? (
-                <div className="p-5">
-                  <EmptyState icon={<ScanLine className="size-6" />} title="No activity yet" />
-                </div>
-              ) : (
-                <ul>
-                  {rows.map(({ transaction: tx, customerName, programName }) => (
-                    <li key={tx.id}>
-                      <button type="button" className="list-row w-full items-start justify-start text-left text-sm hover:bg-canvas" onClick={() => setFound({ customerId: tx.customerId, entry: 'search', scannedPass: null })}>
-                        <span className="feed-ic bg-accent-soft text-accent" aria-hidden>
-                          <ScanLine className="size-4" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="flex justify-between gap-2">
-                            <span className="font-semibold">{customerName}</span>
-                            <span className="shrink-0 text-xs text-faint">{formatDateTime(tx.createdAt)}</span>
-                          </span>
-                          <span className="mt-0.5 block text-xs text-muted">
-                            {KIND_LABEL[tx.kind]}
-                            {tx.pointsAdded ? ` · +${tx.pointsAdded} pts` : ''} · {programName}
-                          </span>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )
-            }
-          </QueryState>
-        </Card>}
       </div>
     </>
   )

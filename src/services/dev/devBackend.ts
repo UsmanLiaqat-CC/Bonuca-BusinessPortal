@@ -43,7 +43,7 @@ import { DEFAULT_SIGNUP_FIELDS, defaultSignupPage, defaultSubscription, defaultW
 import { giftStatus } from '@/lib/gifts'
 import { customerHistory } from '@/lib/history'
 import { isTeamPermission, presetFor, type TeamPermission } from '@/lib/teamPermissions'
-import { campaignLinked, campaignRows, customerCampaigns, endExpiredCampaigns, WINBACK_ID } from '@/lib/campaigns'
+import { campaignLinked, campaignRows, customerCampaigns, endExpiredCampaigns, seedCampaignDemo, WINBACK_ID } from '@/lib/campaigns'
 import { currencyCode } from '@/lib/points'
 import { programSchema } from '@/schemas/program'
 import { campaignSchema } from '@/schemas/campaign'
@@ -622,6 +622,8 @@ export class DevBackend implements BusinessBackend {
         campaign.publishedAt = this.now().toISOString()
       }
       campaign.status = next
+      // Development: a newly published campaign starts with demo linked customers so the page is not empty.
+      if (action === 'publish') seedCampaignDemo(c.ds, campaign, this.now())
       if (next === 'ended') campaign.publishedAt ??= this.now().toISOString()
       this.audit(c, 'Campaigns', `${action[0]!.toUpperCase()}${action.slice(1)} campaign`, campaign.name)
       return campaign
@@ -1176,6 +1178,8 @@ export function normalizeDataset(ds: BusinessDataset): BusinessDataset {
   if (ds.business.name === 'Sample Business (development)') ds.business.name = 'Brew & Bean Café'
   ds.gifts ??= []
   ds.audit ??= []
+  // Active campaigns created before demo linking existed would show an empty Linked customers table.
+  for (const campaign of ds.campaigns ?? []) seedCampaignDemo(ds, campaign, new Date())
   for (const p of ds.programs) {
     p.expiresOn ??= null
     p.location ??= null

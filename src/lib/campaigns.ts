@@ -1,4 +1,5 @@
-import type { BusinessDataset, Campaign, ISODate, LifecycleStatus, RewardInstance } from '@/types/domain'
+import type { BusinessDataset, Campaign, Customer, ISODate, LifecycleStatus, RewardInstance } from '@/types/domain'
+import { createId } from './ids'
 import { rewardStatus } from './rewards'
 import { formatDate } from './dates'
 
@@ -139,4 +140,47 @@ export function endExpiredCampaigns(ds: BusinessDataset, now: Date): boolean {
     }
   }
   return changed
+}
+
+const DEMO_FIRST = ['Lena', 'Marco', 'Aylin', 'Jonas', 'Sofia', 'Emre', 'Clara', 'Daniel', 'Mira', 'Tobias']
+const DEMO_LAST = ['Becker', 'Rossi', 'Yildiz', 'Hoffmann', 'Conti', 'Kaya', 'Weber', 'Fischer', 'Demir', 'Schulz']
+
+/**
+ * Demo data for a campaign that has no linked customers yet (development environment): a handful of realistic
+ * customers claim it over the last days, a few have already redeemed. Real claims come from the campaign QR.
+ */
+export function seedCampaignDemo(ds: BusinessDataset, campaign: Campaign, now: Date = new Date()): number {
+  if (campaign.status !== 'active' || campaign.kind === undefined) return 0
+  if (campaignLinked(ds, campaign.id, now).length > 0) return 0
+  const program = campaign.kind === 'stamp_acquisition' ? ds.programs.find((p) => p.id === campaign.linkedProgramId) : undefined
+  if (campaign.kind === 'stamp_acquisition' && (!program || program.status !== 'active')) return 0
+  const staff = ds.users.find((u) => u.role === 'employee') ?? ds.users[0]
+  let next = ds.customers.reduce((max, x) => Math.max(max, Number(x.customerNumber.replace(/\D/g, '')) || 0), 10000)
+  const count = 6
+  for (let i = 0; i < count; i++) {
+    const at = new Date(now.getTime() - (i * 1.5 + 0.5) * 86_400_000).toISOString()
+    const first = DEMO_FIRST[(i + campaign.id.length) % DEMO_FIRST.length]!
+    const last = DEMO_LAST[(i * 3 + campaign.name.length) % DEMO_LAST.length]!
+    next += 1
+    const customer: Customer = { id: createId('cus'), businessId: ds.business.id, customerNumber: `C-${next}`, name: `${first} ${last}`, email: `${first}.${last}@example.com`.toLowerCase(), phone: '', birthday: '', notes: '', createdAt: at }
+    ds.customers.push(customer)
+    const redeemed = i % 3 === 1
+    const reward = (partial: Partial<RewardInstance> & Pick<RewardInstance, 'source' | 'name'>): RewardInstance => ({
+      id: createId('rwd'), businessId: ds.business.id, customerId: customer.id, programId: null, campaignId: campaign.id, description: '', pointsRewardId: null, pointsCost: null, winbackStage: null, passCode: null,
+      issuedAt: at, availableFrom: null, expiresAt: null, redeemedAt: redeemed ? new Date(new Date(at).getTime() + 3_600_000 * 20).toISOString() : null, status: redeemed ? 'redeemed' : 'available', ...partial,
+    })
+    if (campaign.kind === 'stamp_acquisition' && program) {
+      ds.memberships.push({ id: createId('mem'), customerId: customer.id, programId: program.id, passCode: `BNC-${createId('p').slice(-8).toUpperCase()}`, joinedAt: at, stamps: campaign.startingStamps, points: 0, visits: 0, totalSpend: 0, tierIndex: 0, lastActivityAt: null, viaCampaignId: campaign.id })
+      if (campaign.welcomeGift.enabled) {
+        const r = reward({ source: 'welcome_gift', name: campaign.welcomeGift.rewardName, description: campaign.welcomeGift.description, programId: program.id })
+        ds.rewards.push(r)
+        if (redeemed && staff) ds.transactions.push({ id: createId('txn'), businessId: ds.business.id, customerId: customer.id, programId: program.id, campaignId: null, employeeId: staff.id, kind: 'reward_redeemed', stampsAdded: 0, pointsAdded: 0, purchaseAmount: null, rewardId: r.id, createdAt: r.redeemedAt!, durationMs: null, entry: 'scan', balanceAfter: null })
+      }
+    } else if (campaign.kind === 'voucher') {
+      const r = reward({ source: 'voucher', name: campaign.voucherReward, passCode: `BNC-${createId('v').slice(-8).toUpperCase()}`, availableFrom: new Date(`${campaign.validFrom}T00:00:00`).toISOString(), expiresAt: new Date(`${campaign.validTo}T23:59:59`).toISOString() })
+      ds.rewards.push(r)
+      if (redeemed && staff) ds.transactions.push({ id: createId('txn'), businessId: ds.business.id, customerId: customer.id, programId: null, campaignId: campaign.id, employeeId: staff.id, kind: 'voucher_redeemed', stampsAdded: 0, pointsAdded: 0, purchaseAmount: null, rewardId: r.id, createdAt: r.redeemedAt!, durationMs: null, entry: 'scan', balanceAfter: null })
+    }
+  }
+  return count
 }
