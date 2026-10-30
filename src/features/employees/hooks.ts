@@ -1,3 +1,4 @@
+import type { TeamPermission } from '@/lib/teamPermissions'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Business, Invite } from '@/types/domain'
 import { useBackend } from '@/state/services'
@@ -16,7 +17,20 @@ export function useLeaderboard(enabled = true) {
 export function useInvite() {
   const backend = useBackend()
   const qc = useQueryClient()
-  return useMutation({ mutationFn: ({ email, role }: { email: string; role: Invite['role'] }) => backend.inviteEmployee(email, role), onSuccess: () => qc.invalidateQueries({ queryKey: ['employees'] }) })
+  return useMutation({
+    mutationFn: ({ email, role, permissions }: { email: string; role: Invite['role']; permissions?: TeamPermission[] }) => backend.inviteEmployee(email, role, permissions),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['employees'] }),
+  })
+}
+
+/** Owner changes a team member's User Type and permission checkboxes. */
+export function useUpdateMemberAccess() {
+  const backend = useBackend()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ userId, role, permissions }: { userId: string; role: Invite['role']; permissions: TeamPermission[] }) => backend.updateMemberAccess(userId, role, permissions),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['employees'] }),
+  })
 }
 
 export function useUpdatePermissions() {

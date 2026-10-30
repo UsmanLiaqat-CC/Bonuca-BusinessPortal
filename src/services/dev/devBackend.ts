@@ -42,6 +42,7 @@ import { addDays, daysBetween, formatDate } from '@/lib/dates'
 import { DEFAULT_SIGNUP_FIELDS, defaultSignupPage, defaultSubscription, defaultWinBack } from '@/lib/factories'
 import { giftStatus } from '@/lib/gifts'
 import { customerHistory } from '@/lib/history'
+import { isTeamPermission, presetFor, type TeamPermission } from '@/lib/teamPermissions'
 import { campaignLinked, campaignRows, customerCampaigns, endExpiredCampaigns, WINBACK_ID } from '@/lib/campaigns'
 import { currencyCode } from '@/lib/points'
 import { programSchema } from '@/schemas/program'
@@ -63,6 +64,7 @@ export interface DevBackendOptions {
 }
 
 const SEED_PASSWORD = 'Bonuca123'
+const TYPE_NAME = { stamp: 'Stamp Card', membership: 'Membership Card', tier: 'Tier Program', points: 'Points Program' } as const
 const SEED_ACCOUNTS = [
   { email: 'owner@sample.dev', role: 'owner' as const, name: 'Sam Owner' },
   { email: 'manager@sample.dev', role: 'manager' as const, name: 'Mia Manager' },
@@ -186,7 +188,7 @@ export class DevBackend implements BusinessBackend {
     const current = structuredClone(db.datasets[ds.business.id]!)
     const self = current.users.find((u) => u.id === user.id) ?? user
     const plan = resolvePlanState(current.subscription, this.opts.catalog, this.now())
-    return { db, user: self, ds: current, plan, access: { role: self.role, plan, permissions: current.business.permissions } }
+    return { db, user: self, ds: current, plan, access: { role: self.role, plan, permissions: current.business.permissions, grants: self.permissions ?? null } }
   }
 
   /** Preview Mode reads demo data (spec §2); real data is untouched. */
@@ -345,6 +347,8 @@ export class DevBackend implements BusinessBackend {
       emailVerified: true,
       language: 'en',
       createdAt: this.now().toISOString(),
+      // The same permissions apply wherever this account signs in (web and mobile).
+      permissions: invite.permissions ?? null,
     }
     ds.users.push(user)
     invite.acceptedAt = this.now().toISOString()
@@ -492,6 +496,9 @@ export class DevBackend implements BusinessBackend {
         program.publishedAt = this.now().toISOString()
       }
       if (action === 'enable' || action === 'publish') {
+        // Only one Active program of each type; drafts and inactive programs are unlimited (client rule).
+        const sameType = c.ds.programs.find((p) => p.id !== id && p.type === program.type && p.status === 'active')
+        if (sameType) throw new ValidationError(`Only one active ${TYPE_NAME[program.type]} at a time. Pause or archive “${sameType.name}” first.`)
         assertWithinLimit(c.plan, 'programs', c.ds.programs.filter((p) => p.status === 'active' && p.id !== id).length)
       }
       program.status = next
@@ -659,7 +666,9 @@ export class DevBackend implements BusinessBackend {
     return this.mutate((c) => {
       const a = input.action
       // Remove stamp (-1) and adding more than one stamp are Owner/Manager only.
-      if (a.type === 'remove_stamp' || (a.type === 'add_stamp' && (a.count ?? 1) > 1)) authorize(c.access, 'scanner.adjust')
+      if (a.type === 'remove_stamp') authorize(c.access, 'scanner.adjust')
+      // Several stamps in one scan: the program must allow it and the user needs the permission.
+      if (a.type === 'add_stamp' && (a.count ?? 1) > 1) authorize(c.access, 'scanner.multiStamp')
       const address = c.ds.business.address
       const location = [address.street, address.city].filter(Boolean).join(', ') || c.ds.business.name
       const { dataset, result } = applyScan(c.ds, { ...input, employeeId: c.user.id, location }, this.now())
@@ -711,6 +720,8 @@ export class DevBackend implements BusinessBackend {
   /** Employees see limited customer info (OI-18). */
   private limit(customer: Customer, c: Ctx): Customer {
     if (c.user.role !== 'employee') return customer
+    // Staff see limited customer info unless the owner ticked "View customers".
+    if (c.user.permissions?.includes('customers.view')) return customer
     return { ...customer, email: '', phone: '', birthday: '', notes: '' }
   }
 
@@ -978,10 +989,10 @@ export class DevBackend implements BusinessBackend {
     }))
   }
 
-  async inviteEmployee(email: string, role: Invite['role']) {
+  async inviteEmployee(email: string, role: Invite['role'], permissions?: TeamPermission[]) {
     return this.mutate((c) => {
-      if (role !== 'manager' && role !== 'employee') throw new ValidationError('Invalid role.')
-      authorize(c.access, role === 'manager' ? 'employees.inviteManager' : 'employees.invite')
+      if (role !== 'manager' && role !== 'employee' && role !== 'admin') throw new ValidationError('Invalid role.')
+      authorize(c.access, role === 'employee' ? 'employees.invite' : 'employees.inviteManager')
       const normalized = email.trim().toLowerCase()
       if (c.ds.users.some((u) => u.email === normalized)) throw new ValidationError('This person is already on your team.')
       if (c.ds.invites.some((i) => i.email === normalized && !i.acceptedAt)) throw new ValidationError('An invitation is already pending for this email.')
@@ -995,6 +1006,8 @@ export class DevBackend implements BusinessBackend {
         invitedBy: c.user.id,
         createdAt: this.now().toISOString(),
         acceptedAt: null,
+        // User Type preset, as adjusted by the inviter.
+        permissions: (permissions ?? presetFor(role)).filter(isTeamPermission),
       }
       c.ds.invites.push(invite)
       this.audit(c, 'Employees', `Invited ${role}`, normalized)
@@ -1002,6 +1015,18 @@ export class DevBackend implements BusinessBackend {
       const delivery: EmailDelivery = { delivered: false, devLink: `/accept-invite/${invite.token}` }
       return { invite, delivery }
     }, 'employees.invite')
+  }
+
+  async updateMemberAccess(userId: string, role: Invite['role'], permissions: TeamPermission[]): Promise<void> {
+    await this.mutate((c) => {
+      const member = c.ds.users.find((u) => u.id === userId)
+      if (!member) throw new NotFoundError('Team member not found.')
+      if (member.role === 'owner') throw new ValidationError('The owner always has full access.')
+      if (role !== 'manager' && role !== 'employee' && role !== 'admin') throw new ValidationError('Invalid role.')
+      member.role = role
+      member.permissions = permissions.filter(isTeamPermission)
+      this.audit(c, 'Employees', 'Changed access', `${member.fullName}: ${role}`)
+    }, 'employees.permissions')
   }
 
   async updatePermissions(patch: Partial<Business['permissions']>): Promise<void> {

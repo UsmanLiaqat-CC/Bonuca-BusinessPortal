@@ -337,6 +337,10 @@ export function applyScan(
         const count = action.count ?? 1
         if (!Number.isInteger(count) || count < 1) throw new ScanError('Choose how many stamps to add.')
         if (m.stamps >= required) throw new ScanError('The card is full. Redeem the bonus first.')
+        // "Allow Multiple Stamps": off by default (one stamp per scan); when on, up to the program's limit.
+        const multi = program.config.multipleStamps
+        if (count > 1 && !multi?.enabled) throw new ScanError('This program gives one stamp per scan.')
+        if (count > 1 && multi?.max != null && count > multi.max) throw new ScanError(`At most ${multi.max} stamps per scan.`)
         const added = Math.min(count, required - m.stamps)
         m.stamps += added
         m.visits += 1

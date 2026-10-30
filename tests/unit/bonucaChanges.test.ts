@@ -198,6 +198,70 @@ describe('Campaigns tab', () => {
   })
 })
 
+describe('one Active program per type', () => {
+  it('a second program of the same type cannot be published or enabled while one is active', async () => {
+    const b = await as('owner')
+    const draft = (await b.listPrograms()).find((p) => p.id === 'prg_lunch')!
+    expect(draft.type).toBe('stamp')
+    await expect(b.programLifecycle('prg_lunch', 'publish')).rejects.toThrow(/Only one active Stamp Card at a time/)
+    // Drafts of the same type are unlimited.
+    const { toDraft } = await import('@/lib/factories')
+    await b.createProgram({ ...toDraft(draft), name: 'Another stamp draft' })
+    // Pausing the active one frees the slot.
+    await b.programLifecycle('prg_coffee', 'disable')
+    expect((await b.programLifecycle('prg_lunch', 'publish')).status).toBe('active')
+    await expect(b.programLifecycle('prg_coffee', 'enable')).rejects.toThrow(/Only one active/)
+  })
+})
+
+describe('Allow Multiple Stamps', () => {
+  it('off: one stamp per scan; on: up to the limit', async () => {
+    const owner = await as('owner')
+    const { membership } = (await owner.getProgramCustomers('prg_coffee')).find((r) => r.membership.stamps <= 5)!
+    // Sample Coffee Card allows up to 5.
+    await expect(owner.confirmScan({ passCode: membership.passCode, action: { type: 'add_stamp', count: 6 }, durationMs: null, entry: 'scan' })).rejects.toThrow(/At most 5 stamps per scan/)
+    const r = await owner.confirmScan({ passCode: membership.passCode, action: { type: 'add_stamp', count: 2 }, durationMs: null, entry: 'scan' })
+    expect(r.transaction.stampsAdded).toBe(2)
+    // Turn it off: back to one stamp per scan.
+    const { toDraft } = await import('@/lib/factories')
+    const coffee = (await owner.listPrograms()).find((p) => p.id === 'prg_coffee')!
+    if (coffee.type !== 'stamp') throw new Error('expected stamp')
+    await owner.updateProgram('prg_coffee', { ...toDraft(coffee), config: { ...coffee.config, multipleStamps: { enabled: false, max: 3 } } } as never)
+    await expect(owner.confirmScan({ passCode: membership.passCode, action: { type: 'add_stamp', count: 2 }, durationMs: null, entry: 'scan' })).rejects.toThrow(/one stamp per scan/)
+  })
+})
+
+describe('User Type and permission presets', () => {
+  it('Staff / Manager / Admin presets; invite stores them and the activated account uses them', async () => {
+    const { presetFor } = await import('@/lib/teamPermissions')
+    expect(presetFor('employee')).toEqual(['scan', 'redeem'])
+    expect(presetFor('manager')).toEqual(expect.arrayContaining(['scan', 'redeem', 'customers.add', 'customers.view', 'customers.edit', 'programs.manage', 'dashboard']))
+    expect(presetFor('admin')).toContain('settings')
+    const owner = await as('owner')
+    const { invite } = await owner.inviteEmployee('newstaff@example.com', 'employee', ['scan', 'redeem', 'customers.view'])
+    expect(invite.permissions).toEqual(['scan', 'redeem', 'customers.view'])
+    await owner.logout()
+    await owner.acceptInvite(invite.token, { fullName: 'New Staff', password: 'secret123' })
+    const s = (await owner.getSession())!
+    expect(s.user).toMatchObject({ role: 'employee', permissions: ['scan', 'redeem', 'customers.view'] })
+    // Ticked "View customers": full customer info, but no dashboard.
+    const first = (await owner.listCustomers())[0]!
+    expect(first.email.length + first.phone.length).toBeGreaterThan(0)
+    await expect(owner.getDashboard()).rejects.toThrow(ROLE_LOCK_MESSAGE)
+  })
+
+  it('only the owner invites Managers/Admins and changes a member’s permissions', async () => {
+    const owner = await as('owner')
+    const { users } = await owner.listEmployees()
+    const mgr = users.find((u) => u.role === 'manager')!
+    await owner.updateMemberAccess(mgr.id, 'manager', ['scan', 'redeem'])
+    const asMgr = await as('manager', owner)
+    await expect(asMgr.getDashboard()).rejects.toThrow(ROLE_LOCK_MESSAGE)
+    await expect(asMgr.inviteEmployee('x@example.com', 'admin')).rejects.toThrow(ROLE_LOCK_MESSAGE)
+    await expect(asMgr.updateMemberAccess(mgr.id, 'admin', ['scan'])).rejects.toThrow(ROLE_LOCK_MESSAGE)
+  })
+})
+
 describe('history and stored data', () => {
   it('history leaves out rows where nothing changed ("0 stamps")', async () => {
     const b = await as('owner')

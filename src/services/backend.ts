@@ -28,6 +28,7 @@ import type { ScanContext, ScanInput, ScanResult } from '@/lib/scanEngine'
 import type { DashboardStats, AnalyticsStats, DateRange } from '@/lib/metrics'
 import type { LeaderboardEntry } from '@/lib/gamification'
 import type { HistoryRow } from '@/lib/history'
+import type { TeamPermission } from '@/lib/teamPermissions'
 import type { CampaignKind, CampaignLinkedRow, CampaignRow } from '@/lib/campaigns'
 
 /**
@@ -244,7 +245,10 @@ export interface BusinessBackend {
 
   // Employees (§4.6)
   listEmployees(): Promise<EmployeesView>
-  inviteEmployee(email: string, role: Invite['role']): Promise<{ invite: Invite; delivery: EmailDelivery }>
+  /** Invite by email with a User Type (Staff/Manager/Admin) and its permission checkboxes. */
+  inviteEmployee(email: string, role: Invite['role'], permissions?: TeamPermission[]): Promise<{ invite: Invite; delivery: EmailDelivery }>
+  /** Owner changes a team member's User Type and permission checkboxes. */
+  updateMemberAccess(userId: string, role: Invite['role'], permissions: TeamPermission[]): Promise<void>
   updatePermissions(patch: Partial<Business['permissions']>): Promise<void>
   getLeaderboard(): Promise<LeaderboardEntry[]>
 

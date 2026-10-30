@@ -24,37 +24,41 @@ import { useAwardCustomer, useConfirmScan } from '../hooks'
 import { ScanPanel } from './ScanPanel'
 
 type Entry = 'scan' | 'search'
-const AMOUNTS = [1, 2, 3, 4, 5]
 
-/** Stamp program: stamp count, +1 stamp, Redeem bonus (full card only); -1 and amount for Owner/Manager. */
+/**
+ * Stamp program: stamp count, +1 stamp, Redeem bonus (full card only). Remove stamp needs the remove permission;
+ * the amount dropdown shows only when the program allows multiple stamps and the user may award them.
+ */
 function StampActions({ context, program, onAction, pending }: { context: ScanContext; program: StampProgram; onAction: (a: ScanAction) => void; pending: boolean }) {
   const access = useAccess()
-  const canAdjust = access.can('scanner.adjust')
+  const canRemove = access.can('scanner.adjust')
+  const multi = program.config.multipleStamps
+  const canMulti = !!multi?.enabled && access.can('scanner.multiStamp')
+  const amounts = Array.from({ length: Math.max(2, multi?.max ?? 10) }, (_, i) => i + 1)
   const [amount, setAmount] = useState(1)
   const m = context.target.kind === 'membership' ? context.target.membership : null
   if (!m) return null
   const required = program.config.stampsRequired
   const full = m.stamps >= required
-  const n = canAdjust ? amount : 1
+  const n = canMulti ? amount : 1
   return (
     <div className="flex flex-col gap-4">
       <p className="font-display text-[34px] leading-none font-bold tracking-tight" aria-label={`${m.stamps} of ${required} stamps`}>
         {m.stamps} <span className="text-lg text-muted">/ {required} stamps</span>
       </p>
       <div className="flex flex-wrap items-center gap-2">
-        {canAdjust && (
+        {canMulti && (
           <label className="flex items-center gap-2 text-sm">
             <span className="label">Amount</span>
             <Select className="w-20" value={amount} onChange={(e) => setAmount(Number(e.target.value))} aria-label="Stamp amount">
-              {AMOUNTS.map((a) => <option key={a} value={a}>{a}</option>)}
+              {amounts.map((a) => <option key={a} value={a}>{a}</option>)}
             </Select>
           </label>
         )}
         <GuardedButton permission="scanner.transact" size="lg" onClick={() => onAction({ type: 'add_stamp', count: n })} loading={pending} disabled={full}>
           <Plus className="size-4" aria-hidden /> {n} stamp{n > 1 ? 's' : ''}
         </GuardedButton>
-        {/* Remove stamp (-1) and the amount dropdown are visible to Owner and Manager only. */}
-        {canAdjust && (
+        {canRemove && (
           <GuardedButton permission="scanner.adjust" size="lg" variant="secondary" onClick={() => onAction({ type: 'remove_stamp', count: n })} loading={pending} disabled={m.stamps === 0}>
             <Minus className="size-4" aria-hidden /> Remove stamp (-{n})
           </GuardedButton>

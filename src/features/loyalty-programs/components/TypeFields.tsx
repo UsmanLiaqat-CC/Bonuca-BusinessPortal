@@ -64,6 +64,34 @@ export function StampFields({ form }: { form: Form }) {
       <div className="sm:col-span-2">
         <ToggleNumber form={form} toggleName="config.expiry.enabled" numberName="config.expiry.days" label="Expiry Rule" description="If enabled, an inactive card resets/expires after X days without a scan." unit="days without a scan" />
       </div>
+      <div className="sm:col-span-2">
+        <Controller
+          control={control}
+          name="config.multipleStamps"
+          render={({ field }) => {
+            const v = (field.value as { enabled: boolean; max: number | null } | undefined) ?? { enabled: false, max: 3 }
+            return (
+              <div className="flex flex-col gap-2">
+                <Toggle
+                  label="Allow Multiple Stamps"
+                  description="Off: one stamp per scan. On: staff can award several stamps in one scan, up to the limit. Can be changed any time, even while the program is running. Team permissions still apply."
+                  checked={v.enabled}
+                  onChange={(on) => field.onChange({ enabled: on, max: v.max ?? 3 })}
+                />
+                {v.enabled && (
+                  <div className="field max-w-xs">
+                    <label htmlFor="multi-stamp-max" className="label">Maximum stamps per scan</label>
+                    <Select id="multi-stamp-max" value={v.max === null ? 'unlimited' : String(v.max)} onChange={(e) => field.onChange({ enabled: true, max: e.target.value === 'unlimited' ? null : Number(e.target.value) })}>
+                      {[2, 3, 4, 5, 10].map((n) => <option key={n} value={n}>{n}</option>)}
+                      <option value="unlimited">Unlimited</option>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            )
+          }}
+        />
+      </div>
     </div>
   )
 }

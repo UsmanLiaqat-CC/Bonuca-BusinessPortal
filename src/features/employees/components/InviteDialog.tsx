@@ -7,9 +7,11 @@ import { errorMessage } from '@/lib/errors'
 import { useAccess } from '@/state/session'
 import { Dialog } from '@/components/ui/Dialog'
 import { Button } from '@/components/ui/Button'
-import { Field, Input, Select } from '@/components/ui/Field'
+import { Field, Input } from '@/components/ui/Field'
 import { DevCallout } from '@/features/auth/components/AuthLayout'
+import { presetFor, type TeamPermission, type UserType } from '@/lib/teamPermissions'
 import { useInvite } from '../hooks'
+import { AccessFields } from './AccessFields'
 
 type Values = z.infer<typeof inviteSchema>
 
@@ -19,16 +21,20 @@ export function InviteDialog({ open, onClose }: { open: boolean; onClose: () => 
   const invite = useInvite()
   const [link, setLink] = useState<string | null>(null)
   const canInviteManager = access.can('employees.inviteManager')
+  const [type, setType] = useState<UserType>('employee')
+  const [perms, setPerms] = useState<TeamPermission[]>(presetFor('employee'))
   const { register, handleSubmit, formState, setError, reset } = useForm<Values>({ resolver: zodResolver(inviteSchema), defaultValues: { email: '', role: 'employee' } })
 
   const close = () => {
     setLink(null)
     reset()
+    setType('employee')
+    setPerms(presetFor('employee'))
     onClose()
   }
   const submit = handleSubmit(async (v) => {
     try {
-      const { delivery } = await invite.mutateAsync(v)
+      const { delivery } = await invite.mutateAsync({ email: v.email, role: type, permissions: perms })
       setLink(delivery.delivered ? null : `${window.location.origin}${delivery.devLink ?? ''}`)
       if (delivery.delivered) close()
     } catch (e) {
@@ -41,7 +47,8 @@ export function InviteDialog({ open, onClose }: { open: boolean; onClose: () => 
       open={open}
       onClose={close}
       title="Invite team member"
-      description="They receive an email, set their own password, and get role-based access."
+      description="They receive an email with an activation link, enter their name, choose their own password, and can then log in on the web and mobile apps."
+      size="lg"
       footer={
         link ? (
           <Button onClick={close}>Done</Button>
@@ -65,14 +72,16 @@ export function InviteDialog({ open, onClose }: { open: boolean; onClose: () => 
           <Field label="Email" required error={formState.errors.email?.message}>
             {(p) => <Input {...p} type="email" {...register('email')} />}
           </Field>
-          <Field label="Role" required hint={canInviteManager ? undefined : 'Managers can invite Employees only.'}>
-            {(p) => (
-              <Select {...p} {...register('role')}>
-                <option value="employee">Employee</option>
-                {canInviteManager && <option value="manager">Manager</option>}
-              </Select>
-            )}
-          </Field>
+          <AccessFields
+            type={type}
+            permissions={perms}
+            types={canInviteManager ? ['employee', 'manager', 'admin'] : ['employee']}
+            onChange={(t, p) => {
+              setType(t)
+              setPerms(p)
+            }}
+            idPrefix="invite"
+          />
           {formState.errors.root && <p className="callout border-transparent bg-danger-soft text-danger" role="alert">{formState.errors.root.message}</p>}
         </form>
       )}

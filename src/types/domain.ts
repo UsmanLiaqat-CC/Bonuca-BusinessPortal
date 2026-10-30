@@ -10,7 +10,10 @@ export type ImageRef = string | null
 
 /* ------------------------------------------------------------------ Accounts & roles (§2, §4.6) */
 
-export type Role = 'owner' | 'manager' | 'employee'
+import type { TeamPermission } from '@/lib/teamPermissions'
+
+/** 'employee' is shown as Staff; 'admin' gets every team permission by default. */
+export type Role = 'owner' | 'admin' | 'manager' | 'employee'
 export type LanguageCode = 'en' | 'de' | 'tr' | 'fr' | 'it'
 
 export interface User {
@@ -24,6 +27,8 @@ export interface User {
   emailVerified: boolean
   language: LanguageCode
   createdAt: ISODate
+  /** Team permissions chosen by the owner (preset by User Type). null/absent = role defaults (older accounts). */
+  permissions?: TeamPermission[] | null
 }
 
 export interface Invite {
@@ -34,6 +39,8 @@ export interface Invite {
   invitedBy: string
   createdAt: ISODate
   acceptedAt: ISODate | null
+  /** Permission checkboxes chosen when inviting; copied to the user on activation. */
+  permissions?: TeamPermission[] | null
 }
 
 /* ------------------------------------------------------------------ Business (§1.4, §4.10, §4.12) */
@@ -215,6 +222,8 @@ export interface StampConfig {
   rewardDescription: string
   rewardType: StampRewardType
   expiry: { enabled: boolean; days: number | null }
+  /** "Allow Multiple Stamps": off = one stamp per scan. max null = unlimited. Missing = off (older programs). */
+  multipleStamps?: { enabled: boolean; max: number | null }
 }
 
 export type BenefitType = 'percent_discount' | 'fixed_discount' | 'perk'

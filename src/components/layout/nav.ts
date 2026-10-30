@@ -37,6 +37,9 @@ export const NAV_ITEMS: NavItem[] = [
 
 export const BusinessIcon = Building2
 
-export function homePathFor(role: Role): string {
-  return role === 'employee' ? '/app/scanner' : '/app/dashboard'
+export function homePathFor(role: Role, grants?: readonly string[] | null): string {
+  if (role === 'employee') return '/app/scanner'
+  // Team members without dashboard access land on Award actions.
+  if (role !== 'owner' && grants && !grants.includes('dashboard')) return '/app/scanner'
+  return '/app/dashboard'
 }

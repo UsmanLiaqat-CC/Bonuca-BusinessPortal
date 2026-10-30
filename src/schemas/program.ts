@@ -67,6 +67,9 @@ export const stampConfigSchema = z.object({
   rewardDescription: requiredText('Reward description is required.'),
   rewardType: z.enum(['free_item', 'percent_discount', 'fixed_discount', 'custom']),
   expiry: toggleDays('the expiry rule'),
+  multipleStamps: z
+    .object({ enabled: z.boolean(), max: z.number().int().min(2, 'At least 2.').nullable() })
+    .optional(),
 })
 
 export const membershipConfigSchema = z

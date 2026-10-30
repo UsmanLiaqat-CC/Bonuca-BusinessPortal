@@ -62,5 +62,5 @@ export const acceptInviteSchema = z
 
 export const inviteSchema = z.object({
   email: z.email('Enter a valid email address.'),
-  role: z.enum(['manager', 'employee']),
+  role: z.enum(['admin', 'manager', 'employee']),
 })

@@ -107,7 +107,7 @@ export function buildSampleDataset(opts: SampleOptions): BusinessDataset {
   const stamp: StampProgram = {
     ...base('prg_coffee', 'Coffee Card'),
     type: 'stamp',
-    config: { stampsRequired: 10, stampIcon: { kind: 'preset', preset: 'coffee' }, rewardDescription: '1 Free Coffee', rewardType: 'free_item', expiry: { enabled: false, days: null } },
+    config: { stampsRequired: 10, stampIcon: { kind: 'preset', preset: 'coffee' }, rewardDescription: '1 Free Coffee', rewardType: 'free_item', expiry: { enabled: false, days: null }, multipleStamps: { enabled: true, max: 5 } },
   }
   const lunch: StampProgram = {
     ...base('prg_lunch', 'Lunch Card'),

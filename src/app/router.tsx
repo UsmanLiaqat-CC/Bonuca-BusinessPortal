@@ -17,7 +17,7 @@ const guarded = (permission: Permission, el: ReactNode) => <RequirePermission pe
 
 function AppHome() {
   const { session } = useSession()
-  return <Navigate to={homePathFor(session.user.role)} replace />
+  return <Navigate to={homePathFor(session.user.role, session.user.permissions)} replace />
 }
 
 /** The Wallet Cards tab was removed: each program's wallet card now lives inside Loyalty Programs. */

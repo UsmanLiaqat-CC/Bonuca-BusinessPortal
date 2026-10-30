@@ -1,5 +1,6 @@
 import type { Business, PlanLimits, Role } from '@/types/domain'
 import { hasPlanFeature, type PlanState } from './plan'
+import type { TeamPermission } from './teamPermissions'
 
 /** Exact Preview Mode message required by spec §2. Do not reword. */
 export const PREVIEW_LOCK_MESSAGE = 'Select a free trial, free plan, or paid plan to use this feature.'
@@ -15,6 +16,7 @@ export type Permission =
   | 'scanner.use'
   | 'scanner.transact'
   | 'scanner.adjust'
+  | 'scanner.multiStamp'
   | 'gifts.manage'
   | 'audit.view'
   | 'customers.view'
@@ -47,6 +49,8 @@ export interface AccessContext {
   role: Role
   plan: PlanState
   permissions: Business['permissions']
+  /** The user's team permissions (owner-chosen). null = role defaults. */
+  grants?: TeamPermission[] | null
 }
 
 type RoleRule = (ctx: AccessContext) => boolean
@@ -58,7 +62,7 @@ interface PermissionRule {
   feature?: 'aiCommentary'
 }
 
-const OWNER_MANAGER: RoleRule = (c) => c.role === 'owner' || c.role === 'manager'
+const OWNER_MANAGER: RoleRule = (c) => c.role === 'owner' || c.role === 'admin' || c.role === 'manager'
 const ALL: RoleRule = () => true
 const OWNER: RoleRule = (c) => c.role === 'owner'
 const EMPLOYEE_ADMIN: RoleRule = (c) =>
@@ -80,6 +84,8 @@ const RULES: Record<Permission, PermissionRule> = {
   'scanner.transact': { roles: ALL, locksInPreview: true },
   // Award actions: Remove stamp (-1) and the amount dropdown are Owner/Manager only; employees add and redeem.
   'scanner.adjust': { roles: OWNER_MANAGER, locksInPreview: true },
+  // "Allow Multiple Stamps": awarding several stamps in one scan needs this permission.
+  'scanner.multiStamp': { roles: OWNER_MANAGER, locksInPreview: true },
   // Surprise gift from the customer profile: Give gift / Cancel are Owner and Manager only.
   'gifts.manage': { roles: OWNER_MANAGER, locksInPreview: true },
   // Settings → Audit: review what Managers and Employees did.
@@ -120,9 +126,46 @@ export type Decision =
   | { allowed: true }
   | { allowed: false; reason: 'role' | 'preview' | 'plan' | 'limit'; message: string }
 
+/** Which team-permission checkbox decides each action, for team members with an owner-chosen list. */
+const GRANT_FOR: Partial<Record<Permission, TeamPermission>> = {
+  'dashboard.view': 'dashboard',
+  'analytics.view': 'dashboard',
+  'programs.view': 'programs.view',
+  'programs.manage': 'programs.manage',
+  'wallet.view': 'programs.view',
+  'wallet.manage': 'programs.manage',
+  'qr.manage': 'programs.manage',
+  'scanner.use': 'scan',
+  'scanner.transact': 'redeem',
+  'scanner.adjust': 'adjustStamps',
+  'scanner.multiStamp': 'multiStamp',
+  'customers.viewFull': 'customers.view',
+  'customers.add': 'customers.add',
+  'customers.notes': 'customers.edit',
+  'customers.signupFields': 'customers.edit',
+  'gifts.manage': 'customers.edit',
+  'employees.view': 'team',
+  'employees.invite': 'team',
+  'notifications.view': 'notifications',
+  'notifications.manage': 'notifications',
+  'rewards.view': 'rewards',
+  'rewards.manage': 'rewards',
+  'branding.manage': 'settings',
+  'settings.view': 'settings',
+  'settings.edit': 'settings',
+  'audit.view': 'audit',
+}
+
+function roleAllows(ctx: AccessContext, permission: Permission): boolean {
+  const grant = GRANT_FOR[permission]
+  // Owner keeps full access; team members with an owner-chosen list follow their checkboxes.
+  if (ctx.role !== 'owner' && ctx.grants && grant) return ctx.grants.includes(grant)
+  return RULES[permission].roles(ctx)
+}
+
 export function evaluate(ctx: AccessContext, permission: Permission): Decision {
   const rule = RULES[permission]
-  if (!rule.roles(ctx)) return { allowed: false, reason: 'role', message: ROLE_LOCK_MESSAGE }
+  if (!roleAllows(ctx, permission)) return { allowed: false, reason: 'role', message: ROLE_LOCK_MESSAGE }
   if (rule.locksInPreview && ctx.plan.mode === 'preview') {
     return { allowed: false, reason: 'preview', message: PREVIEW_LOCK_MESSAGE }
   }

@@ -14,14 +14,19 @@ import { GuardedButton } from '@/components/feedback/GuardedButton'
 import { QueryState } from '@/components/feedback/QueryState'
 import { InviteDialog } from '../components/InviteDialog'
 import { Leaderboard } from '../components/Leaderboard'
-import { useEmployees, useUpdatePermissions } from '../hooks'
+import { useEmployees, useUpdateMemberAccess, useUpdatePermissions } from '../hooks'
+import { AccessFields } from '../components/AccessFields'
+import { presetFor, USER_TYPE_LABEL, type TeamPermission, type UserType } from '@/lib/teamPermissions'
+import { Dialog } from '@/components/ui/Dialog'
+import { Button } from '@/components/ui/Button'
 
 const ROLE_ACCESS = {
   owner: 'Full access — billing/subscription, employees, customers, loyalty programs, analytics, scanner, business settings.',
+  admin: 'All available permissions (preset). The owner can change the ticks per person.',
   manager: 'Customers, loyalty programs, rewards, analytics, scanner, limited settings, and employees if permitted.',
   employee: 'Scanner, limited customer info, add stamps/points/visits, redeem rewards. No billing or subscription access.',
 } as const
-const ROLE_TONE: Record<keyof typeof ROLE_ACCESS, BadgeTone> = { owner: 'accent', manager: 'warning', employee: 'neutral' }
+const ROLE_TONE: Record<keyof typeof ROLE_ACCESS, BadgeTone> = { owner: 'accent', admin: 'accent', manager: 'warning', employee: 'neutral' }
 
 /** Spec §4.6 Employees. */
 export default function EmployeesPage() {
@@ -32,6 +37,8 @@ export default function EmployeesPage() {
   const employees = useEmployees()
   const permissions = useUpdatePermissions()
   const [inviting, setInviting] = useState(false)
+  const [editing, setEditing] = useState<{ userId: string; name: string; role: UserType; permissions: TeamPermission[] } | null>(null)
+  const memberAccess = useUpdateMemberAccess()
   const perms = session.business.permissions
   const staffCount = (employees.data?.users.filter((u) => u.role !== 'owner').length ?? 0) + (employees.data?.invites.filter((i) => !i.acceptedAt).length ?? 0)
 
@@ -62,8 +69,8 @@ export default function EmployeesPage() {
               <DataTable
                 caption="Team members and invitations"
                 rows={[
-                  ...data.users.map((u) => ({ key: u.id, name: u.fullName, email: u.email, role: u.role, status: 'Active' as const, date: u.createdAt })),
-                  ...data.invites.filter((i) => !i.acceptedAt).map((i) => ({ key: i.token, name: '—', email: i.email, role: i.role, status: 'Invited' as const, date: i.createdAt })),
+                  ...data.users.map((u) => ({ key: u.id, name: u.fullName, email: u.email, role: u.role, status: 'Active' as const, date: u.createdAt, permissions: u.permissions ?? null })),
+                  ...data.invites.filter((i) => !i.acceptedAt).map((i) => ({ key: i.token, name: '—', email: i.email, role: i.role, status: 'Invited' as const, date: i.createdAt, permissions: i.permissions ?? null })),
                 ]}
                 rowKey={(r) => r.key}
                 columns={[
@@ -87,13 +94,24 @@ export default function EmployeesPage() {
                     cell: (r) => (
                       <span title={ROLE_ACCESS[r.role]}>
                         <Badge tone={ROLE_TONE[r.role]} dot={false} className="capitalize">
-                          {r.role}
+                          {r.role === 'owner' ? 'Owner' : USER_TYPE_LABEL[r.role]}
                         </Badge>
                       </span>
                     ),
                   },
                   { key: 'status', header: 'Status', cell: (r) => <Badge tone={r.status === 'Active' ? 'success' : 'warning'} live={r.status === 'Active'}>{r.status === 'Invited' ? 'Invited — awaiting setup' : 'Active'}</Badge> },
                   { key: 'date', header: 'Since', hideOnMobile: true, cell: (r) => <span className="text-muted">{formatDate(r.date)}</span> },
+                  {
+                    key: 'access',
+                    header: 'Access',
+                    className: 'num',
+                    cell: (r) =>
+                      r.status === 'Active' && r.role !== 'owner' ? (
+                        <GuardedButton permission="employees.permissions" size="sm" variant="secondary" onClick={() => setEditing({ userId: r.key, name: r.name, role: r.role as UserType, permissions: r.permissions ?? presetFor(r.role as UserType) })}>
+                          Permissions
+                        </GuardedButton>
+                      ) : null,
+                  },
                 ]}
               />
             )}
@@ -142,6 +160,33 @@ export default function EmployeesPage() {
         {access.can('leaderboard.view') && <Leaderboard />}
       </div>
       <InviteDialog open={inviting} onClose={() => setInviting(false)} />
+      <Dialog
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        title={`Permissions — ${editing?.name ?? ''}`}
+        description="Whatever access you give here applies on both the web and mobile apps."
+        size="lg"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setEditing(null)}>Cancel</Button>
+            <GuardedButton
+              permission="employees.permissions"
+              loading={memberAccess.isPending}
+              onClick={() =>
+                editing &&
+                memberAccess.mutate(
+                  { userId: editing.userId, role: editing.role, permissions: editing.permissions },
+                  { onSuccess: () => { toast.success('Permissions saved.'); setEditing(null) }, onError: (e) => toast.error(errorMessage(e)) },
+                )
+              }
+            >
+              Save permissions
+            </GuardedButton>
+          </>
+        }
+      >
+        {editing && <AccessFields type={editing.role} permissions={editing.permissions} types={['employee', 'manager', 'admin']} onChange={(role, permissions) => setEditing({ ...editing, role, permissions })} idPrefix="edit" />}
+      </Dialog>
     </>
   )
 }

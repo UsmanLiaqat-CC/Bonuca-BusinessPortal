@@ -24,7 +24,7 @@ const SessionContext = createContext<BusinessSession | null>(null)
 export function BusinessSessionProvider({ session, children }: { session: BusinessSession['session']; children: ReactNode }) {
   const value = useMemo<BusinessSession>(() => {
     const plan = resolvePlanState(session.subscription, session.catalog)
-    return { session, plan, access: { role: session.user.role, plan, permissions: session.business.permissions } }
+    return { session, plan, access: { role: session.user.role, plan, permissions: session.business.permissions, grants: session.user.permissions ?? null } }
   }, [session])
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
 }
