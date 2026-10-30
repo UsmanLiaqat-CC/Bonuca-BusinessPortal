@@ -29,7 +29,7 @@ export function WalletCard({ content, qrCode = 'BNC-PREVIEW', compact = false, c
       <div className="wc-head">
         <span className="wc-logo">{content.logo ? <img src={content.logo} alt="" /> : content.brand.slice(0, 1)}</span>
         <span className="wc-brand min-w-0">
-          <b className="truncate">{content.brand}</b>
+          <b>{content.brand}</b>
           {content.subtitle && <small className="truncate">{content.subtitle}</small>}
         </span>
         <span className="wc-type">

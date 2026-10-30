@@ -85,11 +85,12 @@ function RowActions({ row, onEnd }: { row: CampaignRow; onEnd: (row: CampaignRow
   const access = useAccess()
   const lifecycle = useCampaignLifecycle()
   const winback = useWinbackLifecycle()
-  const [open, setOpen] = useState(false)
+  // Fixed-position menu so the table's horizontal scroll never clips it.
+  const [open, setOpen] = useState<{ top: number; right: number } | null>(null)
   const allowed = access.evaluate(managePermission(row.kind))
   const canToggle = row.status === 'active' || row.status === 'paused'
   const toggle = () => {
-    setOpen(false)
+    setOpen(null)
     const done = { onSuccess: () => toast.success(row.status === 'active' ? 'Campaign paused.' : 'Campaign resumed.'), onError: (e: unknown) => toast.error(errorMessage(e)) }
     if (row.kind === 'winback') winback.mutate(row.status === 'active' ? 'disable' : 'enable', done)
     else lifecycle.mutate({ id: row.id, action: row.status === 'active' ? 'disable' : 'enable' }, done)
@@ -97,7 +98,7 @@ function RowActions({ row, onEnd }: { row: CampaignRow; onEnd: (row: CampaignRow
   const items = [
     { label: 'Edit', run: () => navigate(editPath(row)), show: row.status !== 'ended' && row.status !== 'archived' },
     { label: row.status === 'active' ? 'Pause' : 'Resume', run: toggle, show: canToggle },
-    { label: 'End', run: () => { setOpen(false); onEnd(row) }, show: canToggle },
+    { label: 'End', run: () => { setOpen(null); onEnd(row) }, show: canToggle },
   ].filter((i) => i.show)
   return (
     // Buttons inside a clickable table row: stop their clicks/keys from also opening the row.
@@ -105,11 +106,14 @@ function RowActions({ row, onEnd }: { row: CampaignRow; onEnd: (row: CampaignRow
       <Button size="sm" variant="secondary" onClick={() => navigate(`/app/campaigns/${row.id}`)}>
         <Eye className="size-3.5" aria-hidden /> View
       </Button>
-      <Button size="sm" variant="ghost" aria-label={`More actions for ${row.name}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <Button size="sm" variant="ghost" aria-label={`More actions for ${row.name}`} aria-expanded={!!open} onClick={(e) => {
+        const r = e.currentTarget.getBoundingClientRect()
+        setOpen((o) => (o ? null : { top: r.bottom + 4, right: window.innerWidth - r.right }))
+      }}>
         <MoreHorizontal className="size-4" aria-hidden />
       </Button>
       {open && (
-        <div role="menu" aria-label={`${row.name} actions`} className="absolute top-full right-0 z-30 mt-1 flex w-44 flex-col rounded-xl border border-line bg-surface p-1 text-left shadow-[var(--shadow-pop)]">
+        <div role="menu" aria-label={`${row.name} actions`} style={{ top: open.top, right: open.right }} className="fixed z-50 flex w-44 flex-col rounded-xl border border-line bg-surface p-1 text-left shadow-[var(--shadow-pop)]">
           {items.map((i) => (
             <button key={i.label} type="button" role="menuitem" disabled={!allowed.allowed} title={allowed.allowed ? undefined : allowed.message} className="rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-50" onClick={i.run}>
               {i.label}
@@ -154,7 +158,7 @@ export default function CampaignsPage() {
           </GuardedButton>
         }
       />
-      <Card className="reveal-up overflow-visible">
+      <Card className="campaign-table reveal-up overflow-hidden">
         <div className="flex flex-wrap items-center gap-3 border-b border-line p-4">
           <div className="relative min-w-[220px] flex-1">
             <label htmlFor="campaign-search" className="sr-only">Search campaigns</label>
@@ -184,11 +188,11 @@ export default function CampaignsPage() {
                 rowKey={(r) => r.id}
                 onRowClick={(r) => navigate(`/app/campaigns/${r.id}`)}
                 columns={[
-                  { key: 'name', header: 'Campaign', cell: (r) => <span className="font-semibold">{r.name}</span> },
+                  { key: 'name', header: 'Campaign', cell: (r) => <span className="block min-w-[110px] font-semibold">{r.name}</span> },
                   { key: 'type', header: 'Type', cell: (r) => <Badge tone="outline">{CAMPAIGN_KIND_LABEL[r.kind]}</Badge> },
                   { key: 'status', header: 'Status', cell: (r) => <LifecycleBadge status={r.status} /> },
-                  { key: 'offer', header: 'Offer', cell: (r) => <span className="text-muted">{r.offer}</span> },
-                  { key: 'period', header: 'Period', hideOnMobile: true, cell: (r) => <span className="whitespace-nowrap text-muted">{r.period}</span> },
+                  { key: 'offer', header: 'Offer', cell: (r) => <span className="block min-w-[140px] text-muted">{r.offer}</span> },
+                  { key: 'period', header: 'Period', hideOnMobile: true, cell: (r) => <span className="block min-w-[120px] text-muted">{r.period}</span> },
                   { key: 'customers', header: 'Customers', className: 'num', cell: (r) => r.customers },
                   { key: 'redeemed', header: 'Redeemed', className: 'num', cell: (r) => r.redeemed },
                   { key: 'created', header: 'Created', hideOnMobile: true, cell: (r) => <span className="whitespace-nowrap text-muted">{formatDate(r.createdAt)}</span> },
