@@ -1172,6 +1172,8 @@ export class DevBackend implements BusinessBackend {
 
 /** Fill fields added after data was first saved (gifts, audit, program sign-up page …). */
 export function normalizeDataset(ds: BusinessDataset): BusinessDataset {
+  // Older saved sample data still carries the placeholder name "Sample Business (development)".
+  if (ds.business.name === 'Sample Business (development)') ds.business.name = 'Brew & Bean Café'
   ds.gifts ??= []
   ds.audit ??= []
   for (const p of ds.programs) {

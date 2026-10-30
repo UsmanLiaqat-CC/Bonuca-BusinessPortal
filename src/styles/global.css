@@ -263,23 +263,23 @@ body {
   .phone-screen.signup-screen { padding: 0; }
 
   /* Customer sign-up page (doc images 4 and 6). */
-  .join-page { --jbg: #f6f1e9; --jfg: #2b1a0e; min-height: 100%; display: flex; flex-direction: column; background: var(--jbg); color: var(--jfg); padding: 40px 18px 18px; font-size: 13px; }
-  .join-hero { position: relative; height: 176px; border-radius: 26px; overflow: hidden; display: grid; place-items: center; text-align: center; color: #fff; padding: 0 16px; background: linear-gradient(145deg, #2b1a0e, #5a3a22 60%, #8a6a45) center / cover no-repeat; box-shadow: 0 24px 40px -24px rgba(43, 26, 14, 0.65); }
-  .join-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.62)); }
+  .join-page { --jbg: #f6f1e9; --jfg: #2b1a0e; flex: 1; min-height: 100%; display: flex; flex-direction: column; background: var(--jbg); color: var(--jfg); padding: 40px 18px 18px; font-size: 13px; }
+  .join-hero { position: relative; min-height: 196px; padding: 26px 18px 24px; border-radius: 28px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #fff; background: linear-gradient(150deg, #24150b, #4d311d 55%, #8a6a45) center / cover no-repeat; box-shadow: 0 28px 44px -26px rgba(43, 26, 14, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+  .join-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 0%, rgba(226, 184, 107, 0.22), transparent 60%), linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.6)); }
   .join-hero > * { position: relative; max-width: 100%; }
-  .join-hero .jh-logo { width: 42px; height: 42px; margin: 0 auto 10px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.55); background: rgba(255,255,255,.12); backdrop-filter: blur(6px); }
+  .join-hero .jh-logo { width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; border: 1.5px solid rgba(226, 184, 107, 0.85); background: rgba(255,255,255,.1); backdrop-filter: blur(6px); }
   .join-hero .jh-logo img { width: 100%; height: 100%; object-fit: cover; }
-  .join-hero h2 { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(18px, 6.2vw, 24px); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.15; overflow-wrap: anywhere; text-wrap: balance; }
-  .join-hero h2::after { content: ''; display: block; width: 34px; height: 2px; margin: 10px auto 0; border-radius: 2px; background: #e2b86b; }
-  .join-hero p { margin-top: 9px; font-family: var(--font-mono, monospace); font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: #e8c98d; }
-  .join-earn { display: flex; align-items: center; gap: 12px; margin: 26px 10px 0; padding: 12px; border-radius: 18px; background: #fff; border: 1px solid rgba(0,0,0,.25); }
+  .join-hero h2 { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(18px, 5.4vw, 22px); font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; line-height: 1.25; word-break: normal; overflow-wrap: break-word; hyphens: manual; text-wrap: balance; }
+  .join-hero h2::after { content: ''; display: block; width: 36px; height: 2px; margin: 12px auto 0; border-radius: 2px; background: #e2b86b; }
+  .join-hero p { margin-top: 12px; padding: 4px 12px; border: 1px solid rgba(226, 184, 107, 0.55); border-radius: 999px; font-family: var(--font-mono, monospace); font-size: 9px; letter-spacing: 0.26em; text-transform: uppercase; color: #ecd09a; }
+  .join-earn { display: flex; align-items: center; gap: 12px; margin: 22px 6px 0; padding: 14px; border-radius: 20px; background: #fff; border: 1px solid rgba(43, 26, 14, 0.12); box-shadow: 0 14px 28px -18px rgba(43, 26, 14, 0.35); }
   .join-earn .ji { width: 40px; height: 40px; flex: none; border-radius: 10px; display: grid; place-items: center; background: #f1e4dd; font-size: 18px; }
   .join-earn b { display: block; font-size: 14px; }
   .join-earn span { color: #7d7570; font-size: 12px; }
   .join-how { margin: 22px 18px 0; }
   .join-how h3 { font-family: var(--font-mono, monospace); font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; color: #6f6964; margin-bottom: 10px; }
   .join-how li { display: flex; align-items: center; gap: 12px; padding: 7px 0; font-size: 12.5px; }
-  .join-how li i { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 1px solid currentColor; display: grid; place-items: center; font-style: normal; font-size: 10px; }
+  .join-how li i { width: 24px; height: 24px; flex: none; border-radius: 50%; background: var(--jfg); color: var(--jbg); display: grid; place-items: center; font-style: normal; font-size: 11px; font-weight: 700; }
   .join-cta { margin-top: auto; padding-top: 22px; text-align: center; }
   .join-btn { display: block; width: 100%; border-radius: 13px; padding: 13px; font-weight: 700; font-size: 15px; color: #fff; background: var(--jfg); box-shadow: 0 10px 20px -12px rgba(0,0,0,.6); }
   .join-btn:disabled { opacity: 0.6; }
