@@ -79,7 +79,7 @@ export function MembershipFields({ form }: { form: Form }) {
       <Field label="Benefit Description" required error={e('config.benefitDescription')} hint='Main line on the pass, e.g. "10% off every visit".' className="sm:col-span-2">
         {(p) => <Input {...p} {...register('config.benefitDescription')} />}
       </Field>
-      <Field label="Benefit Type" required hint="Drives what the employee sees when scanning this member.">
+      <Field label="Benefit Type" required hint="Drives what the employee sees when scanning this customer.">
         {(p) => (
           <Select {...p} {...register('config.benefitType')}>
             <option value="percent_discount">% discount</option>

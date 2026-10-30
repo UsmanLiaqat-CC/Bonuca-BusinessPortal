@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ComponentType, type ReactNode } from 'react'
-import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom'
+import { createBrowserRouter, Navigate, useParams, type RouteObject } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { homePathFor } from '@/components/layout/nav'
 import { Spinner } from '@/components/ui/Spinner'
@@ -20,10 +20,18 @@ function AppHome() {
   return <Navigate to={homePathFor(session.user.role)} replace />
 }
 
+/** The Wallet Cards tab was removed: each program's wallet card now lives inside Loyalty Programs. */
+function WalletCardRedirect() {
+  const { id } = useParams()
+  return <Navigate to={id ? `/app/programs/${id}?tab=wallet` : '/app/programs'} replace />
+}
+
 export const routes: RouteObject[] = [
   { path: '/', element: page(() => import('@/features/auth/pages/LandingPage')), errorElement: <RouteError /> },
   { path: '/login', element: <StageRoute stage="anon">{page(() => import('@/features/auth/pages/LoginPage'))}</StageRoute> },
   { path: '/register', element: <StageRoute stage="anon">{page(() => import('@/features/auth/pages/RegisterPage'))}</StageRoute> },
+  { path: '/join/campaign/:token', element: page(() => import('@/features/join/pages/JoinCampaignPage')) },
+  { path: '/join/program/:token', element: page(() => import('@/features/join/pages/JoinPage')) },
   { path: '/accept-invite/:token', element: page(() => import('@/features/auth/pages/AcceptInvitePage')) },
   { path: '/verify-email', element: <StageRoute stage="verify">{page(() => import('@/features/auth/pages/VerifyEmailPage'))}</StageRoute> },
   { path: '/onboarding/business', element: <StageRoute stage="business">{page(() => import('@/features/onboarding/pages/BusinessProfilePage'))}</StageRoute> },
@@ -39,12 +47,14 @@ export const routes: RouteObject[] = [
       { path: 'programs', element: guarded('programs.view', page(() => import('@/features/loyalty-programs/pages/ProgramsPage'))) },
       { path: 'programs/new/:type', element: guarded('programs.view', page(() => import('@/features/loyalty-programs/pages/ProgramEditorPage'))) },
       { path: 'programs/:id', element: guarded('programs.view', page(() => import('@/features/loyalty-programs/pages/ProgramDetailPage'))) },
+      { path: 'programs/:id/live', element: guarded('programs.view', page(() => import('@/features/loyalty-programs/pages/ProgramLivePage'))) },
       { path: 'programs/:id/edit', element: guarded('programs.view', page(() => import('@/features/loyalty-programs/pages/ProgramEditorPage'))) },
+      { path: 'campaigns', element: guarded('programs.view', page(() => import('@/features/campaigns/pages/CampaignsPage'))) },
       { path: 'campaigns/new/:kind', element: guarded('programs.view', page(() => import('@/features/loyalty-programs/pages/CampaignEditorPage'))) },
       { path: 'campaigns/:id', element: guarded('programs.view', page(() => import('@/features/loyalty-programs/pages/CampaignDetailPage'))) },
       { path: 'campaigns/:id/edit', element: guarded('programs.view', page(() => import('@/features/loyalty-programs/pages/CampaignEditorPage'))) },
-      { path: 'wallet-cards', element: guarded('wallet.view', page(() => import('@/features/wallet-cards/pages/WalletCardsPage'))) },
-      { path: 'wallet-cards/:id', element: guarded('wallet.view', page(() => import('@/features/wallet-cards/pages/WalletDesignPage'))) },
+      { path: 'wallet-cards', element: <WalletCardRedirect /> },
+      { path: 'wallet-cards/:id', element: <WalletCardRedirect /> },
       { path: 'scanner', element: guarded('scanner.use', page(() => import('@/features/qr-scanner/pages/ScannerPage'))) },
       { path: 'scanner/qr-codes', element: guarded('programs.view', page(() => import('@/features/qr-scanner/pages/QrCodesPage'))) },
       { path: 'customers', element: guarded('customers.view', page(() => import('@/features/customers/pages/CustomersPage'))) },

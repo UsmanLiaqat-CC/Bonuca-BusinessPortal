@@ -54,8 +54,8 @@ export default function AnalyticsPage() {
               <ChartCard title="Most active days" icon={<CalendarDays className="size-4" />} table={{ columns: ['Day', 'Scans'], rows: a.mostActiveDays.map((d) => [d.day, d.scans]) }}>
                 <Bars data={a.mostActiveDays} x="day" y="scans" name="Scans" />
               </ChartCard>
-              <ChartCard title="Growth" icon={<TrendingUp className="size-4" />} description={a.growthPercent === null ? 'New members per week' : `New members per week · ${a.growthPercent >= 0 ? '+' : ''}${a.growthPercent}% vs previous 30 days`} table={{ columns: ['Week of', 'New members'], rows: a.growth.map((g) => [g.week, g.newMembers]) }}>
-                <Bars data={a.growth.map((g) => ({ ...g, week: g.week.slice(5) }))} x="week" y="newMembers" name="New members" />
+              <ChartCard title="Growth" icon={<TrendingUp className="size-4" />} description={a.growthPercent === null ? 'New customers per week' : `New members per week · ${a.growthPercent >= 0 ? '+' : ''}${a.growthPercent}% vs previous 30 days`} table={{ columns: ['Week of', 'New customers'], rows: a.growth.map((g) => [g.week, g.newMembers]) }}>
+                <Bars data={a.growth.map((g) => ({ ...g, week: g.week.slice(5) }))} x="week" y="newMembers" name="New customers" />
               </ChartCard>
             </div>
             <div className="grid gap-[18px] lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -91,7 +91,7 @@ export default function AnalyticsPage() {
               </Card>
             </div>
             <Card className="reveal-up overflow-hidden">
-              <CardHeader title="Top members" icon={<Trophy className="size-4" />} description="Most visits in the last 30 days" />
+              <CardHeader title="Top customers" icon={<Trophy className="size-4" />} description="Most visits in the last 30 days" />
               {a.topMembers.length === 0 ? (
                 <CardBody><p className="empty py-4">No visits in this period.</p></CardBody>
               ) : (

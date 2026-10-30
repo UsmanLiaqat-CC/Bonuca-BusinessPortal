@@ -1,6 +1,9 @@
 import type {
+  AuditEntry,
+  AuditModule,
   Business,
   BusinessDataset,
+  Gift,
   Campaign,
   Customer,
   Invite,
@@ -19,6 +22,8 @@ import type {
   CampaignDraft,
   CustomerInput,
   EmailDelivery,
+  GiftInput,
+  JoinInput,
   NotificationDraft,
   ProgramDraft,
   RegisterInput,
@@ -28,13 +33,17 @@ import type { Integrations } from '../integrations'
 import { assertWithinLimit, authorize, type AccessContext, type Permission } from '@/lib/access'
 import { resolvePlanState, type PlanState } from '@/lib/plan'
 import { nextStatus, type LifecycleAction } from '@/lib/lifecycle'
-import { applyScan, buildScanContext, evaluateWinBack } from '@/lib/scanEngine'
+import { applyScan, buildScanContext, evaluateWinBack, programUnavailable } from '@/lib/scanEngine'
 import { analyticsStats, dashboardStats, type DateRange } from '@/lib/metrics'
 import { buildLeaderboard } from '@/lib/gamification'
 import { AuthError, NotFoundError, ValidationError } from '@/lib/errors'
 import { createId, createToken, createVerificationCode } from '@/lib/ids'
-import { addDays } from '@/lib/dates'
-import { DEFAULT_SIGNUP_FIELDS, defaultSubscription, defaultWinBack } from '@/lib/factories'
+import { addDays, daysBetween, formatDate } from '@/lib/dates'
+import { DEFAULT_SIGNUP_FIELDS, defaultSignupPage, defaultSubscription, defaultWinBack } from '@/lib/factories'
+import { giftStatus } from '@/lib/gifts'
+import { customerHistory } from '@/lib/history'
+import { campaignLinked, campaignRows, customerCampaigns, endExpiredCampaigns, WINBACK_ID } from '@/lib/campaigns'
+import { currencyCode } from '@/lib/points'
 import { programSchema } from '@/schemas/program'
 import { campaignSchema } from '@/schemas/campaign'
 import { customerSchema } from '@/schemas/customer'
@@ -117,6 +126,7 @@ export class DevBackend implements BusinessBackend {
       this.ready = (async () => {
         const loaded = loadDb(this.opts.store)
         if (loaded) {
+          for (const ds of Object.values(loaded.datasets)) normalizeDataset(ds)
           this.dbCache = loaded
         } else {
           this.dbCache = emptyDb()
@@ -170,6 +180,8 @@ export class DevBackend implements BusinessBackend {
       db.datasets[ds.business.id] = evaluated
       this.persist()
     }
+    // Vouchers end automatically after their end date (Campaigns tab status rules).
+    if (endExpiredCampaigns(db.datasets[ds.business.id]!, this.now())) this.persist()
     // Work on a copy: a failed mutation must not leave partial changes behind.
     const current = structuredClone(db.datasets[ds.business.id]!)
     const self = current.users.find((u) => u.id === user.id) ?? user
@@ -206,6 +218,13 @@ export class DevBackend implements BusinessBackend {
       subscription: ds?.subscription ?? null,
       catalog: this.opts.catalog,
     })
+  }
+
+  /** Settings → Audit records what Managers and Employees do (the Owner's own actions are not listed). */
+  private audit(c: Ctx, module: AuditModule, action: string, details: string): void {
+    if (c.user.role === 'owner') return
+    const entry: AuditEntry = { id: createId('aud'), userId: c.user.id, userName: c.user.fullName, role: c.user.role, action, module, details, createdAt: this.now().toISOString() }
+    c.ds.audit.push(entry)
   }
 
   /* ------------------------------------------------------------------ auth */
@@ -376,6 +395,8 @@ export class DevBackend implements BusinessBackend {
       notifications: [],
       winback: defaultWinBack(),
       winbackEvents: [],
+      gifts: [],
+      audit: [],
     }
     this.persist()
   }
@@ -434,6 +455,7 @@ export class DevBackend implements BusinessBackend {
         updatedAt: now,
       } as Program
       c.ds.programs.push(program)
+      this.audit(c, 'Programs', 'Created program', program.name)
       return program
     }, 'programs.manage')
   }
@@ -451,6 +473,7 @@ export class DevBackend implements BusinessBackend {
       } else if (!draft.name.trim()) throw new ValidationError('Program name is required.')
       const updated = { ...existing, ...structuredClone(draft), updatedAt: this.now().toISOString() } as Program
       c.ds.programs[index] = updated
+      this.audit(c, 'Programs', 'Edited program', updated.name)
       return updated
     }, 'programs.manage')
   }
@@ -473,6 +496,7 @@ export class DevBackend implements BusinessBackend {
       }
       program.status = next
       program.updatedAt = this.now().toISOString()
+      this.audit(c, 'Programs', `${action[0]!.toUpperCase()}${action.slice(1)} program`, program.name)
       return program
     }, 'programs.manage')
   }
@@ -501,6 +525,37 @@ export class DevBackend implements BusinessBackend {
     }, 'rewards.manage')
   }
 
+  programCardCounts() {
+    return this.read('programs.view', (ds) => {
+      const counts: Record<string, number> = {}
+      for (const m of ds.memberships) counts[m.programId] = (counts[m.programId] ?? 0) + 1
+      return counts
+    })
+  }
+
+  getProgramCustomers(programId: string) {
+    return this.read('programs.view', (ds, c) => {
+      const program = ds.programs.find((p) => p.id === programId)
+      if (!program) throw new NotFoundError('Program not found.')
+      const lastByCustomer = new Map<string, string>()
+      for (const t of ds.transactions) {
+        if (t.programId !== programId) continue
+        const prev = lastByCustomer.get(t.customerId)
+        if (!prev || t.createdAt > prev) lastByCustomer.set(t.customerId, t.createdAt)
+      }
+      return ds.memberships
+        .filter((m) => m.programId === programId)
+        .flatMap((membership) => {
+          const customer = ds.customers.find((x) => x.id === membership.customerId)
+          if (!customer) return []
+          const lastVisit = lastByCustomer.get(customer.id) ?? membership.lastActivityAt
+          // OI-46 (provisional): Active = any activity on this card in the last 60 days.
+          const status: 'active' | 'inactive' = lastVisit && daysBetween(lastVisit, this.now()) <= 60 ? 'active' : 'inactive'
+          return [{ customer: this.limit(customer, c), membership, progress: progressLine(program, membership), lastVisit, status }]
+        })
+    })
+  }
+
   listCampaigns() {
     return this.read('programs.view', (ds) => ds.campaigns)
   }
@@ -511,6 +566,7 @@ export class DevBackend implements BusinessBackend {
       const now = this.now().toISOString()
       const campaign = { ...structuredClone(draft), id: createId('cmp'), businessId: c.ds.business.id, status: 'draft', qrToken: null, createdAt: now, publishedAt: null } as Campaign
       c.ds.campaigns.push(campaign)
+      this.audit(c, 'Campaigns', 'Created campaign', campaign.name)
       return campaign
     }, 'programs.manage')
   }
@@ -527,6 +583,7 @@ export class DevBackend implements BusinessBackend {
       }
       const updated = { ...existing, ...structuredClone(draft) } as Campaign
       c.ds.campaigns[index] = updated
+      this.audit(c, 'Campaigns', 'Edited campaign', updated.name)
       return updated
     }, 'programs.manage')
   }
@@ -553,8 +610,39 @@ export class DevBackend implements BusinessBackend {
         campaign.publishedAt = this.now().toISOString()
       }
       campaign.status = next
+      if (next === 'ended') campaign.publishedAt ??= this.now().toISOString()
+      this.audit(c, 'Campaigns', `${action[0]!.toUpperCase()}${action.slice(1)} campaign`, campaign.name)
       return campaign
     }, 'programs.manage')
+  }
+
+  listCampaignRows() {
+    return this.read('programs.view', (ds) => campaignRows(ds, this.now()))
+  }
+
+  getCampaignLinked(id: string) {
+    return this.read('programs.view', (ds) => {
+      if (id !== WINBACK_ID && !ds.campaigns.some((c) => c.id === id)) throw new NotFoundError('Campaign not found.')
+      return campaignLinked(ds, id, this.now())
+    })
+  }
+
+  async winbackLifecycle(action: 'enable' | 'disable' | 'end'): Promise<void> {
+    await this.mutate((c) => {
+      const w = c.ds.winback
+      if (w.endedAt) throw new ValidationError('This campaign has ended.')
+      if (action === 'enable') {
+        const parsed = winBackSchema.safeParse({ ...w, enabled: true })
+        if (!parsed.success) throw ValidationError.fromZod(parsed.error, 'Complete the win-back stages before resuming.')
+        w.enabled = true
+      } else if (action === 'disable') w.enabled = false
+      else {
+        w.enabled = false
+        w.endedAt = this.now().toISOString()
+      }
+      this.audit(c, 'Campaigns', action === 'enable' ? 'Resumed campaign' : action === 'disable' ? 'Paused campaign' : 'Ended campaign', 'Win-back')
+      if (action === 'enable') c.ds = evaluateWinBack(c.ds, this.now())
+    }, 'notifications.manage')
   }
 
   /* ------------------------------------------------------------------ scanner */
@@ -569,10 +657,37 @@ export class DevBackend implements BusinessBackend {
 
   async confirmScan(input: Parameters<BusinessBackend['confirmScan']>[0]) {
     return this.mutate((c) => {
-      const { dataset, result } = applyScan(c.ds, { ...input, employeeId: c.user.id }, this.now())
+      const a = input.action
+      // Remove stamp (-1) and adding more than one stamp are Owner/Manager only.
+      if (a.type === 'remove_stamp' || (a.type === 'add_stamp' && (a.count ?? 1) > 1)) authorize(c.access, 'scanner.adjust')
+      const address = c.ds.business.address
+      const location = [address.street, address.city].filter(Boolean).join(', ') || c.ds.business.name
+      const { dataset, result } = applyScan(c.ds, { ...input, employeeId: c.user.id, location }, this.now())
       c.ds = dataset
+      const customer = c.ds.customers.find((x) => x.id === result.transaction.customerId)
+      const program = c.ds.programs.find((p) => p.id === result.transaction.programId)
+      this.audit(c, 'Award actions', result.summary.replace(/\.$/, ''), `${customer?.name ?? 'Customer'}${program ? ` · ${program.name}` : ''} · ${input.entry === 'search' ? 'found by search' : 'scanned'}`)
       return result
     }, 'scanner.transact')
+  }
+
+  getAwardCustomer(customerId: string) {
+    return this.read('scanner.use', (ds, c) => {
+      const customer = ds.customers.find((x) => x.id === customerId)
+      if (!customer) return null
+      const now = this.now()
+      return {
+        customer: this.limit(customer, c),
+        cards: ds.memberships
+          .filter((m) => m.customerId === customerId)
+          .flatMap((membership) => {
+            const program = ds.programs.find((p) => p.id === membership.programId)
+            return program && program.status !== 'draft' ? [{ membership, program, unavailableReason: programUnavailable(program, now) }] : []
+          }),
+        gifts: ds.gifts.filter((g) => g.customerId === customerId && giftStatus(g, now) === 'available'),
+        history: customerHistory(ds, customerId).slice(0, c.user.role === 'employee' ? 10 : 30),
+      }
+    })
   }
 
   listRecentScans(limit: number) {
@@ -618,6 +733,9 @@ export class DevBackend implements BusinessBackend {
           }),
         transactions: c.user.role === 'employee' ? transactions.slice(0, 10) : transactions,
         rewards: ds.rewards.filter((r) => r.customerId === id),
+        gifts: ds.gifts.filter((g) => g.customerId === id),
+        campaigns: customerCampaigns(ds, id),
+        history: c.user.role === 'employee' ? customerHistory(ds, id).slice(0, 10) : customerHistory(ds, id),
         lastVisit: transactions[0]?.createdAt ?? null,
         scanCount: transactions.length,
       }
@@ -639,6 +757,7 @@ export class DevBackend implements BusinessBackend {
         createdAt: this.now().toISOString(),
       }
       c.ds.customers.push(customer)
+      this.audit(c, 'Customers', 'Added customer', `${customer.name} (${customer.customerNumber})`)
       return customer
     }, 'customers.add')
   }
@@ -648,12 +767,204 @@ export class DevBackend implements BusinessBackend {
       const customer = c.ds.customers.find((x) => x.id === id)
       if (!customer) throw new NotFoundError('Customer not found.')
       customer.notes = notes
+      this.audit(c, 'Customers', 'Edited notes', `${customer.name} (${customer.customerNumber})`)
     }, 'customers.notes')
+  }
+
+  async giveGift(customerId: string, input: GiftInput): Promise<Gift> {
+    return this.mutate((c) => {
+      const customer = c.ds.customers.find((x) => x.id === customerId)
+      if (!customer) throw new NotFoundError('Customer not found.')
+      if (!input.name.trim()) throw new ValidationError('Gift name is required.')
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.expiresOn)) throw new ValidationError('Choose the expiry date.')
+      const expiresAt = new Date(`${input.expiresOn}T23:59:59`)
+      const availableFrom = input.availableFrom ? new Date(`${input.availableFrom}T00:00:00`) : null
+      if (expiresAt < this.now()) throw new ValidationError('The expiry date must be in the future.')
+      if (availableFrom && availableFrom > expiresAt) throw new ValidationError('The gift must start before it expires.')
+      const gift: Gift = {
+        id: createId('gft'),
+        businessId: c.ds.business.id,
+        customerId,
+        name: input.name.trim(),
+        description: input.description.trim(),
+        terms: input.terms.trim(),
+        availableFrom: availableFrom && availableFrom > this.now() ? availableFrom.toISOString() : null,
+        expiresAt: expiresAt.toISOString(),
+        status: 'open',
+        createdBy: c.user.id,
+        createdAt: this.now().toISOString(),
+        redeemedAt: null,
+        redeemedBy: null,
+        redeemedLocation: null,
+        cancelledAt: null,
+        cancelledBy: null,
+      }
+      c.ds.gifts.push(gift)
+      this.audit(c, 'Gifts', 'Gave gift', `${gift.name} → ${customer.name}`)
+      return gift
+    }, 'gifts.manage')
+  }
+
+  async cancelGift(giftId: string): Promise<Gift> {
+    return this.mutate((c) => {
+      const gift = c.ds.gifts.find((g) => g.id === giftId)
+      if (!gift) throw new NotFoundError('Gift not found.')
+      const status = giftStatus(gift, this.now())
+      if (status === 'redeemed') throw new ValidationError('A redeemed gift cannot be cancelled.')
+      if (status === 'cancelled') throw new ValidationError('This gift is already cancelled.')
+      gift.status = 'cancelled'
+      gift.cancelledAt = this.now().toISOString()
+      gift.cancelledBy = c.user.id
+      const customer = c.ds.customers.find((x) => x.id === gift.customerId)
+      this.audit(c, 'Gifts', 'Cancelled gift', `${gift.name} → ${customer?.name ?? 'customer'}`)
+      return gift
+    }, 'gifts.manage')
+  }
+
+  listAudit() {
+    return this.read('audit.view', (ds) => [...ds.audit].reverse())
+  }
+
+  /* ------------------------------------------------------------------ public sign-up (no login) */
+
+  private findCampaign(db: DevDb, token: string) {
+    for (const ds of Object.values(db.datasets)) {
+      endExpiredCampaigns(ds, this.now())
+      const campaign = ds.campaigns.find((c) => c.qrToken === token)
+      if (campaign) return { ds, campaign }
+    }
+    return null
+  }
+
+  async getCampaignJoin(token: string) {
+    await this.delay()
+    const found = this.findCampaign(await this.db(), token)
+    if (!found || found.campaign.status === 'draft' || found.campaign.status === 'archived') return null
+    const { ds, campaign } = found
+    const state: 'open' | 'paused' | 'ended' = campaign.status === 'ended' ? 'ended' : campaign.status === 'paused' ? 'paused' : 'open'
+    const program = campaign.kind === 'stamp_acquisition' ? (ds.programs.find((p) => p.id === campaign.linkedProgramId) ?? null) : null
+    return structuredClone({ businessName: ds.business.name, branding: ds.business.branding, campaign, program, state })
+  }
+
+  /**
+   * Claiming a QR campaign: one claim per customer. Creates the stamp card (with starting stamps and
+   * welcome gift) or the voucher, which adds the customer to the campaign's Linked customers.
+   */
+  async claimCampaign(token: string, input: JoinInput) {
+    await this.delay()
+    const db = await this.db()
+    const found = this.findCampaign(db, token)
+    if (!found || found.campaign.status === 'draft' || found.campaign.status === 'archived') throw new NotFoundError('This campaign is not available.')
+    const { ds, campaign } = found
+    if (campaign.status === 'ended') throw new ValidationError('This campaign has ended.')
+    if (campaign.status === 'paused') throw new ValidationError('This campaign is paused. New claims are not possible right now.')
+    if (!input.name.trim()) throw new ValidationError('Name is required.')
+    const email = input.email.trim().toLowerCase()
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ValidationError('Enter a valid email address.')
+    if (!input.acceptTerms) throw new ValidationError('Please accept the rewards terms.')
+    const now = this.now()
+    const nowIso = now.toISOString()
+    let customer = email ? ds.customers.find((x) => x.email.toLowerCase() === email) : undefined
+    const program = campaign.kind === 'stamp_acquisition' ? ds.programs.find((p) => p.id === campaign.linkedProgramId) : undefined
+    if (customer) {
+      const claimed =
+        campaign.kind === 'stamp_acquisition'
+          ? ds.memberships.some((m) => m.customerId === customer!.id && m.viaCampaignId === campaign.id)
+          : ds.rewards.some((r) => r.customerId === customer!.id && r.campaignId === campaign.id)
+      if (claimed) throw new ValidationError('You have already claimed this campaign. A second scan gives nothing new.')
+      if (program && ds.memberships.some((m) => m.customerId === customer!.id && m.programId === program.id)) throw new ValidationError('You already have this stamp card.')
+    }
+    if (campaign.kind === 'stamp_acquisition' && (!program || program.status !== 'active')) throw new ValidationError('This campaign is not available.')
+    if (!customer) {
+      assertWithinLimit(resolvePlanState(ds.subscription, this.opts.catalog, now), 'customers', ds.customers.length)
+      const next = ds.customers.reduce((max, x) => Math.max(max, Number(x.customerNumber.replace(/\D/g, '')) || 0), 10000) + 1
+      customer = { id: createId('cus'), businessId: ds.business.id, customerNumber: `C-${next}`, name: input.name.trim(), email, phone: '', birthday: input.birthday, notes: '', createdAt: nowIso }
+      ds.customers.push(customer)
+    }
+    const passCode = () => `BNC-${createToken().slice(0, 8).toUpperCase()}`
+    const base = { businessId: ds.business.id, customerId: customer.id, description: '', pointsRewardId: null, pointsCost: null, winbackStage: null, issuedAt: nowIso, redeemedAt: null, status: 'available' as const }
+    let membership = null
+    let reward = null
+    if (campaign.kind === 'stamp_acquisition') {
+      membership = { id: createId('mem'), customerId: customer.id, programId: program!.id, passCode: passCode(), joinedAt: nowIso, stamps: campaign.startingStamps, points: 0, visits: 0, totalSpend: 0, tierIndex: 0, lastActivityAt: null, viaCampaignId: campaign.id }
+      ds.memberships.push(membership)
+      if (campaign.welcomeGift.enabled) {
+        reward = { ...base, id: createId('rwd'), programId: program!.id, campaignId: campaign.id, source: 'welcome_gift' as const, name: campaign.welcomeGift.rewardName, description: campaign.welcomeGift.description, passCode: null, availableFrom: null, expiresAt: campaign.welcomeGift.validityDays ? addDays(now, campaign.welcomeGift.validityDays).toISOString() : null }
+        ds.rewards.push(reward)
+      }
+    } else {
+      reward = { ...base, id: createId('rwd'), programId: null, campaignId: campaign.id, source: 'voucher' as const, name: campaign.voucherReward, passCode: passCode(), availableFrom: new Date(`${campaign.validFrom}T00:00:00`).toISOString(), expiresAt: new Date(`${campaign.validTo}T23:59:59`).toISOString() }
+      ds.rewards.push(reward)
+    }
+    this.persist()
+    return structuredClone({ customer, campaign, businessName: ds.business.name, program: program ?? null, membership, reward })
+  }
+
+  private findJoin(db: DevDb, token: string) {
+    for (const ds of Object.values(db.datasets)) {
+      const program = ds.programs.find((p) => p.joinQrToken === token)
+      if (program) return { ds, program }
+    }
+    return null
+  }
+
+  async getJoinPage(token: string) {
+    await this.delay()
+    const found = this.findJoin(await this.db(), token)
+    if (!found || found.program.status !== 'active') return null
+    return structuredClone({ businessName: found.ds.business.name, branding: found.ds.business.branding, program: found.program })
+  }
+
+  async joinProgram(token: string, input: JoinInput) {
+    await this.delay()
+    const db = await this.db()
+    const found = this.findJoin(db, token)
+    if (!found || found.program.status !== 'active') throw new NotFoundError('This program is not accepting sign-ups.')
+    const { ds, program } = found
+    const fields = program.signupPage.fields
+    if (!input.name.trim()) throw new ValidationError('Name is required.')
+    if (fields.email === 'required' && !input.email.trim()) throw new ValidationError('Email is required.')
+    if (input.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim())) throw new ValidationError('Enter a valid email address.')
+    if (fields.birthday === 'required' && !input.birthday) throw new ValidationError('Birthday is required.')
+    if (!input.acceptTerms) throw new ValidationError('Please accept the rewards terms.')
+    assertWithinLimit(resolvePlanState(ds.subscription, this.opts.catalog, this.now()), 'customers', ds.customers.length)
+    const now = this.now().toISOString()
+    const next = ds.customers.reduce((max, x) => Math.max(max, Number(x.customerNumber.replace(/\D/g, '')) || 0), 10000) + 1
+    const customer: Customer = {
+      id: createId('cus'),
+      businessId: ds.business.id,
+      customerNumber: `C-${next}`,
+      name: input.name.trim(),
+      email: fields.email === 'off' ? '' : input.email.trim(),
+      phone: '',
+      birthday: fields.birthday === 'off' ? '' : input.birthday,
+      notes: '',
+      createdAt: now,
+    }
+    const membership = {
+      id: createId('mem'),
+      customerId: customer.id,
+      programId: program.id,
+      passCode: `BNC-${createToken().slice(0, 8).toUpperCase()}`,
+      joinedAt: now,
+      stamps: 0,
+      points: 0,
+      visits: 0,
+      totalSpend: 0,
+      tierIndex: 0,
+      lastActivityAt: null,
+      viaCampaignId: null,
+    }
+    ds.customers.push(customer)
+    ds.memberships.push(membership)
+    this.persist()
+    return structuredClone({ customer, membership, program, businessName: ds.business.name, branding: ds.business.branding })
   }
 
   async updateSignupFields(config: SignupFieldConfig): Promise<void> {
     await this.mutate((c) => {
       c.ds.business.signupFields = { ...config }
+      this.audit(c, 'Customers', 'Edited sign-up fields', Object.entries(config).map(([k, v]) => `${k}: ${v}`).join(', '))
     }, 'customers.signupFields')
   }
 
@@ -686,6 +997,7 @@ export class DevBackend implements BusinessBackend {
         acceptedAt: null,
       }
       c.ds.invites.push(invite)
+      this.audit(c, 'Employees', `Invited ${role}`, normalized)
       // Email delivery is not connected (OI-37): surface the link instead of claiming it was sent.
       const delivery: EmailDelivery = { delivered: false, devLink: `/accept-invite/${invite.token}` }
       return { invite, delivery }
@@ -721,10 +1033,12 @@ export class DevBackend implements BusinessBackend {
         if (!existing) throw new NotFoundError('Campaign not found.')
         if (existing.status === 'sent') throw new ValidationError('Sent campaigns cannot be edited.')
         Object.assign(existing, structuredClone(draft), { updatedAt: now })
+        this.audit(c, 'Notifications', 'Edited notification', existing.title)
         return existing
       }
       const created = { ...structuredClone(draft), id: createId('ntf'), businessId: c.ds.business.id, status: 'draft' as const, createdAt: now, updatedAt: now, sentAt: null }
       c.ds.notifications.push(created)
+      this.audit(c, 'Notifications', 'Created notification', created.title)
       return created
     }, 'notifications.manage')
   }
@@ -754,6 +1068,7 @@ export class DevBackend implements BusinessBackend {
       const parsed = winBackSchema.safeParse(config)
       if (!parsed.success) throw ValidationError.fromZod(parsed.error)
       c.ds.winback = structuredClone(config)
+      this.audit(c, 'Notifications', 'Edited win-back settings', config.enabled ? 'On' : 'Off')
       c.ds = evaluateWinBack(c.ds, this.now())
     }, 'notifications.manage')
   }
@@ -785,6 +1100,32 @@ export class DevBackend implements BusinessBackend {
         if (rest.name !== undefined && !rest.name.trim()) throw new ValidationError('Business name is required.')
         Object.assign(b, rest)
       }
+      this.audit(c, 'Settings', update.branding ? 'Edited branding' : 'Edited business settings', Object.keys(update).join(', '))
     })
+  }
+}
+
+/** Fill fields added after data was first saved (gifts, audit, program sign-up page …). */
+export function normalizeDataset(ds: BusinessDataset): BusinessDataset {
+  ds.gifts ??= []
+  ds.audit ??= []
+  for (const p of ds.programs) {
+    p.expiresOn ??= null
+    p.location ??= null
+    p.signupPage ??= defaultSignupPage(ds.business.branding)
+  }
+  return ds
+}
+
+function progressLine(program: Program, m: { stamps: number; points: number; visits: number; tierIndex: number; joinedAt: string }): string {
+  switch (program.type) {
+    case 'stamp':
+      return `${m.stamps} / ${program.config.stampsRequired} stamps`
+    case 'points':
+      return `${m.points} pts (${currencyCode(program.config)})`
+    case 'tier':
+      return program.config.tiersEnabled ? `${program.config.tiers[m.tierIndex]?.name ?? '—'} · ${m.visits} visits` : `${m.visits} visits`
+    case 'membership':
+      return `Customer since ${formatDate(m.joinedAt)}`
   }
 }

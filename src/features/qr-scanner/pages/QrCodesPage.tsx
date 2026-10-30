@@ -46,7 +46,7 @@ export default function QrCodesPage() {
                   <Card key={p.id} className="reveal-up">
                     <CardHeader icon={<Stamp className="size-4" />} title={p.name} description={p.type === 'membership' || p.type === 'tier' ? 'Join membership' : 'Add wallet card'} actions={<LifecycleBadge status={p.status} />} />
                     <CardBody>
-                      {p.status === 'paused' && <p className="mb-3 callout warn">Paused — this QR does not enrol new members until enabled.</p>}
+                      {p.status === 'paused' && <p className="mb-3 callout warn">Paused — this QR does not enrol new customers until enabled.</p>}
                       <QrDownload text={joinUrl('program', p.joinQrToken!)} filename={`join-${SLUG(p.name)}`} title={p.name} subtitle={p.type === 'membership' || p.type === 'tier' ? 'Scan to join' : 'Scan to add our card to your wallet'} placements={['table', 'counter', 'sticker', 'flyer', 'window']} />
                     </CardBody>
                   </Card>

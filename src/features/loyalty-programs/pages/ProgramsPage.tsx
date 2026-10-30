@@ -1,41 +1,44 @@
 import { useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Archive, ArrowRight, CalendarDays, ChevronRight, Coins, Crown, Layers, Plus, Stamp, Ticket, TicketPercent } from 'lucide-react'
+import { Archive, Coins, Crown, Layers, Plus, Stamp, Users } from 'lucide-react'
 import { PROGRAM_TYPES, type LifecycleStatus, type ProgramType } from '@/types/domain'
 import { useT } from '@/i18n'
-import { useAccess } from '@/state/session'
+import { useAccess, useSession } from '@/state/session'
 import { formatDate } from '@/lib/dates'
+import { buildPassContent } from '@/lib/walletContent'
+import { WalletCard } from '@/features/wallet-cards/components/WalletPassPreview'
 import { PageHeader } from '@/components/data-display/PageHeader'
 import { LifecycleBadge } from '@/components/data-display/StatusBadge'
-import { DataTable } from '@/components/data-display/Table'
-import { Card } from '@/components/ui/Card'
 import { Tabs } from '@/components/ui/Tabs'
 import { Dialog } from '@/components/ui/Dialog'
-import { Badge } from '@/components/ui/Badge'
 import { GuardedButton } from '@/components/feedback/GuardedButton'
 import { EmptyState, QueryState } from '@/components/feedback/QueryState'
-import { useCampaigns, usePrograms } from '../hooks'
+import { useProgramCardCounts, usePrograms } from '../hooks'
 
 export const TYPE_ICONS: Record<ProgramType, typeof Stamp> = { stamp: Stamp, membership: Crown, tier: Layers, points: Coins }
 /** Redesign accent per program type (icon tiles, type cards). Decorative only. */
 export const TYPE_COLORS: Record<ProgramType, string> = { stamp: '#1747F8', membership: '#7C3AED', tier: '#0F9D6E', points: '#C2410C' }
 export const TYPE_BLURB: Record<ProgramType, string> = {
   stamp: 'Collect stamps, earn a reward',
-  membership: 'A standing perk for members',
+  membership: 'A standing perk for customers',
   tier: 'Levels unlocked by visits',
   points: 'Earn points per purchase',
 }
 type Filter = 'all' | LifecycleStatus
 
-/** Spec §4.2 — several programs at once, including more than one of the same type. */
+/**
+ * Spec §4.2 — several programs at once, including more than one of the same type. Campaigns moved to
+ * their own Campaigns tab (client change), so only "Create Program" stays here.
+ */
 export default function ProgramsPage() {
   const t = useT()
   const navigate = useNavigate()
   const access = useAccess()
   const programs = usePrograms()
-  const campaigns = useCampaigns()
+  const cardCounts = useProgramCardCounts()
+  const { session } = useSession()
   const [filter, setFilter] = useState<Filter>('all')
-  const [chooser, setChooser] = useState<'program' | 'campaign' | null>(null)
+  const [chooser, setChooser] = useState(false)
   const nonArchived = (programs.data ?? []).filter((p) => p.status !== 'archived').length
 
   return (
@@ -47,21 +50,16 @@ export default function ProgramsPage() {
             <Stamp className="size-[13px]" aria-hidden /> Programs
           </>
         }
-        description="Programs are what customers join. Campaigns are special QR codes layered on top (acquisition) or standalone vouchers."
+        description="Programs are what customers join."
         actions={
-          <>
-            <GuardedButton permission="programs.manage" variant="secondary" onClick={() => setChooser('campaign')}>
-              <Ticket className="size-[15px]" aria-hidden /> Create campaign
-            </GuardedButton>
-            <GuardedButton permission="programs.manage" extra={access.limit('programs', nonArchived)} onClick={() => setChooser('program')}>
-              <Plus className="size-[15px]" aria-hidden /> Create Program
-            </GuardedButton>
-          </>
+          <GuardedButton permission="programs.manage" extra={access.limit('programs', nonArchived)} onClick={() => setChooser(true)}>
+            <Plus className="size-[15px]" aria-hidden /> Create Program
+          </GuardedButton>
         }
       />
       <QueryState query={programs}>
         {(list) => {
-          const counts = { all: list.length, draft: 0, active: 0, paused: 0, archived: 0 }
+          const counts: Record<Filter, number> = { all: list.length, draft: 0, active: 0, paused: 0, ended: 0, archived: 0 }
           list.forEach((p) => counts[p.status]++)
           const shown = filter === 'all' ? list : list.filter((p) => p.status === filter)
           return (
@@ -78,29 +76,32 @@ export default function ProgramsPage() {
                 <ul className="grid gap-[18px] sm:grid-cols-2 xl:grid-cols-3">
                   {shown.map((p) => {
                     const Icon = TYPE_ICONS[p.type]
+                    const cards = cardCounts.data?.[p.id] ?? 0
                     return (
-                      <li key={p.id} className="flex">
-                        <Link to={`/app/programs/${p.id}`} className="card hover prog-card reveal-up w-full" style={{ '--c': TYPE_COLORS[p.type] } as CSSProperties}>
-                          <div className="top">
-                            <span className="ti">
-                              <Icon className="size-[22px]" aria-hidden />
-                            </span>
+                      <li key={p.id} className="flex" data-testid="program-card">
+                        <div className="card hover reveal-up relative flex w-full flex-col gap-3.5 p-3.5" style={{ '--c': TYPE_COLORS[p.type] } as CSSProperties}>
+                          {/* Program wallet pass: each pass lives on its own program (Wallet Cards tab removed). */}
+                          <Link to={`/app/programs/${p.id}`} aria-label={`Open ${p.name}`} className="block">
+                            <WalletCard content={buildPassContent(p, null, session.business.name)} compact />
+                          </Link>
+                          <div className="flex items-start justify-between gap-3 px-1">
+                            <div className="min-w-0">
+                              <h3 className="truncate font-display text-[17px] font-bold tracking-tight">
+                                <Link to={`/app/programs/${p.id}`} className="hover:underline">{p.name}</Link>
+                              </h3>
+                              <p className="mt-0.5 inline-flex items-center gap-1.5 text-[13px] text-muted">
+                                <Icon className="size-[14px]" aria-hidden /> {t(`type.${p.type}`)}
+                              </p>
+                            </div>
                             <LifecycleBadge status={p.status} />
                           </div>
-                          <div>
-                            <h3>{p.name}</h3>
-                            <p className="mt-0.5 text-muted">{t(`type.${p.type}`)}</p>
+                          <div className="flex items-center justify-between gap-2 border-t border-line px-1 pt-3 text-[13px]">
+                            <Link to={`/app/programs/${p.id}?tab=customers`} className="link font-semibold" aria-label={`${cards} active cards — view customers of ${p.name}`}>
+                              <Users className="size-[15px]" aria-hidden /> {cards} active {cards === 1 ? 'card' : 'cards'}
+                            </Link>
+                            <span className="text-faint">{p.publishedAt ? `Published ${formatDate(p.publishedAt)}` : `Created ${formatDate(p.createdAt)}`}</span>
                           </div>
-                          <div className="foot">
-                            <span className="inline-flex items-center gap-1.5">
-                              <CalendarDays className="size-[15px]" aria-hidden />
-                              {p.publishedAt ? `Published ${formatDate(p.publishedAt)}` : `Created ${formatDate(p.createdAt)}`}
-                            </span>
-                            <span className="arrow" aria-hidden>
-                              <ArrowRight className="size-[15px]" />
-                            </span>
-                          </div>
-                        </Link>
+                        </div>
                       </li>
                     )
                   })}
@@ -111,46 +112,7 @@ export default function ProgramsPage() {
         }}
       </QueryState>
 
-      <h2 className="section-title">Campaigns</h2>
-      <Card className="reveal-up overflow-hidden">
-        <QueryState query={campaigns}>
-          {(list) =>
-            list.length === 0 ? (
-              <div className="p-5">
-                <EmptyState icon={<Ticket className="size-6" />} title="No campaigns yet" />
-              </div>
-            ) : (
-              <DataTable
-                caption="Campaigns"
-                rows={list}
-                rowKey={(c) => c.id}
-                onRowClick={(c) => navigate(`/app/campaigns/${c.id}`)}
-                columns={[
-                  {
-                    key: 'name',
-                    header: 'Campaign',
-                    cell: (c) => (
-                      <span className="person">
-                        <span className={c.kind === 'voucher' ? 'feed-ic bg-highlight-soft text-[#9A7300] dark:text-highlight' : 'feed-ic bg-accent-soft text-accent'} aria-hidden>
-                          {c.kind === 'voucher' ? <TicketPercent className="size-[15px]" /> : <Stamp className="size-[15px]" />}
-                        </span>
-                        {c.name}
-                      </span>
-                    ),
-                  },
-                  { key: 'kind', header: 'Type', cell: (c) => <Badge tone="outline">{c.kind === 'voucher' ? 'One-time voucher' : 'Stamp card acquisition'}</Badge> },
-                  { key: 'status', header: 'Status', cell: (c) => <LifecycleBadge status={c.status} /> },
-                  { key: 'date', header: 'Created', hideOnMobile: true, cell: (c) => <span className="text-muted">{formatDate(c.createdAt)}</span> },
-                  { key: 'go', header: '', className: 'num', cell: () => <ChevronRight className="ml-auto size-[15px] text-faint" aria-hidden /> },
-                ]}
-              />
-            )
-          }
-        </QueryState>
-      </Card>
-      <p className="hint mt-2.5">Stamp card acquisition campaigns and one-time voucher campaigns.</p>
-
-      <Dialog open={chooser === 'program'} onClose={() => setChooser(null)} title="Choose a program type" description="The type can’t be changed after creation." size="lg">
+      <Dialog open={chooser} onClose={() => setChooser(false)} title="Choose a program type" description="The type can’t be changed after creation." size="lg">
         <ul className="type-grid">
           {PROGRAM_TYPES.map((type) => {
             const Icon = TYPE_ICONS[type]
@@ -166,28 +128,6 @@ export default function ProgramsPage() {
               </li>
             )
           })}
-        </ul>
-      </Dialog>
-      <Dialog open={chooser === 'campaign'} onClose={() => setChooser(null)} title="Choose a campaign type" description="Campaigns are special QR codes layered on top of programs, or standalone vouchers." size="lg">
-        <ul className="type-grid">
-          <li className="flex">
-            <button type="button" onClick={() => navigate('/app/campaigns/new/stamp_acquisition')} className="type-card w-full" style={{ '--c': '#1747F8' } as CSSProperties}>
-              <span className="ti">
-                <Stamp className="size-[18px]" aria-hidden />
-              </span>
-              <b>Stamp card acquisition campaign</b>
-              <small>A special join QR layered on an existing Stamp Card program.</small>
-            </button>
-          </li>
-          <li className="flex">
-            <button type="button" onClick={() => navigate('/app/campaigns/new/voucher')} className="type-card w-full" style={{ '--c': '#C2410C' } as CSSProperties}>
-              <span className="ti">
-                <TicketPercent className="size-[18px]" aria-hidden />
-              </span>
-              <b>One-time voucher campaign</b>
-              <small>Standalone voucher; each claim can be redeemed once.</small>
-            </button>
-          </li>
         </ul>
       </Dialog>
     </>

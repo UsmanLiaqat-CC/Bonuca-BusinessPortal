@@ -25,11 +25,11 @@ export default function ProgramEditorPage() {
 
   if (!id) {
     if (!PROGRAM_TYPES.includes(type as ProgramType)) return <ErrorState message="Unknown program type." />
-    const draft = defaultProgramDraft(type as ProgramType, suggestedCurrency(session.business.country))
+    const draft = defaultProgramDraft(type as ProgramType, suggestedCurrency(session.business.country), session.business.branding)
     return (
       <>
         <PageHeader title={`New ${t(`type.${type as ProgramType}`)}`} breadcrumb={back} />
-        <ProgramForm key={`new-${type}`} initial={draft} programId={null} status={null} onDone={(p) => navigate(`/app/programs/${p.id}`)} />
+        <ProgramForm key={`new-${type}`} initial={draft} programId={null} status={null} onDone={(p, published) => navigate(published ? `/app/programs/${p.id}/live` : `/app/programs/${p.id}`)} />
       </>
     )
   }
@@ -43,7 +43,7 @@ export default function ProgramEditorPage() {
         return (
           <>
             <PageHeader title={`Edit ${program.name}`} breadcrumb={back} />
-            <ProgramForm key={`${program.id}-${program.updatedAt}`} initial={toDraft(program)} programId={program.id} status={program.status} onDone={(p) => navigate(`/app/programs/${p.id}`)} />
+            <ProgramForm key={`${program.id}-${program.updatedAt}`} initial={toDraft(program)} programId={program.id} status={program.status} onDone={(p, published) => navigate(published ? `/app/programs/${p.id}/live` : `/app/programs/${p.id}`)} />
           </>
         )
       }}

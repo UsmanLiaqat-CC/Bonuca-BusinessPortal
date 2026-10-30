@@ -9,7 +9,8 @@ export const env = {
 
 /** URL encoded in printed join/campaign QR codes. Falls back to a non-routable development URL. */
 export function joinUrl(kind: 'program' | 'campaign' | 'register', token: string, placement?: string): string {
-  const base = env.joinBaseUrl ?? 'https://join.bonuca.invalid'
+  // Without a configured join domain the link opens this portal's own customer sign-up page.
+  const base = env.joinBaseUrl ?? (typeof window !== 'undefined' ? `${window.location.origin}/join` : 'https://join.bonuca.invalid')
   const q = placement ? `?placement=${encodeURIComponent(placement)}` : ''
   return `${base}/${kind}/${token}${q}`
 }

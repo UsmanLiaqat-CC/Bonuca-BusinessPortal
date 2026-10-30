@@ -15,7 +15,7 @@ import { IntegrationNotice } from '@/components/feedback/Banners'
 import { useSaveWinBack, useWinBack } from '../hooks'
 
 /** Spec §4.7 win-back automation: inactivity thresholds with escalating offers. */
-export function WinBackSettings() {
+export function WinBackSettings({ onSaved }: { onSaved?: () => void } = {}) {
   const winback = useWinBack()
   const save = useSaveWinBack()
   const toast = useToast()
@@ -35,34 +35,49 @@ export function WinBackSettings() {
           <form
             noValidate
             className="flex flex-col gap-4"
-            onSubmit={form.handleSubmit((v) => save.mutate(v, { onSuccess: () => toast.success('Win-back automation saved.'), onError: (e) => toast.error(errorMessage(e)) }))}
+            onSubmit={form.handleSubmit((v) =>
+              save.mutate(v, {
+                onSuccess: () => {
+                  toast.success('Win-back campaign saved.')
+                  onSaved?.()
+                },
+                onError: (e) => toast.error(errorMessage(e)),
+              }),
+            )}
           >
-            <Controller control={form.control} name="enabled" render={({ field }) => <Toggle label="Enable win-back automation" checked={field.value} onChange={field.onChange} />} />
+            <Controller control={form.control} name="enabled" render={({ field }) => <Toggle label="Win-back campaign active" checked={field.value} onChange={field.onChange} />} />
             <ol className="flex flex-col gap-3">
               {stages.fields.map((f, i) => (
-                <li key={f.id} className="grid items-start gap-3 reveal sm:grid-cols-[9rem_1fr_auto]">
+                <li key={f.id} className="grid items-start gap-3 rounded-xl border border-line p-3 reveal sm:grid-cols-[9rem_1fr_1fr_auto]">
                   <label className="field">
-                    <span className="label">Stage {i + 1} — days inactive</span>
+                    <span className="label">Stage {i + 1} — days away</span>
                     <Input type="number" min={1} {...form.register(`stages.${i}.days`, { setValueAs: toNullableNumber })} aria-invalid={errs?.[i]?.days ? true : undefined} />
                     {errs?.[i]?.days && <span className="error-msg">{errs[i]?.days?.message}</span>}
                   </label>
+                  <div className="field">
+                    <label htmlFor={`wb-msg-${i}`} className="label">Message</label>
+                    <Input id={`wb-msg-${i}`} placeholder="e.g. We miss you! Your coffee is on us." {...form.register(`stages.${i}.message`)} />
+                  </div>
                   <label className="field">
                     <span className="label">Offer (becomes the active reward)</span>
                     <Input placeholder="e.g. Free coffee" {...form.register(`stages.${i}.offer`)} aria-invalid={errs?.[i]?.offer ? true : undefined} />
                     {errs?.[i]?.offer && <span className="error-msg">{errs[i]?.offer?.message}</span>}
                   </label>
-                  <Button variant="ghost" className="sm:mt-6" onClick={() => stages.remove(i)} disabled={stages.fields.length <= 1} aria-label={`Remove stage ${i + 1}`}>
-                    <Trash2 className="size-4" />
-                  </Button>
+                  <div className="flex items-center gap-1 sm:mt-6">
+                    <Controller control={form.control} name={`stages.${i}.enabled`} render={({ field }) => <Toggle label={`Stage ${i + 1} on`} checked={field.value !== false} onChange={field.onChange} plain />} />
+                    <Button variant="ghost" onClick={() => stages.remove(i)} disabled={stages.fields.length <= 1} aria-label={`Remove stage ${i + 1}`}>
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ol>
             <div className="flex flex-wrap gap-2">
-              <Button variant="secondary" size="sm" onClick={() => stages.append({ days: (stages.fields.at(-1)?.days ?? 0) + 30, offer: '' })}>
+              <Button variant="secondary" size="sm" onClick={() => stages.append({ days: (stages.fields.at(-1)?.days ?? 0) + 30, offer: '', message: '', enabled: true })}>
                 <Plus className="size-4" aria-hidden /> Add stage
               </Button>
               <GuardedButton permission="notifications.manage" type="submit" loading={save.isPending}>
-                Save automation
+                Save campaign
               </GuardedButton>
             </div>
           </form>

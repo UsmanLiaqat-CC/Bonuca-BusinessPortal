@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SignupFieldConfig } from '@/types/domain'
-import type { CustomerInput } from '@/services/backend'
+import type { CustomerInput, GiftInput } from '@/services/backend'
 import { useBackend } from '@/state/services'
 import { SESSION_KEY } from '@/state/session'
 
@@ -33,4 +33,22 @@ export function useUpdateSignupFields() {
   const backend = useBackend()
   const qc = useQueryClient()
   return useMutation({ mutationFn: (c: SignupFieldConfig) => backend.updateSignupFields(c), onSuccess: () => qc.invalidateQueries({ queryKey: SESSION_KEY }) })
+}
+
+export function useGiveGift(customerId: string) {
+  const backend = useBackend()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: GiftInput) => backend.giveGift(customerId, input),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: ['customer', customerId] }), qc.invalidateQueries({ queryKey: ['award-customer', customerId] })]),
+  })
+}
+
+export function useCancelGift(customerId: string) {
+  const backend = useBackend()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (giftId: string) => backend.cancelGift(giftId),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: ['customer', customerId] }), qc.invalidateQueries({ queryKey: ['award-customer', customerId] })]),
+  })
 }

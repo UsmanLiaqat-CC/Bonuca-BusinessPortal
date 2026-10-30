@@ -3,6 +3,7 @@ import { Loader2, Lock } from 'lucide-react'
 import type { Permission, Decision } from '@/lib/access'
 import { useAccess } from '@/state/session'
 import { buttonClass, ripple, type ButtonSize, type ButtonVariant } from '@/components/ui/Button'
+import { cn } from '@/lib/cn'
 
 export interface GuardedButtonProps {
   permission: Permission
@@ -16,13 +17,15 @@ export interface GuardedButtonProps {
   loading?: boolean
   className?: string
   form?: string
+  /** Allowed by role/plan but not possible right now (e.g. Redeem bonus before the card is full). */
+  disabled?: boolean
 }
 
 /**
  * Button that stays visible but disabled when the action is not allowed (spec §2: "Buttons stay
  * visible but disabled"), and explains why — in Preview Mode with the exact required message.
  */
-export function GuardedButton({ permission, extra, onClick, children, variant = 'primary', size = 'md', type = 'button', loading, className, form }: GuardedButtonProps) {
+export function GuardedButton({ permission, extra, onClick, children, variant = 'primary', size = 'md', type = 'button', loading, className, form, disabled }: GuardedButtonProps) {
   const access = useAccess()
   const base = access.evaluate(permission)
   const decision = !base.allowed ? base : extra && !extra.allowed ? extra : base
@@ -31,7 +34,7 @@ export function GuardedButton({ permission, extra, onClick, children, variant = 
 
   if (decision.allowed) {
     return (
-      <button type={type} form={form} onClick={loading ? undefined : onClick} onPointerDown={ripple} aria-busy={loading || undefined} className={buttonClass(variant, size, className)}>
+      <button type={type} form={form} disabled={disabled} onClick={loading ? undefined : onClick} onPointerDown={ripple} aria-busy={loading || undefined} className={buttonClass(variant, size, cn('disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none', className))}>
         {loading && <Loader2 className="size-4 animate-spin" aria-hidden />}
         {children}
       </button>

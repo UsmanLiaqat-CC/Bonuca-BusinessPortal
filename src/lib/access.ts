@@ -14,6 +14,9 @@ export type Permission =
   | 'qr.manage'
   | 'scanner.use'
   | 'scanner.transact'
+  | 'scanner.adjust'
+  | 'gifts.manage'
+  | 'audit.view'
   | 'customers.view'
   | 'customers.viewFull'
   | 'customers.add'
@@ -75,6 +78,12 @@ const RULES: Record<Permission, PermissionRule> = {
   'qr.manage': { roles: OWNER_MANAGER, locksInPreview: true },
   'scanner.use': { roles: ALL, locksInPreview: false },
   'scanner.transact': { roles: ALL, locksInPreview: true },
+  // Award actions: Remove stamp (-1) and the amount dropdown are Owner/Manager only; employees add and redeem.
+  'scanner.adjust': { roles: OWNER_MANAGER, locksInPreview: true },
+  // Surprise gift from the customer profile: Give gift / Cancel are Owner and Manager only.
+  'gifts.manage': { roles: OWNER_MANAGER, locksInPreview: true },
+  // Settings → Audit: review what Managers and Employees did.
+  'audit.view': { roles: OWNER_MANAGER, locksInPreview: false },
   'customers.view': { roles: ALL, locksInPreview: false },
   'customers.viewFull': { roles: OWNER_MANAGER, locksInPreview: false },
   'customers.add': { roles: OWNER_MANAGER, locksInPreview: true },

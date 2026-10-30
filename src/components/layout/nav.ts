@@ -1,4 +1,4 @@
-import { BarChart3, Bell, Building2, CreditCard, Gift, LayoutDashboard, Palette, QrCode, Settings, Stamp, UserCircle, Users, UsersRound, WalletCards, type LucideIcon } from 'lucide-react'
+import { BarChart3, Bell, Building2, CreditCard, Gift, LayoutDashboard, Palette, QrCode, Settings, Stamp, Ticket, UserCircle, Users, UsersRound, type LucideIcon } from 'lucide-react'
 import type { Permission } from '@/lib/access'
 import type { MessageKey } from '@/i18n'
 import type { Role } from '@/types/domain'
@@ -21,7 +21,8 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { to: '/app/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: 'dashboard.view', group: 'overview' },
   { to: '/app/programs', labelKey: 'nav.programs', icon: Stamp, permission: 'programs.view', group: 'overview' },
-  { to: '/app/wallet-cards', labelKey: 'nav.wallet', icon: WalletCards, permission: 'wallet.view', group: 'overview' },
+  // Campaigns tab (client change): sits right under Loyalty Programs.
+  { to: '/app/campaigns', labelKey: 'nav.campaigns', icon: Ticket, permission: 'programs.view', group: 'overview' },
   { to: '/app/scanner', labelKey: 'nav.scanner', icon: QrCode, permission: 'scanner.use', group: 'operations' },
   { to: '/app/customers', labelKey: 'nav.customers', employeeLabelKey: 'nav.customerInfo', icon: Users, permission: 'customers.view', group: 'operations' },
   { to: '/app/employees', labelKey: 'nav.employees', icon: UsersRound, permission: 'employees.view', group: 'operations' },

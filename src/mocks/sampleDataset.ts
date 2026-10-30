@@ -1,5 +1,7 @@
 import type {
+  AuditEntry,
   BusinessDataset,
+  Gift,
   Customer,
   Membership,
   PointsProgram,
@@ -15,6 +17,7 @@ import {
   DEFAULT_SIGNUP_FIELDS,
   defaultOpeningHours,
   defaultSubscription,
+  defaultSignupPage,
   defaultSurprise,
   defaultVisuals,
 } from '@/lib/factories'
@@ -92,6 +95,9 @@ export function buildSampleDataset(opts: SampleOptions): BusinessDataset {
     designMode: 'template' as const,
     termsAndConditions: 'Sample terms and conditions.',
     surprise: defaultSurprise(),
+    expiresOn: null,
+    location: null,
+    signupPage: { ...defaultSignupPage({ logo: SAMPLE_LOGO }) },
     joinQrToken: `join-${id}`,
     createdAt: created,
     publishedAt: created,
@@ -252,6 +258,7 @@ export function buildSampleDataset(opts: SampleOptions): BusinessDataset {
           rewardId: null,
           createdAt: iso(at),
           durationMs: 1500 + Math.floor(rng() * 4500),
+          entry: 'scan',
         })
         m.visits++
         m.stamps++
@@ -275,6 +282,10 @@ export function buildSampleDataset(opts: SampleOptions): BusinessDataset {
         if (rewards.at(-1)!.status === 'redeemed') m.points -= 100
       }
       if (program.type !== 'points') m.points = program.type === 'tier' ? 0 : m.points
+      if (m.viaCampaignId) {
+        // Cup-lid campaign claim: welcome gift with the first coffee (Campaigns → Linked customers).
+        rewards.push({ ...sampleReward(`rwd_w_${i}`, customer.id, program.id, 'welcome_gift', 'Free cookie', now, rng() > 0.45), campaignId: m.viaCampaignId, issuedAt: m.joinedAt })
+      }
       memberships.push(m)
     }
 
@@ -364,7 +375,10 @@ export function buildSampleDataset(opts: SampleOptions): BusinessDataset {
       ],
     },
     winbackEvents: [],
+    gifts: sampleGifts(businessId, customers, users, now),
+    audit: [],
   }
+  dataset.audit = sampleAudit(dataset)
   return evaluateWinBack(dataset, now)
 }
 
@@ -399,6 +413,59 @@ function sampleReward(
     status: redeemed ? 'redeemed' : 'available',
     ...extra,
   }
+}
+
+/** A few surprise gifts so the customer profile shows every gift state. */
+function sampleGifts(businessId: string, customers: Customer[], users: User[], now: Date): Gift[] {
+  const owner = users.find((u) => u.role === 'owner') ?? users[0]
+  const staff = users.find((u) => u.role === 'employee') ?? owner
+  if (!owner || customers.length < 3) return []
+  const base = (i: number, name: string, description: string): Gift => ({
+    id: `gft_s_${i}`,
+    businessId,
+    customerId: customers[i]!.id,
+    name,
+    description,
+    terms: '',
+    availableFrom: null,
+    expiresAt: addDays(now, 30).toISOString(),
+    status: 'open',
+    createdBy: owner.id,
+    createdAt: addDays(now, -3).toISOString(),
+    redeemedAt: null,
+    redeemedBy: null,
+    redeemedLocation: null,
+    cancelledAt: null,
+    cancelledBy: null,
+  })
+  return [
+    base(0, 'Free slice of cake', 'Thank you for being a regular.'),
+    { ...base(1, 'Birthday coffee', 'Happy birthday!'), status: 'redeemed', redeemedAt: addDays(now, -1).toISOString(), redeemedBy: staff!.id, redeemedLocation: 'Sample Street 1, Berlin' },
+    { ...base(2, 'Free cookie', 'Sorry for the wait last time.'), expiresAt: addDays(now, -2).toISOString(), createdAt: addDays(now, -20).toISOString() },
+  ]
+}
+
+/** Audit rows for the manager/employee scans in the sample data (Settings → Audit). */
+function sampleAudit(ds: BusinessDataset): AuditEntry[] {
+  const users = new Map(ds.users.map((u) => [u.id, u]))
+  const customers = new Map(ds.customers.map((c) => [c.id, c.name]))
+  const programs = new Map(ds.programs.map((p) => [p.id, p.name]))
+  const label = { stamp: 'Added stamp', stamp_removed: 'Removed stamp', points: 'Credited points', visit: 'Recorded visit', reward_redeemed: 'Redeemed reward', voucher_redeemed: 'Redeemed voucher', winback_redeemed: 'Redeemed win-back reward', gift_redeemed: 'Redeemed gift' } as const
+  return ds.transactions.slice(-60).flatMap((t) => {
+    const u = users.get(t.employeeId)
+    if (!u || u.role === 'owner') return []
+    const what = t.pointsAdded ? ` (+${t.pointsAdded} pts)` : ''
+    return [{
+      id: `aud_${t.id}`,
+      userId: u.id,
+      userName: u.fullName,
+      role: u.role,
+      action: label[t.kind],
+      module: 'Award actions' as const,
+      details: `${customers.get(t.customerId) ?? 'Customer'} · ${programs.get(t.programId ?? '') ?? '—'}${what}`,
+      createdAt: t.createdAt,
+    }]
+  })
 }
 
 export const DEMO_BUSINESS_ID = 'biz_demo'

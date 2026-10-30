@@ -30,10 +30,17 @@ export default function DashboardPage() {
         title={t('nav.dashboard')}
         description={`Welcome back${firstName ? `, ${firstName}` : ''} — here’s how your loyalty programs are performing.`}
         actions={
-          <Link to="/app/programs" className={buttonClass('primary')}>
-            <Stamp className="size-[15px]" aria-hidden />
-            {t('nav.programs')}
-          </Link>
+          <>
+            <Link to="/app/programs" className={buttonClass('secondary')}>
+              <Stamp className="size-[15px]" aria-hidden />
+              {t('nav.programs')}
+            </Link>
+            {/* Opens Award actions (Scan / Search) — the same flow as the QR Scanner menu item. */}
+            <Link to="/app/scanner" className={buttonClass('primary')}>
+              <ScanLine className="size-[15px]" aria-hidden />
+              Scan QR
+            </Link>
+          </>
         }
       />
       <QueryState query={dashboard}>
@@ -49,8 +56,8 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <KpiCard label="Total Members" value={s.totalMembers} icon="customers" accent="primary" hint="All time" />
-                  <KpiCard label="New Members" value={p.newMembers} icon="growth" accent="success" trend={trendPercent(p.newMembers, prev.newMembers)} />
+                  <KpiCard label="Total Customers" value={s.totalMembers} icon="customers" accent="primary" hint="All time" />
+                  <KpiCard label="New Customers" value={p.newMembers} icon="growth" accent="success" trend={trendPercent(p.newMembers, prev.newMembers)} />
                   <KpiCard label="Total Scans" value={p.scans} icon="scans" accent="primary" trend={trendPercent(p.scans, prev.scans)} />
                   <KpiCard label="Visits" value={p.visits} icon="clock" accent="warning" trend={trendPercent(p.visits, prev.visits)} hint="One customer on one day" />
                   <KpiCard label="Returning Customers" value={p.returningCustomers} icon="retention" accent="success" trend={trendPercent(p.returningCustomers, prev.returningCustomers)} hint="Visited on 2+ days" />
@@ -63,14 +70,14 @@ export default function DashboardPage() {
                 <EmptyState icon={<BarChart3 className="size-6" />} title="No activity yet" body="Charts fill in as customers join and get scanned." />
               ) : (
                 <div className="grid gap-6 lg:grid-cols-2">
-                  <ChartCard title="Customer Growth" description="Total members, last 30 days" icon={<TrendingUp className="size-4" />} table={{ columns: ['Date', 'Total members'], rows: s.customerGrowth.map((d) => [d.date, d.total]) }}>
-                    <AreaTrend data={s.customerGrowth.map((d) => ({ ...d, date: short(d.date) }))} x="date" y="total" name="Total members" />
+                  <ChartCard title="Customer Growth" description="Total customers, last 30 days" icon={<TrendingUp className="size-4" />} table={{ columns: ['Date', 'Total customers'], rows: s.customerGrowth.map((d) => [d.date, d.total]) }}>
+                    <AreaTrend data={s.customerGrowth.map((d) => ({ ...d, date: short(d.date) }))} x="date" y="total" name="Total customers" />
                   </ChartCard>
                   <ChartCard title="Daily Scans" description="Last 30 days" icon={<ScanLine className="size-4" />} table={{ columns: ['Date', 'Scans'], rows: s.dailyScans.map((d) => [d.date, d.scans]) }}>
                     <Bars data={s.dailyScans.map((d) => ({ ...d, date: short(d.date) }))} x="date" y="scans" name="Scans" />
                   </ChartCard>
-                  <ChartCard title="Monthly Growth" description="New members per month, last 12 months" icon={<CalendarDays className="size-4" />} table={{ columns: ['Month', 'New members'], rows: s.monthlyGrowth.map((d) => [d.month, d.newMembers]) }}>
-                    <Bars data={s.monthlyGrowth} x="month" y="newMembers" name="New members" />
+                  <ChartCard title="Monthly Growth" description="New customers per month, last 12 months" icon={<CalendarDays className="size-4" />} table={{ columns: ['Month', 'New customers'], rows: s.monthlyGrowth.map((d) => [d.month, d.newMembers]) }}>
+                    <Bars data={s.monthlyGrowth} x="month" y="newMembers" name="New customers" />
                   </ChartCard>
                   <QueryState query={programsStats}>
                     {(ps) => (
@@ -79,7 +86,7 @@ export default function DashboardPage() {
                         description="By scans"
                         icon={<Trophy className="size-4" />}
                         filter={<TimePresetChips filter={programsFilter} label="Top Programs period" />}
-                        table={{ columns: ['Program', 'Scans', 'Members'], rows: ps.topPrograms.map((r) => [r.name, r.scans, r.members]) }}
+                        table={{ columns: ['Program', 'Scans', 'Customers'], rows: ps.topPrograms.map((r) => [r.name, r.scans, r.members]) }}
                       >
                         {ps.topPrograms.length ? (
                           <Bars data={ps.topPrograms} x="name" y="scans" name="Scans" horizontal height={Math.max(160, ps.topPrograms.length * 48)} />
@@ -92,12 +99,12 @@ export default function DashboardPage() {
                   <QueryState query={membershipStats}>
                     {(ms) => (
                       <ChartCard
-                        title="Membership Distribution"
+                        title="Customers per Program"
                         description="Wallet cards per program"
                         icon={<PieChart className="size-4" />}
                         className="lg:col-span-2"
-                        filter={<TimePresetChips filter={membershipFilter} label="Membership Distribution period" />}
-                        table={{ columns: ['Program', 'Members'], rows: ms.membershipDistribution.map((d) => [d.name, d.value]) }}
+                        filter={<TimePresetChips filter={membershipFilter} label="Customers per Program period" />}
+                        table={{ columns: ['Program', 'Customers'], rows: ms.membershipDistribution.map((d) => [d.name, d.value]) }}
                       >
                         {ms.membershipDistribution.length ? (
                           <Donut data={ms.membershipDistribution} label="name" value="value" centerLabel="wallet cards" />

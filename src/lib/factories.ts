@@ -1,5 +1,7 @@
 import type {
   Business,
+  BusinessBranding,
+  SignupPageConfig,
   MembershipConfig,
   OpeningHours,
   PointsConfig,
@@ -111,13 +113,27 @@ export function defaultPointsConfig(currency: PointsConfig['currency'] = 'EUR'):
   }
 }
 
-export function defaultProgramDraft(type: ProgramType, currency?: PointsConfig['currency']): ProgramDraft {
+/** Sign-up page defaults: cream page / dark text as in the client reference; logo from Branding. */
+export function defaultSignupPage(branding?: Pick<BusinessBranding, 'logo'> | null): SignupPageConfig {
+  return { backgroundColor: '#F6F1E9', fontColor: '#2B1A0E', heroImage: null, logo: branding?.logo ?? null, fields: { email: 'optional', birthday: 'optional' } }
+}
+
+/** Wallet design starts from the business Branding (logo + colours); each program can change it. */
+export function visualsFromBranding(branding?: Pick<BusinessBranding, 'logo' | 'primaryColor' | 'secondaryColor'> | null): ProgramVisuals {
+  if (!branding) return defaultVisuals()
+  return { ...defaultVisuals(), logo: branding.logo, background: { kind: 'color', color: branding.secondaryColor }, accentColor: branding.primaryColor }
+}
+
+export function defaultProgramDraft(type: ProgramType, currency?: PointsConfig['currency'], branding?: BusinessBranding | null): ProgramDraft {
   const common = {
     name: '',
-    visuals: defaultVisuals(),
+    visuals: visualsFromBranding(branding),
     designMode: 'template' as const,
     termsAndConditions: '',
     surprise: defaultSurprise(),
+    expiresOn: null,
+    location: null,
+    signupPage: defaultSignupPage(branding),
   }
   switch (type) {
     case 'stamp':

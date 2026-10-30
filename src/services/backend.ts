@@ -1,10 +1,12 @@
 import type {
+  AuditEntry,
   Business,
   BusinessBranding,
   BusinessCategory,
   Campaign,
   Customer,
   DesignMode,
+  Gift,
   Invite,
   LanguageCode,
   Membership,
@@ -25,6 +27,8 @@ import type { LifecycleAction } from '@/lib/lifecycle'
 import type { ScanContext, ScanInput, ScanResult } from '@/lib/scanEngine'
 import type { DashboardStats, AnalyticsStats, DateRange } from '@/lib/metrics'
 import type { LeaderboardEntry } from '@/lib/gamification'
+import type { HistoryRow } from '@/lib/history'
+import type { CampaignKind, CampaignLinkedRow, CampaignRow } from '@/lib/campaigns'
 
 /**
  * The single business-account data contract used by every screen (spec §0: one account, one
@@ -81,8 +85,82 @@ export interface CustomerDetail {
   memberships: { membership: Membership; program: Program }[]
   transactions: Transaction[]
   rewards: RewardInstance[]
+  gifts: Gift[]
+  /** All activity across programs (stamps, points, redemptions, gifts). */
+  history: HistoryRow[]
+  /** Campaigns this customer is linked to (claimed or triggered). */
+  campaigns: { id: string; kind: CampaignKind; name: string; status: Campaign['status']; date: string }[]
   lastVisit: string | null
   scanCount: number
+}
+
+/** Award actions: one customer found by scan or search, with every program card they hold. */
+export interface AwardCustomer {
+  customer: Customer
+  cards: { membership: Membership; program: Program; unavailableReason: string | null }[]
+  gifts: Gift[]
+  history: HistoryRow[]
+}
+
+export interface GiftInput {
+  name: string
+  description: string
+  terms: string
+  /** YYYY-MM-DD; empty = available now. */
+  availableFrom: string
+  /** YYYY-MM-DD (required). */
+  expiresOn: string
+}
+
+export interface ProgramCustomerRow {
+  customer: Customer
+  membership: Membership
+  progress: string
+  lastVisit: string | null
+  /** Active = activity in the last 60 days (provisional, OI-46). */
+  status: 'active' | 'inactive'
+}
+
+/** Public customer sign-up page reached by scanning a program's join QR. */
+export interface JoinPage {
+  businessName: string
+  branding: BusinessBranding
+  program: Program
+}
+
+/** Public page reached by scanning a campaign QR. */
+export interface CampaignJoinPage {
+  businessName: string
+  branding: BusinessBranding
+  campaign: Campaign
+  /** Linked stamp card (acquisition campaigns). */
+  program: Program | null
+  /** 'ended' → "This campaign has ended."; 'paused' → no new claims. */
+  state: 'open' | 'paused' | 'ended'
+}
+
+export interface CampaignClaimResult {
+  customer: Customer
+  campaign: Campaign
+  businessName: string
+  program: Program | null
+  membership: Membership | null
+  reward: RewardInstance | null
+}
+
+export interface JoinInput {
+  name: string
+  email: string
+  birthday: string
+  acceptTerms: boolean
+}
+
+export interface JoinResult {
+  customer: Customer
+  membership: Membership
+  program: Program
+  businessName: string
+  branding: BusinessBranding
 }
 
 export interface EmployeesView {
@@ -127,15 +205,24 @@ export interface BusinessBackend {
   programLifecycle(id: string, action: LifecycleAction): Promise<Program>
   setDesignMode(id: string, mode: DesignMode): Promise<Program>
   updateSurprise(id: string, surprise: SurpriseConfig): Promise<Program>
+  /** Wallet cards (memberships) issued per program id. */
+  programCardCounts(): Promise<Record<string, number>>
+  getProgramCustomers(programId: string): Promise<ProgramCustomerRow[]>
   listCampaigns(): Promise<Campaign[]>
   createCampaign(draft: CampaignDraft): Promise<Campaign>
   updateCampaign(id: string, draft: CampaignDraft): Promise<Campaign>
   campaignLifecycle(id: string, action: LifecycleAction): Promise<Campaign>
+  /** Campaigns tab: every campaign plus the win-back campaign, with offer, period and counts. */
+  listCampaignRows(): Promise<CampaignRow[]>
+  getCampaignLinked(id: string): Promise<CampaignLinkedRow[]>
+  /** Win-back campaign Pause / Resume / End. */
+  winbackLifecycle(action: 'enable' | 'disable' | 'end'): Promise<void>
 
   // Scanner (§4.4)
   lookupPass(code: string): Promise<ScanContext | null>
   confirmScan(input: Omit<ScanInput, 'employeeId'>): Promise<ScanResult>
   listRecentScans(limit: number): Promise<{ transaction: Transaction; customerName: string; programName: string }[]>
+  getAwardCustomer(customerId: string): Promise<AwardCustomer | null>
 
   // Customers (§4.5)
   listCustomers(): Promise<Customer[]>
@@ -143,6 +230,17 @@ export interface BusinessBackend {
   addCustomer(input: CustomerInput): Promise<Customer>
   updateCustomerNotes(id: string, notes: string): Promise<void>
   updateSignupFields(config: SignupFieldConfig): Promise<void>
+  giveGift(customerId: string, input: GiftInput): Promise<Gift>
+  cancelGift(giftId: string): Promise<Gift>
+
+  // Settings → Audit
+  listAudit(): Promise<AuditEntry[]>
+
+  // Public customer sign-up (no login): first scan of a program's join QR
+  getJoinPage(token: string): Promise<JoinPage | null>
+  joinProgram(token: string, input: JoinInput): Promise<JoinResult>
+  getCampaignJoin(token: string): Promise<CampaignJoinPage | null>
+  claimCampaign(token: string, input: JoinInput): Promise<CampaignClaimResult>
 
   // Employees (§4.6)
   listEmployees(): Promise<EmployeesView>

@@ -22,13 +22,15 @@ export const winBackSchema = z
         z.object({
           days: z.number({ error: 'Enter the days.' }).int().min(1, 'At least 1 day.'),
           offer: z.string(),
+          enabled: z.boolean().optional(),
+          message: z.string().optional(),
         }),
       )
       .min(1, 'Add at least one stage.'),
   })
   .superRefine((c, ctx) => {
     c.stages.forEach((s, i) => {
-      if (c.enabled && !s.offer.trim()) ctx.addIssue({ code: 'custom', message: 'Enter the offer for this stage.', path: ['stages', i, 'offer'] })
+      if (c.enabled && s.enabled !== false && !s.offer.trim()) ctx.addIssue({ code: 'custom', message: 'Enter the offer for this stage.', path: ['stages', i, 'offer'] })
       const prev = c.stages[i - 1]
       if (prev && s.days <= prev.days) ctx.addIssue({ code: 'custom', message: 'Each stage must be later than the previous one.', path: ['stages', i, 'days'] })
     })

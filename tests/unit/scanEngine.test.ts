@@ -12,15 +12,46 @@ const scan = (ds: BusinessDataset, passCode: string, action: Parameters<typeof a
   applyScan(ds, { passCode, action, employeeId: 'u_emp', durationMs: 2000 }, NOW, rng)
 
 describe('scan engine (spec §4.2, §4.4)', () => {
-  it('adds a stamp; a full card issues the reward and resets (OI-25)', () => {
+  it('+1 stamp fills the card; Redeem bonus only on a full card (10/10), then the card starts again', () => {
     let ds = sampleDataset()
     const m = passFor(ds, 'prg_coffee')
     ds.memberships.find((x) => x.id === m.id)!.stamps = 9
-    const { dataset, result } = scan(ds, m.passCode, { type: 'add_stamp' })
-    ds = dataset
+    expect(() => scan(ds, m.passCode, { type: 'redeem_bonus' })).toThrow(/when the card is full/)
+    const added = scan(ds, m.passCode, { type: 'add_stamp' })
+    ds = added.dataset
+    expect(ds.memberships.find((x) => x.id === m.id)!.stamps).toBe(10)
+    expect(added.result.issuedRewards).toHaveLength(0)
+    expect(added.result.transaction).toMatchObject({ kind: 'stamp', stampsAdded: 1, durationMs: 2000, employeeId: 'u_emp', balanceAfter: 10, entry: 'scan' })
+    expect(() => scan(ds, m.passCode, { type: 'add_stamp' })).toThrow(/Redeem the bonus first/)
+    const bonus = scan(ds, m.passCode, { type: 'redeem_bonus' })
+    ds = bonus.dataset
     expect(ds.memberships.find((x) => x.id === m.id)!.stamps).toBe(0)
-    expect(result.issuedRewards[0]).toMatchObject({ name: '1 Free Coffee', source: 'stamp_card', status: 'available' })
-    expect(result.transaction).toMatchObject({ kind: 'stamp', stampsAdded: 1, durationMs: 2000, employeeId: 'u_emp' })
+    expect(bonus.result.transaction).toMatchObject({ kind: 'reward_redeemed', balanceAfter: 0 })
+    expect(ds.rewards.find((r) => r.id === bonus.result.transaction.rewardId)).toMatchObject({ name: '1 Free Coffee', source: 'stamp_card', status: 'redeemed' })
+  })
+
+  it('remove stamp (-N) never goes below zero and is recorded as a removal', () => {
+    const ds = sampleDataset()
+    const m = passFor(ds, 'prg_coffee')
+    ds.memberships.find((x) => x.id === m.id)!.stamps = 2
+    const { dataset, result } = scan(ds, m.passCode, { type: 'remove_stamp', count: 5 })
+    expect(dataset.memberships.find((x) => x.id === m.id)!.stamps).toBe(0)
+    expect(result.transaction).toMatchObject({ kind: 'stamp_removed', stampsAdded: -2, balanceAfter: 0 })
+  })
+
+  it('a surprise gift is redeemed on press, records who and where, and never changes stamps or points', () => {
+    const ds = sampleDataset()
+    const m = passFor(ds, 'prg_coffee')
+    ds.memberships.find((x) => x.id === m.id)!.stamps = 4
+    ds.gifts = [
+      { id: 'g1', businessId: ds.business.id, customerId: m.customerId, name: 'Cake', description: '', terms: '', availableFrom: null, expiresAt: '2099-01-01T00:00:00.000Z', status: 'open', createdBy: 'u_owner', createdAt: NOW.toISOString(), redeemedAt: null, redeemedBy: null, redeemedLocation: null, cancelledAt: null, cancelledBy: null },
+    ]
+    expect(buildScanContext(ds, m.passCode, NOW)?.gifts.map((g) => g.id)).toEqual(['g1'])
+    const { dataset, result } = applyScan(ds, { passCode: m.passCode, action: { type: 'redeem_gift', giftId: 'g1' }, employeeId: 'u_emp', durationMs: null, entry: 'search', location: 'Main St' }, NOW)
+    expect(dataset.memberships.find((x) => x.id === m.id)!.stamps).toBe(4)
+    expect(dataset.gifts[0]).toMatchObject({ status: 'redeemed', redeemedBy: 'u_emp', redeemedLocation: 'Main St' })
+    expect(result.transaction).toMatchObject({ kind: 'gift_redeemed', programId: null, entry: 'search', stampsAdded: 0, pointsAdded: 0 })
+    expect(() => applyScan(dataset, { passCode: m.passCode, action: { type: 'redeem_gift', giftId: 'g1' }, employeeId: 'u_emp', durationMs: null }, NOW)).toThrow(/not available/)
   })
 
   it('a paused program scans as temporarily unavailable — no new stamps', () => {

@@ -13,7 +13,23 @@ const visualsSchema = z.object({
   background: backgroundSchema,
   heroImage: optionalImage,
   textColor: hexColor,
+  accentColor: hexColor.optional(),
 })
+
+const signupPageSchema = z.object({
+  backgroundColor: hexColor,
+  fontColor: hexColor,
+  heroImage: optionalImage,
+  logo: optionalImage,
+  fields: z.object({ email: z.enum(['required', 'optional', 'off']), birthday: z.enum(['required', 'optional', 'off']) }),
+})
+
+const locationSchema = z
+  .object({
+    address: requiredText('Enter the address of the location.'),
+    radiusMeters: z.number({ error: 'Enter a radius.' }).int('Whole metres only.').min(50, 'Minimum 50 m.').max(5000, 'Maximum 5,000 m.'),
+  })
+  .nullable()
 
 const surpriseSchema = z
   .object({
@@ -29,6 +45,9 @@ const common = {
   designMode: z.enum(['template', 'custom']),
   termsAndConditions: z.string(),
   surprise: surpriseSchema,
+  expiresOn: z.string().nullable(),
+  location: locationSchema,
+  signupPage: signupPageSchema,
 }
 
 const toggleDays = (label: string) =>

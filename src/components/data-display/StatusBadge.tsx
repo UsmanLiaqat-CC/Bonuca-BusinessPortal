@@ -2,7 +2,7 @@ import type { LifecycleStatus, RewardStatus } from '@/types/domain'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { useT } from '@/i18n'
 
-const LIFECYCLE_TONE: Record<LifecycleStatus, BadgeTone> = { draft: 'neutral', active: 'success', paused: 'warning', archived: 'neutral' }
+const LIFECYCLE_TONE: Record<LifecycleStatus, BadgeTone> = { draft: 'neutral', active: 'success', paused: 'warning', ended: 'outline', archived: 'neutral' }
 
 export function LifecycleBadge({ status }: { status: LifecycleStatus }) {
   const t = useT()

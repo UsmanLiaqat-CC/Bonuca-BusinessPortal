@@ -196,3 +196,101 @@ body {
   .no-print, .ambient { display: none !important; }
   body { background: #fff; color: #000; }
 }
+
+/* Wallet card — client reference layout (BONUCA CHANGES doc, image 1): logo tile + brand line, card type
+   and headline, stamp circles with "6 / 10 STAMPS", reward block with gift icon, QR "Show to redeem". */
+@layer components {
+  .wcard {
+    --ac: #7fb77e;
+    position: relative; isolation: isolate; overflow: hidden;
+    border-radius: 22px; padding: 16px 16px 14px;
+    color: var(--fg, #fff); background: var(--bgp, #1f2622);
+    box-shadow: 0 30px 40px -30px rgba(0, 0, 0, 0.75);
+  }
+  .wcard::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    background: radial-gradient(60% 45% at 50% 70%, rgba(255, 255, 255, 0.1), transparent 70%);
+  }
+  .wc-notch { position: absolute; right: -24px; top: 46%; width: 46px; height: 46px; border-radius: 50%; background: #eeeff2; }
+  .wc-head { display: flex; align-items: center; gap: 10px; }
+  .wc-logo {
+    width: 40px; height: 40px; flex: none; border-radius: 11px; overflow: hidden;
+    display: grid; place-items: center; font-weight: 800; font-size: 16px;
+    background: color-mix(in srgb, var(--ac) 45%, #1d2a22); border: 1px solid rgba(255, 255, 255, 0.55);
+  }
+  .wc-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .wc-brand b { display: block; font-size: 12.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .wc-brand small { display: block; margin-top: 2px; font-size: 8px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--ac); }
+  .wc-type { margin-left: auto; text-align: right; flex: none; max-width: 46%; }
+  .wc-type small { display: block; font-size: 7.5px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.7; }
+  .wc-type b { display: block; margin-top: 2px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.25; }
+  .wc-nfc { width: 13px; height: 13px; flex: none; opacity: 0.55; margin-left: -4px; }
+  .wc-hero { display: block; width: calc(100% + 32px); max-width: none; height: 64px; margin: 12px -16px 0; object-fit: cover; }
+  .wc-stamps { display: grid; gap: 4px; margin-top: 18px; padding-right: 16px; }
+  .wc-stamp {
+    aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
+    border: 1.5px dashed color-mix(in srgb, var(--fg, #fff) 35%, transparent);
+  }
+  .wc-stamp.on {
+    border-style: solid; border-color: color-mix(in srgb, var(--ac) 70%, transparent);
+    background: color-mix(in srgb, var(--fg, #fff) 10%, transparent); color: var(--fg, #fff);
+  }
+  .wc-count, .wc-sub { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 9px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; }
+  .wc-count::before, .wc-count::after { content: ''; width: 18px; height: 1px; background: currentColor; opacity: 0.55; }
+  .wc-sub { font-weight: 600; letter-spacing: 0.12em; opacity: 0.8; justify-content: flex-start; }
+  .wc-body { margin-top: 16px; padding-right: 16px; }
+  .wc-big { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
+  .wc-bar { height: 5px; border-radius: 9px; margin-top: 10px; overflow: hidden; background: color-mix(in srgb, var(--fg, #fff) 16%, transparent); }
+  .wc-bar i { display: block; height: 100%; width: var(--w); border-radius: inherit; background: var(--ac); }
+  .wc-foot { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+  .wc-gift {
+    width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center;
+    color: var(--ac); border: 1px solid color-mix(in srgb, var(--ac) 60%, transparent);
+  }
+  .wc-gift svg { width: 18px; height: 18px; }
+  .wc-reward small { display: block; font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ac); }
+  .wc-reward b { display: block; margin-top: 2px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.25; }
+  .wc-reward span { display: block; margin-top: 2px; font-size: 8.5px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.8; }
+  .wc-qr { margin-left: auto; flex: none; text-align: center; }
+  .wc-qr img, .wc-qr > span { width: 50px; height: 50px; margin: 0 auto; border-radius: 7px; padding: 3px; background: #fff; }
+  .wc-qr small { display: block; margin-top: 4px; font-size: 6.5px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.85; }
+  .wcard.compact { padding: 13px 13px 11px; border-radius: 18px; box-shadow: 0 16px 26px -20px rgba(0, 0, 0, 0.7); }
+  .wcard.compact .wc-stamps { margin-top: 12px; }
+  .wcard.compact .wc-foot { margin-top: 10px; }
+  .wcard.compact .wc-notch { background: var(--color-surface); }
+  .wc-status { margin: 4px 0 14px; text-align: center; font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #8b8c96; }
+  .phone-screen.signup-screen { padding: 0; }
+
+  /* Customer sign-up page (doc images 4 and 6). */
+  .join-page { --jbg: #f6f1e9; --jfg: #2b1a0e; min-height: 100%; display: flex; flex-direction: column; background: var(--jbg); color: var(--jfg); padding: 40px 18px 18px; font-size: 13px; }
+  .join-hero { position: relative; height: 150px; border-radius: 22px; overflow: hidden; display: grid; place-items: center; text-align: center; color: #fff; background: #3b2a1e center / cover no-repeat; border: 1px solid rgba(0,0,0,.35); }
+  .join-hero::before { content: ''; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45); }
+  .join-hero > * { position: relative; }
+  .join-hero .jh-logo { width: 38px; height: 38px; margin: 0 auto 6px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.6); }
+  .join-hero .jh-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .join-hero h2 { font-family: Georgia, 'Times New Roman', serif; font-size: 26px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.05; }
+  .join-hero p { margin-top: 6px; font-family: var(--font-mono, monospace); font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: #e2b86b; }
+  .join-earn { display: flex; align-items: center; gap: 12px; margin: 26px 10px 0; padding: 12px; border-radius: 18px; background: #fff; border: 1px solid rgba(0,0,0,.25); }
+  .join-earn .ji { width: 40px; height: 40px; flex: none; border-radius: 10px; display: grid; place-items: center; background: #f1e4dd; font-size: 18px; }
+  .join-earn b { display: block; font-size: 14px; }
+  .join-earn span { color: #7d7570; font-size: 12px; }
+  .join-how { margin: 22px 18px 0; }
+  .join-how h3 { font-family: var(--font-mono, monospace); font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; color: #6f6964; margin-bottom: 10px; }
+  .join-how li { display: flex; align-items: center; gap: 12px; padding: 7px 0; font-size: 12.5px; }
+  .join-how li i { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 1px solid currentColor; display: grid; place-items: center; font-style: normal; font-size: 10px; }
+  .join-cta { margin-top: auto; padding-top: 22px; text-align: center; }
+  .join-btn { display: block; width: 100%; border-radius: 13px; padding: 13px; font-weight: 700; font-size: 15px; color: #fff; background: var(--jfg); box-shadow: 0 10px 20px -12px rgba(0,0,0,.6); }
+  .join-btn:disabled { opacity: 0.6; }
+  .join-cta small { display: block; margin-top: 8px; color: #8a827c; font-size: 11px; }
+  .join-foot { margin-top: 14px; text-align: center; font-family: var(--font-mono, monospace); font-size: 8.5px; letter-spacing: 0.25em; text-transform: uppercase; color: #a39b95; }
+  .join-form h2 { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+  .join-form > p { margin-top: 8px; color: #7d7570; font-size: 13px; line-height: 1.5; }
+  .join-field { margin-top: 16px; }
+  .join-field .jl { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6f6964; margin-bottom: 6px; }
+  .join-field .jl em { font-style: normal; font-size: 9px; padding: 2px 6px; border-radius: 3px; letter-spacing: 0.1em; background: #e6dfd6; color: #7d7570; }
+  .join-field .jl em.req { background: #d9342b; color: #fff; }
+  .join-field input { width: 100%; border-radius: 10px; border: 1px solid #b9b0a7; background: #fff; padding: 12px 13px; font-size: 14px; color: #1d1d1d; }
+  .join-field input:focus { outline: 2px solid var(--jfg); outline-offset: 0; }
+  .join-check { display: flex; align-items: center; gap: 10px; margin-top: 18px; font-size: 12.5px; }
+  .join-check input { width: 18px; height: 18px; accent-color: #111; }
+}

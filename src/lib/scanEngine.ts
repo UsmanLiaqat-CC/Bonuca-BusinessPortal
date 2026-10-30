@@ -2,6 +2,7 @@ import type {
   BusinessDataset,
   Campaign,
   Customer,
+  Gift,
   Membership,
   PointsProgram,
   Program,
@@ -14,6 +15,7 @@ import { addDays, addMonths, daysBetween } from './dates'
 import { createId } from './ids'
 import { buildPointsPreview, calculatePoints, sortedRewards } from './points'
 import { rewardStatus } from './rewards'
+import { giftStatus } from './gifts'
 import { computeTierIndex, tierMetric } from './tiers'
 
 /**
@@ -41,10 +43,15 @@ export interface ScanContext {
   activeWinback: RewardInstance | null
   /** Rewards the employee can redeem on this card. */
   redeemableRewards: RewardInstance[]
+  /** Surprise gifts available to this customer (not linked to any program). */
+  gifts: Gift[]
 }
 
 export type ScanAction =
-  | { type: 'add_stamp' }
+  | { type: 'add_stamp'; count?: number }
+  | { type: 'remove_stamp'; count: number }
+  | { type: 'redeem_bonus' }
+  | { type: 'redeem_gift'; giftId: string }
   | { type: 'credit_points'; purchaseAmount: number | null }
   | { type: 'record_visit'; purchaseAmount: number | null; points: number | null }
   | { type: 'redeem_reward'; rewardId: string }
@@ -56,6 +63,10 @@ export interface ScanInput {
   action: ScanAction
   employeeId: string
   durationMs: number | null
+  /** How the employee reached the customer on Award actions (shown in history). */
+  entry?: 'scan' | 'search'
+  /** Where a gift was redeemed (business location). */
+  location?: string | null
 }
 
 export interface ScanResult {
@@ -95,10 +106,11 @@ export function resolvePass(ds: BusinessDataset, rawCode: string): ScanTarget | 
   return null
 }
 
-function programUnavailable(program: Program, now: Date): string | null {
+export function programUnavailable(program: Program, now: Date): string | null {
   if (program.status === 'paused') return 'This program is temporarily unavailable.'
   if (program.status === 'archived') return 'This program has been archived.'
   if (program.status === 'draft') return 'This program is not published.'
+  if (program.expiresOn && new Date(`${program.expiresOn}T23:59:59`) < now) return 'This program has ended.'
   if (program.type === 'membership' && program.config.validity.kind === 'expires_on') {
     if (new Date(`${program.config.validity.date}T23:59:59`) < now) return 'This membership has expired.'
   }
@@ -106,7 +118,9 @@ function programUnavailable(program: Program, now: Date): string | null {
 }
 
 function campaignUnavailable(campaign: Campaign, reward: RewardInstance, now: Date): string | null {
-  if (campaign.status !== 'active') return 'This campaign is not active.'
+  // Paused stops new claims only: customers who already have the reward can still redeem it.
+  if (campaign.status === 'ended') return 'This campaign has ended.'
+  if (campaign.status !== 'active' && campaign.status !== 'paused') return 'This campaign is not active.'
   const status = rewardStatus(reward, now)
   if (status === 'redeemed') return 'Redeemed — this voucher has already been used.'
   if (status === 'expired') return 'This voucher has expired.'
@@ -134,6 +148,7 @@ export function buildScanContext(ds: BusinessDataset, code: string, now: Date = 
     daysInactive: daysInactive(ds, target.customer.id, now),
     activeWinback,
     redeemableRewards,
+    gifts: (ds.gifts ?? []).filter((g) => g.customerId === target.customer.id && giftStatus(g, now) === 'available'),
   }
 }
 
@@ -252,10 +267,23 @@ export function applyScan(
   let surprise: RewardInstance | null = null
   let programId: string | null = null
   let campaignId: string | null = null
+  let balanceAfter: number | null = null
+  let giftId: string | null = null
 
   const action = input.action
 
-  if (action.type === 'redeem_winback') {
+  if (action.type === 'redeem_gift') {
+    // A gift is never linked to a program: redeeming it does not touch stamps or points.
+    const gift = (ds.gifts ?? []).find((g) => g.id === action.giftId && g.customerId === target.customer.id)
+    if (!gift || giftStatus(gift, now) !== 'available') throw new ScanError('This gift is not available.')
+    gift.status = 'redeemed'
+    gift.redeemedAt = nowIso
+    gift.redeemedBy = input.employeeId
+    gift.redeemedLocation = input.location ?? null
+    kind = 'gift_redeemed'
+    giftId = gift.id
+    summary = `Gift redeemed: ${gift.name}.`
+  } else if (action.type === 'redeem_winback') {
     const reward = ds.rewards.find((r) => r.id === action.rewardId && r.customerId === target.customer.id)
     if (!reward || reward.source !== 'winback' || rewardStatus(reward, now) !== 'available') {
       throw new ScanError('No active win-back reward to redeem.')
@@ -304,19 +332,40 @@ export function applyScan(
       rewardId = reward.id
       summary = `Reward redeemed: ${reward.name}.`
     } else if (program.type === 'stamp') {
-      if (action.type !== 'add_stamp') throw new ScanError('Stamp cards accept "Add stamp" or reward redemption.')
-      m.stamps += 1
-      m.visits += 1
-      stampsAdded = 1
-      kind = 'stamp'
-      summary = `Stamp added (${m.stamps}/${program.config.stampsRequired}).`
-      if (m.stamps >= program.config.stampsRequired) {
-        // OI-25: full card issues the reward and resets.
-        issueReward(d, { ...rewardBase(m.customerId, program.id), source: 'stamp_card', name: program.config.rewardDescription })
-        m.stamps = 0
-        summary = `Card completed — reward available: ${program.config.rewardDescription}.`
+      const required = program.config.stampsRequired
+      if (action.type === 'add_stamp') {
+        const count = action.count ?? 1
+        if (!Number.isInteger(count) || count < 1) throw new ScanError('Choose how many stamps to add.')
+        if (m.stamps >= required) throw new ScanError('The card is full. Redeem the bonus first.')
+        const added = Math.min(count, required - m.stamps)
+        m.stamps += added
+        m.visits += 1
+        stampsAdded = added
+        kind = 'stamp'
+        summary = m.stamps >= required ? `Card full (${m.stamps}/${required}). The bonus can be redeemed.` : `+${added} stamp${added > 1 ? 's' : ''} (${m.stamps}/${required}).`
+        surprise = maybeSurprise(d, program, m.customerId, rng)
+      } else if (action.type === 'remove_stamp') {
+        if (!Number.isInteger(action.count) || action.count < 1) throw new ScanError('Choose how many stamps to remove.')
+        if (m.stamps === 0) throw new ScanError('There are no stamps to remove.')
+        const removed = Math.min(action.count, m.stamps)
+        m.stamps -= removed
+        stampsAdded = -removed
+        kind = 'stamp_removed'
+        summary = `-${removed} stamp${removed > 1 ? 's' : ''} (${m.stamps}/${required}).`
+      } else if (action.type === 'redeem_bonus') {
+        // Redeem bonus is only possible on a full card (e.g. 10/10); the card then starts again.
+        if (m.stamps < required) throw new ScanError(`The bonus is available when the card is full (${m.stamps}/${required}).`)
+        const reward = issueReward(d, { ...rewardBase(m.customerId, program.id), source: 'stamp_card', name: program.config.rewardDescription })
+        reward.status = 'redeemed'
+        reward.redeemedAt = nowIso
+        d.issued.pop()
+        m.stamps -= required
+        kind = 'reward_redeemed'
+        rewardId = reward.id
+        summary = `Bonus redeemed: ${program.config.rewardDescription}.`
+      } else {
+        throw new ScanError('Stamp cards accept +1 stamp, Redeem bonus or reward redemption.')
       }
-      surprise = maybeSurprise(d, program, m.customerId, rng)
     } else if (program.type === 'points') {
       if (action.type !== 'credit_points') throw new ScanError('Points programs accept "Credit points" or reward redemption.')
       if (program.config.awardingMethod === 'manual') {
@@ -358,6 +407,7 @@ export function applyScan(
       surprise = maybeSurprise(d, program, m.customerId, rng)
     }
     m.lastActivityAt = nowIso
+    balanceAfter = program.type === 'stamp' ? m.stamps : program.type === 'points' ? m.points : m.visits
   }
 
   const transaction: Transaction = {
@@ -374,6 +424,9 @@ export function applyScan(
     rewardId,
     createdAt: nowIso,
     durationMs: input.durationMs,
+    entry: input.entry ?? 'scan',
+    balanceAfter,
+    giftId,
   }
   ds.transactions.push(transaction)
   return { dataset: ds, result: { transaction, summary, issuedRewards: d.issued, surprise } }
@@ -384,7 +437,7 @@ export function applyScan(
  * reward for the highest stage reached. Lower unredeemed stages are closed (expired), never deleted.
  */
 export function evaluateWinBack(source: BusinessDataset, now: Date = new Date()): BusinessDataset {
-  if (!source.winback.enabled || source.winback.stages.length === 0) return source
+  if (!source.winback.enabled || source.winback.endedAt || source.winback.stages.length === 0) return source
   const ds = structuredClone(source)
   const stages = [...ds.winback.stages].sort((a, b) => a.days - b.days)
   for (const customer of ds.customers) {
@@ -392,7 +445,7 @@ export function evaluateWinBack(source: BusinessDataset, now: Date = new Date())
     if (idle === null) continue
     let stageIndex = -1
     stages.forEach((s, i) => {
-      if (idle >= s.days) stageIndex = i
+      if (idle >= s.days && s.enabled !== false) stageIndex = i
     })
     if (stageIndex < 0) continue
     const lastVisit = lastActivityOf(ds, customer.id)!

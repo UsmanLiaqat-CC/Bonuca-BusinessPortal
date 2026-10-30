@@ -31,7 +31,7 @@ export function LifecycleControls({ status, onAction, pending, noun = 'program' 
         <div className="flex flex-col gap-2">
           <Toggle
             label={status === 'active' ? 'Enabled' : 'Disabled (paused)'}
-            description={status === 'active' ? 'Turn off to pause temporarily. Members keep their cards; scans show "temporarily unavailable".' : 'Turn on to resume enrolment and earning.'}
+            description={status === 'active' ? 'Turn off to pause temporarily. Customers keep their cards; scans show "temporarily unavailable".' : 'Turn on to resume enrolment and earning.'}
             checked={status === 'active'}
             disabled={!manage.allowed || pending}
             onChange={(on) => onAction(on ? 'enable' : 'disable')}

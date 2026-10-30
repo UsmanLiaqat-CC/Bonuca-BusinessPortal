@@ -28,6 +28,15 @@ export interface PassContent {
   tierBadge: string | null
   redeemed: boolean
   templateName: string
+  /** Wallet card layout (client reference): brand line, card type, headline, reward block. */
+  brand: string
+  subtitle: string
+  typeLabel: string
+  headline: string
+  accentColor: string
+  /** Large figure for non-stamp cards (balance, tier). */
+  big: string | null
+  footer: { label: string; value: string; sub: string } | null
 }
 
 export const TEMPLATE_NAMES: Record<Program['type'], string> = {
@@ -47,10 +56,24 @@ const SAMPLE: Pick<Membership, 'stamps' | 'points' | 'visits' | 'totalSpend' | '
   joinedAt: new Date('2026-01-15').toISOString(),
 }
 
-export function buildPassContent(program: Program, membership?: Membership | null): PassContent {
+const TYPE_LABEL: Record<Program['type'], string> = {
+  stamp: 'Digital stamp card',
+  membership: 'Membership card',
+  tier: 'Tier card',
+  points: 'Points card',
+}
+
+export function buildPassContent(program: Program, membership?: Membership | null, businessName?: string): PassContent {
   const m = membership ?? SAMPLE
   const v = program.visuals
   const base: PassContent = {
+    brand: businessName || program.name || 'Program name',
+    subtitle: businessName ? program.name : '',
+    typeLabel: TYPE_LABEL[program.type],
+    headline: '',
+    accentColor: v.accentColor ?? '#7FB77E',
+    big: null,
+    footer: null,
     title: program.name || 'Program name',
     logo: v.logo,
     heroImage: v.heroImage,
@@ -75,17 +98,22 @@ export function buildPassContent(program: Program, membership?: Membership | nul
       const filled = Math.min(m.stamps, c.stampsRequired)
       return {
         ...base,
+        headline: c.rewardType === 'free_item' ? `Buy ${c.stampsRequired}, get 1 free` : `Collect ${c.stampsRequired} stamps`,
         stampGrid: { total: c.stampsRequired, filled, icon: c.stampIcon },
         primary: { label: 'Reward', value: c.rewardDescription || 'Reward description' },
         secondary: [{ label: 'Progress', value: `${Math.max(0, c.stampsRequired - filled)} stamps to go` }],
+        footer: { label: 'Reward', value: c.rewardDescription || 'Reward description', sub: filled >= c.stampsRequired ? 'Ready to redeem' : 'On your next visit' },
       }
     }
     case 'membership': {
       const c = program.config
       return {
         ...base,
+        headline: c.benefitDescription || 'Benefit description',
+        big: formatDate(m.joinedAt),
         primary: { label: 'Benefit', value: c.benefitDescription || 'Benefit description' },
-        secondary: [{ label: 'Member since', value: formatDate(m.joinedAt) }],
+        secondary: [{ label: 'Customer since', value: formatDate(m.joinedAt) }],
+        footer: { label: 'Benefit', value: c.benefitDescription || 'Benefit description', sub: 'Show at every visit' },
       }
     }
     case 'tier': {
@@ -97,6 +125,9 @@ export function buildPassContent(program: Program, membership?: Membership | nul
       const unit = c.upgradeBasis === 'visits' ? 'visits' : c.upgradeBasis === 'points' ? 'points' : 'spend'
       return {
         ...base,
+        headline: tier.name,
+        big: tier.name,
+        footer: { label: 'Tier benefits', value: tier.rewards || '—', sub: next ? `${next.remaining} ${unit} to ${next.next.name}` : 'Top tier reached' },
         // Pass background switches to the tier's wallet colour (§4.3).
         background: tier.walletColor,
         tierBadge: tier.badge,
@@ -112,6 +143,9 @@ export function buildPassContent(program: Program, membership?: Membership | nul
       // OI-07 fallback layout: balance + next reward + points needed + QR.
       return {
         ...base,
+        headline: `${c.ratio.points} pts per ${c.ratio.spend} ${currencyCode(c)}`,
+        big: `${m.points} pts`,
+        footer: next ? { label: 'Next reward', value: next.reward.name || 'Reward', sub: `${next.pointsNeeded} pts to go` } : { label: 'Rewards', value: top ? 'All rewards unlocked' : '—', sub: '' },
         primary: { label: 'Balance', value: `${m.points} pts` },
         secondary: next
           ? [
@@ -127,6 +161,13 @@ export function buildPassContent(program: Program, membership?: Membership | nul
 
 export function buildVoucherPassContent(campaign: VoucherCampaign, reward?: RewardInstance | null): PassContent {
   return {
+    brand: campaign.name || 'Campaign name',
+    subtitle: '',
+    typeLabel: 'Voucher',
+    headline: campaign.voucherReward || 'Voucher reward',
+    accentColor: '#7FB77E',
+    big: null,
+    footer: { label: 'Voucher', value: campaign.voucherReward || 'Voucher reward', sub: `Valid to ${formatDate(campaign.validTo || null)}` },
     title: campaign.name || 'Campaign name',
     logo: campaign.visuals.logo,
     heroImage: null,

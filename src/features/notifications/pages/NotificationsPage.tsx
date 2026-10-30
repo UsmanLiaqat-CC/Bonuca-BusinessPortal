@@ -18,11 +18,11 @@ import { IntegrationNotice } from '@/components/feedback/Banners'
 import { usePrograms } from '@/features/loyalty-programs/hooks'
 import { CampaignComposer } from '../components/CampaignComposer'
 import { AiDraftPanel } from '../components/AiDraftPanel'
-import { WinBackSettings } from '../components/WinBackSettings'
 import { CAMPAIGN_TYPE_LABELS } from '../labels'
 import { useNotifications, useSendNotification } from '../hooks'
 
-type Tab = 'campaigns' | 'winback' | 'ai'
+// Win-back automation moved to the Campaigns tab; Notifications keeps manual push messages.
+type Tab = 'campaigns' | 'ai'
 
 export default function NotificationsPage() {
   const t = useT()
@@ -44,10 +44,11 @@ export default function NotificationsPage() {
             <Bell className="size-[13px]" aria-hidden /> {t('nav.group.engagement')}
           </>
         }
+        description="Push messages to your customers’ wallet passes."
         actions={
           tab === 'campaigns' && (
             <GuardedButton permission="notifications.manage" onClick={() => setComposer({ editing: null })}>
-              <Plus className="size-[15px]" aria-hidden /> New campaign
+              <Plus className="size-[15px]" aria-hidden /> New notification
             </GuardedButton>
           )
         }
@@ -58,8 +59,7 @@ export default function NotificationsPage() {
           value={tab}
           onChange={setTab}
           items={[
-            { value: 'campaigns', label: 'Manual campaigns' },
-            { value: 'winback', label: 'Win-back automation' },
+            { value: 'campaigns', label: 'Messages' },
             { value: 'ai', label: 'AI tools' },
           ]}
         />
@@ -72,7 +72,7 @@ export default function NotificationsPage() {
               {(list) =>
                 list.length === 0 ? (
                   <div className="p-5">
-                    <EmptyState icon={<Bell className="size-6" />} title="No campaigns yet" body="Happy Hour, New Item, Double Stamps, Birthday Reward, Holiday Campaign, Limited Offers and similar wallet push notifications." />
+                    <EmptyState icon={<Bell className="size-6" />} title="No notifications yet" body="Happy Hour, New Item, Double Stamps, Birthday Reward, Holiday Campaign, Limited Offers and similar wallet push notifications." />
                   </div>
                 ) : (
                   <ul>
@@ -110,7 +110,6 @@ export default function NotificationsPage() {
           </Card>
         </div>
       )}
-      {tab === 'winback' && <WinBackSettings />}
       {tab === 'ai' && (
         <div className="grid gap-[18px] lg:grid-cols-2">
           {access.role !== 'owner' && (
@@ -129,7 +128,7 @@ export default function NotificationsPage() {
         title="Send this campaign?"
         confirmLabel="Send"
         loading={send.isPending}
-        body={`"${confirmSend?.title}" will be pushed to the selected members' wallet passes.`}
+        body={`"${confirmSend?.title}" will be pushed to the selected customers' wallet passes.`}
         onConfirm={() => {
           const n = confirmSend
           setConfirmSend(null)

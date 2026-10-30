@@ -23,6 +23,8 @@ function useInvalidate() {
       qc.invalidateQueries({ queryKey: programKeys.all }),
       qc.invalidateQueries({ queryKey: programKeys.campaigns }),
       qc.invalidateQueries({ queryKey: ['dashboard'] }),
+      qc.invalidateQueries({ queryKey: ['campaign-rows'] }),
+      qc.invalidateQueries({ queryKey: ['campaign-linked'] }),
     ])
 }
 
@@ -66,4 +68,15 @@ export function useCampaignLifecycle() {
   const backend = useBackend()
   const invalidate = useInvalidate()
   return useMutation({ mutationFn: ({ id, action }: { id: string; action: LifecycleAction }) => backend.campaignLifecycle(id, action), onSuccess: invalidate })
+}
+
+/** Wallet cards issued per program (shown on each program card). */
+export function useProgramCardCounts() {
+  const backend = useBackend()
+  return useQuery({ queryKey: [...programKeys.all, 'card-counts'], queryFn: () => backend.programCardCounts() })
+}
+
+export function useProgramCustomers(programId: string) {
+  const backend = useBackend()
+  return useQuery({ queryKey: ['customers', 'program', programId], queryFn: () => backend.getProgramCustomers(programId) })
 }

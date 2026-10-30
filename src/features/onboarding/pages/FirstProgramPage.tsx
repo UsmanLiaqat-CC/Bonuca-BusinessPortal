@@ -21,7 +21,7 @@ const ICONS: Record<ProgramType, typeof Stamp> = { stamp: Stamp, membership: Cro
 const COLORS: Record<ProgramType, string> = { stamp: '#1747F8', membership: '#7C3AED', tier: '#0F9D6E', points: '#C2410C' }
 const BLURB: Record<ProgramType, string> = {
   stamp: 'Collect stamps, earn a reward',
-  membership: 'A standing perk for members',
+  membership: 'A standing perk for customers',
   tier: 'Levels unlocked by visits',
   points: 'Earn points per purchase',
 }

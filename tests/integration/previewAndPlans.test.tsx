@@ -19,7 +19,7 @@ describe('Preview Mode (spec §2)', () => {
     const backend = await previewOwner()
     const { user } = await renderApp('/app/programs', { backend })
     expect(await screen.findByTestId('preview-banner')).toBeInTheDocument()
-    expect(await screen.findByText('Coffee Card')).toBeInTheDocument()
+    expect((await screen.findAllByText('Coffee Card')).length).toBeGreaterThan(0)
     expect(screen.getAllByText('Demo data').length).toBeGreaterThan(0)
     const create = screen.getByRole('button', { name: /create program/i })
     expect(create).toHaveAttribute('aria-disabled', 'true')

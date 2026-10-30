@@ -156,7 +156,8 @@ export type ProgramType = 'stamp' | 'membership' | 'tier' | 'points'
 export const PROGRAM_TYPES: readonly ProgramType[] = ['stamp', 'membership', 'tier', 'points']
 
 /** §4.2 lifecycle: Draft → Active (Publish) ⇄ Paused (Suspend), plus Archive. */
-export type LifecycleStatus = 'draft' | 'active' | 'paused' | 'archived'
+/** 'ended' is used by campaigns only (end date reached or ended manually). */
+export type LifecycleStatus = 'draft' | 'active' | 'paused' | 'ended' | 'archived'
 
 /** Background is a flat RGB colour OR an image, never both (§4.2). 'default' = Bonuca template gradient. */
 export type Background =
@@ -171,6 +172,26 @@ export interface ProgramVisuals {
   background: Background
   heroImage: ImageRef
   textColor: HexColor
+  /** Highlight colour on the wallet card (labels, stamp rings). Defaults to the business brand colour. */
+  accentColor?: HexColor
+}
+
+/** Who can be asked for which field on the customer sign-up page (Name is always required). */
+export type SignupPageFieldMode = 'required' | 'optional' | 'off'
+
+/** Customer sign-up page shown after the first scan of a program's join QR (BONUCA CHANGES doc). */
+export interface SignupPageConfig {
+  backgroundColor: HexColor
+  fontColor: HexColor
+  heroImage: ImageRef
+  logo: ImageRef
+  fields: { email: SignupPageFieldMode; birthday: SignupPageFieldMode }
+}
+
+/** Optional valid location; used for nearby notifications once a push service is connected. */
+export interface ProgramLocation {
+  address: string
+  radiusMeters: number
 }
 
 /** §4.3 — Base template (default) or Start from Scratch (scope pending, OI-06). */
@@ -263,6 +284,10 @@ interface ProgramBase {
   designMode: DesignMode
   termsAndConditions: string
   surprise: SurpriseConfig
+  /** Program end date ("Program Rules with expiry date"). null = no end date. */
+  expiresOn: string | null
+  location: ProgramLocation | null
+  signupPage: SignupPageConfig
   /** Generated on first Publish (§4.2). */
   joinQrToken: string | null
   createdAt: ISODate
@@ -348,8 +373,10 @@ export interface Membership {
 
 export type TransactionKind =
   | 'stamp'
+  | 'stamp_removed'
   | 'points'
   | 'visit'
+  | 'gift_redeemed'
   | 'reward_redeemed'
   | 'voucher_redeemed'
   | 'winback_redeemed'
@@ -369,6 +396,11 @@ export interface Transaction {
   createdAt: ISODate
   /** Scan-to-confirm duration (§4.4 target < 5 s); used by the leaderboard. */
   durationMs: number | null
+  /** How the employee reached the customer on Award actions. null for older records. */
+  entry?: 'scan' | 'search' | null
+  /** Stamps / points / visits on the card after this action. null when not applicable. */
+  balanceAfter?: number | null
+  giftId?: string | null
 }
 
 export type RewardSource = 'stamp_card' | 'points' | 'winback' | 'surprise' | 'welcome_gift' | 'voucher'
@@ -395,6 +427,48 @@ export interface RewardInstance {
   expiresAt: ISODate | null
   redeemedAt: ISODate | null
   status: StoredRewardStatus
+}
+
+/* ------------------------------------------------------------------ Surprise gifts (customer profile) */
+
+/** Stored state; Scheduled and Expired are derived from the dates. */
+export type StoredGiftStatus = 'open' | 'redeemed' | 'cancelled'
+export type GiftStatus = 'scheduled' | 'available' | 'redeemed' | 'expired' | 'cancelled'
+
+/** A gift given to one customer. Never linked to a program; never changes stamps or points. */
+export interface Gift {
+  id: string
+  businessId: string
+  customerId: string
+  name: string
+  description: string
+  terms: string
+  /** null = available immediately. */
+  availableFrom: ISODate | null
+  expiresAt: ISODate
+  status: StoredGiftStatus
+  createdBy: string
+  createdAt: ISODate
+  redeemedAt: ISODate | null
+  redeemedBy: string | null
+  redeemedLocation: string | null
+  cancelledAt: ISODate | null
+  cancelledBy: string | null
+}
+
+/* ------------------------------------------------------------------ Audit (Settings → Audit) */
+
+export type AuditModule = 'Programs' | 'Campaigns' | 'Award actions' | 'Customers' | 'Gifts' | 'Employees' | 'Notifications' | 'Settings'
+
+export interface AuditEntry {
+  id: string
+  userId: string
+  userName: string
+  role: Exclude<Role, 'owner'>
+  action: string
+  module: AuditModule
+  details: string
+  createdAt: ISODate
 }
 
 /* ------------------------------------------------------------------ Notifications (§4.7) */
@@ -434,11 +508,17 @@ export interface NotificationCampaign {
 export interface WinBackStage {
   days: number
   offer: string
+  /** Campaigns tab: each stage can be switched off. Missing = on (older data). */
+  enabled?: boolean
+  /** Push message text for this stage. */
+  message?: string
 }
 
 export interface WinBackConfig {
   enabled: boolean
   stages: WinBackStage[]
+  /** Set when the win-back campaign is ended from the Campaigns tab. */
+  endedAt?: string | null
 }
 
 export interface WinBackEvent {
@@ -467,4 +547,6 @@ export interface BusinessDataset {
   notifications: NotificationCampaign[]
   winback: WinBackConfig
   winbackEvents: WinBackEvent[]
+  gifts: Gift[]
+  audit: AuditEntry[]
 }

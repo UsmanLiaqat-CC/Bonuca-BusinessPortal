@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Link, NavLink, useParams } from 'react-router-dom'
-import { ArrowRight, Bell, Clock, CreditCard, Image as ImageIcon, Languages, MapPin, Palette, Settings as SettingsIcon, Store, UsersRound, WalletCards, type LucideIcon } from 'lucide-react'
-import { BUSINESS_CATEGORIES, type Address, type OpeningHours } from '@/types/domain'
+import { NavLink, useParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { Clock, History, Image as ImageIcon, Languages, MapPin, Palette, Settings as SettingsIcon, Store, type LucideIcon } from 'lucide-react'
+import { BUSINESS_CATEGORIES, type Address, type AuditEntry, type OpeningHours } from '@/types/domain'
 import { useT } from '@/i18n'
 import { useAccess, useSession } from '@/state/session'
 import { useBackend } from '@/state/services'
@@ -13,29 +14,112 @@ import type { Permission } from '@/lib/access'
 import { cn } from '@/lib/cn'
 import { PageHeader } from '@/components/data-display/PageHeader'
 import { Card, CardBody, CardHeader } from '@/components/ui/Card'
-import { Field, Input, Select, Toggle } from '@/components/ui/Field'
-import { buttonClass } from '@/components/ui/Button'
+import { Field, Input, Select } from '@/components/ui/Field'
 import { OpeningHoursField } from '@/components/forms/OpeningHoursField'
 import { GuardedButton } from '@/components/feedback/GuardedButton'
+import { EmptyState, QueryState } from '@/components/feedback/QueryState'
 import { LanguageSelect, ThemeToggle } from '@/components/layout/Preferences'
 import { BrandingForm } from '@/features/branding/components/BrandingForm'
 import { useUpdateBusiness } from '@/features/branding/hooks'
-import { WinBackSettings } from '@/features/notifications/components/WinBackSettings'
-import { useUpdatePermissions } from '@/features/employees/hooks'
+import { formatDateTime } from '@/lib/dates'
 
-/** Spec §4.12 settings sections. Manager access is "limited" (OI-15). */
+/**
+ * Spec §4.12 settings sections. Manager access is "limited" (OI-15). Employees, Notifications, Billing
+ * and Wallet customization were removed from Settings (client change); each has its own menu item.
+ */
 const SECTIONS: { id: string; label: string; permission: Permission; icon: LucideIcon }[] = [
   { id: 'business', label: 'Business information', permission: 'settings.view', icon: Store },
   { id: 'address', label: 'Address', permission: 'settings.view', icon: MapPin },
   { id: 'hours', label: 'Opening hours', permission: 'settings.view', icon: Clock },
   { id: 'logo', label: 'Logo', permission: 'settings.view', icon: ImageIcon },
   { id: 'brand-colors', label: 'Brand colors', permission: 'settings.view', icon: Palette },
-  { id: 'employees', label: 'Employees', permission: 'employees.view', icon: UsersRound },
-  { id: 'notifications', label: 'Notifications', permission: 'notifications.view', icon: Bell },
-  { id: 'billing', label: 'Billing', permission: 'settings.billing', icon: CreditCard },
-  { id: 'wallet', label: 'Wallet customization', permission: 'wallet.view', icon: WalletCards },
   { id: 'language', label: 'Language', permission: 'settings.view', icon: Languages },
+  { id: 'audit', label: 'Audit', permission: 'audit.view', icon: History },
 ]
+
+const MODULES: AuditEntry['module'][] = ['Programs', 'Campaigns', 'Award actions', 'Customers', 'Gifts', 'Employees', 'Notifications', 'Settings']
+
+/** Audit tab: who (Manager/Employee) did what, where (module) and when — with filters. */
+function AuditLog() {
+  const backend = useBackend()
+  const audit = useQuery({ queryKey: ['audit'], queryFn: () => backend.listAudit() })
+  const [f, setF] = useState({ user: '', role: '', module: '', action: '', from: '', to: '' })
+  return (
+    <QueryState query={audit}>
+      {(rows) => {
+        const users = [...new Map(rows.map((r) => [r.userId, r.userName])).entries()]
+        const actions = [...new Set(rows.map((r) => r.action.replace(/[:(].*$/, '').replace(/\s+\d.*$/, '').trim()))].sort()
+        const shown = rows.filter(
+          (r) =>
+            (!f.user || r.userId === f.user) &&
+            (!f.role || r.role === f.role) &&
+            (!f.module || r.module === f.module) &&
+            (!f.action || r.action.startsWith(f.action)) &&
+            (!f.from || r.createdAt.slice(0, 10) >= f.from) &&
+            (!f.to || r.createdAt.slice(0, 10) <= f.to),
+        )
+        const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value })
+        return (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-muted">Activities performed by Managers and Employees throughout the system.</p>
+            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-6" role="group" aria-label="Audit filters">
+              <Select aria-label="User" value={f.user} onChange={set('user')}>
+                <option value="">All users</option>
+                {users.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+              </Select>
+              <Select aria-label="Role" value={f.role} onChange={set('role')}>
+                <option value="">All roles</option>
+                <option value="manager">Manager</option>
+                <option value="employee">Employee</option>
+              </Select>
+              <Select aria-label="Module" value={f.module} onChange={set('module')}>
+                <option value="">All modules</option>
+                {MODULES.map((m) => <option key={m} value={m}>{m}</option>)}
+              </Select>
+              <Select aria-label="Action" value={f.action} onChange={set('action')}>
+                <option value="">All actions</option>
+                {actions.map((a) => <option key={a} value={a}>{a}</option>)}
+              </Select>
+              <Input type="date" aria-label="From date" value={f.from} onChange={set('from')} />
+              <Input type="date" aria-label="To date" value={f.to} onChange={set('to')} />
+            </div>
+            {shown.length === 0 ? (
+              <EmptyState icon={<History className="size-6" />} title={rows.length ? 'No activity matches these filters' : 'No Manager or Employee activity yet'} />
+            ) : (
+              <div className="table-wrap -mx-5">
+                <table className="t" aria-label="Audit log">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Role</th>
+                      <th>Action performed</th>
+                      <th>Module</th>
+                      <th>Date & time</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shown.slice(0, 200).map((r) => (
+                      <tr key={r.id}>
+                        <td className="font-semibold whitespace-nowrap">{r.userName}</td>
+                        <td className="capitalize">{r.role}</td>
+                        <td>{r.action}</td>
+                        <td className="whitespace-nowrap">{r.module}</td>
+                        <td className="whitespace-nowrap text-muted">{formatDateTime(r.createdAt)}</td>
+                        <td className="text-muted">{r.details}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {shown.length > 200 && <p className="hint">Showing the latest 200 of {shown.length} entries. Narrow the filters to see older activity.</p>}
+          </div>
+        )
+      }}
+    </QueryState>
+  )
+}
 
 function BusinessInfo() {
   const { session } = useSession()
@@ -109,22 +193,6 @@ function HoursSection() {
   )
 }
 
-function EmployeeSettings() {
-  const { session } = useSession()
-  const access = useAccess()
-  const toast = useToast()
-  const perms = useUpdatePermissions()
-  const p = session.business.permissions
-  const set = (patch: Partial<typeof p>) => perms.mutate(patch, { onSuccess: () => toast.success('Saved.'), onError: (e) => toast.error(errorMessage(e)) })
-  return (
-    <div className="flex flex-col gap-4">
-      <Toggle label="Managers may manage employees" description="Owner-only." checked={p.managersCanManageEmployees} disabled={!access.can('employees.permissions')} onChange={(v) => set({ managersCanManageEmployees: v })} />
-      <Toggle label="Show leaderboard to employees" checked={p.showLeaderboardToEmployees} disabled={!access.can('leaderboard.visibility')} onChange={(v) => set({ showLeaderboardToEmployees: v })} />
-      <Link to="/app/employees" className="link text-sm">Manage team and invitations <ArrowRight className="size-[15px]" aria-hidden /></Link>
-    </div>
-  )
-}
-
 export default function SettingsPage() {
   const t = useT()
   const { section = 'business' } = useParams()
@@ -165,20 +233,7 @@ export default function SettingsPage() {
             {current.id === 'hours' && <HoursSection />}
             {current.id === 'logo' && <BrandingForm sections={['logo']} />}
             {current.id === 'brand-colors' && <BrandingForm sections={['colors', 'font']} />}
-            {current.id === 'employees' && <EmployeeSettings />}
-            {current.id === 'notifications' && <WinBackSettings />}
-            {current.id === 'billing' && (
-              <div className="flex flex-col items-start gap-3 text-sm">
-                <p className="text-muted">Plans, invoices, payment history and billing information.</p>
-                <Link to="/app/subscription" className={buttonClass('secondary')}>Open Subscription & Billing</Link>
-              </div>
-            )}
-            {current.id === 'wallet' && (
-              <div className="flex flex-col items-start gap-3 text-sm">
-                <p className="text-muted">Choose base templates or custom designs and preview each program's pass.</p>
-                <Link to="/app/wallet-cards" className={buttonClass('secondary')}>Open Wallet Cards</Link>
-              </div>
-            )}
+            {current.id === 'audit' && <AuditLog />}
             {current.id === 'language' && (
               <div className="flex flex-col gap-4">
                 <p className="callout">Interface language for the dashboard. Supported at launch: English, German, Turkish, French, Italian. Customer-facing content language handling is pending confirmation.</p>

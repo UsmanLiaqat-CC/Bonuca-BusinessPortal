@@ -21,7 +21,7 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
 }
 
 /** Identification → confirm step (spec §4.4 employee scan flow). */
-export function ScanPanel({ context, onConfirm, pending, onReset }: { context: ScanContext; onConfirm: (a: ScanAction) => void; pending: boolean; onReset: () => void }) {
+export function ScanPanel({ context, onConfirm, pending, onReset, hideHeader = false }: { context: ScanContext; onConfirm: (a: ScanAction) => void; pending: boolean; onReset: () => void; hideHeader?: boolean }) {
   const t = useT()
   const [amount, setAmount] = useState('')
   const [points, setPoints] = useState('')
@@ -129,7 +129,7 @@ export function ScanPanel({ context, onConfirm, pending, onReset }: { context: S
           <dl>
             <Row label="Benefit" value={c.benefitDescription} strong />
             {c.benefitType !== 'perk' && <Row label="Discount to apply" value={c.benefitType === 'percent_discount' ? `${c.discountValue}%` : String(c.discountValue)} strong />}
-            <Row label="Member since" value={formatDate(m.joinedAt)} />
+            <Row label="Customer since" value={formatDate(m.joinedAt)} />
           </dl>
           <GuardedButton permission="scanner.transact" size="lg" onClick={() => onConfirm({ type: 'record_visit', purchaseAmount: null, points: null })} loading={pending}>
             Record visit
@@ -166,6 +166,10 @@ export function ScanPanel({ context, onConfirm, pending, onReset }: { context: S
         </>
       )
     }
+  }
+
+  if (hideHeader) {
+    return <div className="flex flex-col gap-[18px]">{action}</div>
   }
 
   return (
