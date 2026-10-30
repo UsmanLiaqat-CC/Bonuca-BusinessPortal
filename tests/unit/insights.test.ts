@@ -73,17 +73,19 @@ describe('wallet pass content (spec §4.3)', () => {
 })
 
 describe('i18n (spec §4.12)', () => {
-  it('supports EN, DE, TR, FR, IT', () => {
-    expect(LANGUAGES.map((l) => l.code)).toEqual(['en', 'de', 'tr', 'fr', 'it'])
+  it('supports EN, DE, TR, FR, IT, RU, KK', () => {
+    expect(LANGUAGES.map((l) => l.code)).toEqual(['en', 'de', 'tr', 'fr', 'it', 'ru', 'kk'])
   })
   it('translates and interpolates; falls back to English', () => {
     expect(translate('de', 'nav.settings')).toBe('Einstellungen')
     expect(translate('fr', 'onb.step', { current: 1, total: 3 })).toBe('Étape 1 sur 3')
+    expect(translate('ru', 'nav.settings')).toBe('Настройки')
+    expect(translate('kk', 'onb.step', { current: 1, total: 3 })).toBe('3 қадамның 1-қадамы')
     expect(translate('en', 'preview.locked')).toBe('Select a free trial, free plan, or paid plan to use this feature.')
   })
   it('every provisional locale covers every English key', async () => {
     const keys = Object.keys(en)
-    for (const code of ['de', 'tr', 'fr', 'it'] as const) {
+    for (const code of ['de', 'tr', 'fr', 'it', 'ru', 'kk'] as const) {
       const mod = (await import(`@/i18n/locales/${code}.ts`)) as Record<string, Record<string, string>>
       const dict = mod[code]!
       expect(keys.filter((k) => !(k in dict))).toEqual([])

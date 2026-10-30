@@ -236,7 +236,7 @@ export default function SettingsPage() {
             {current.id === 'audit' && <AuditLog />}
             {current.id === 'language' && (
               <div className="flex flex-col gap-4">
-                <p className="callout">Interface language for the dashboard. Supported at launch: English, German, Turkish, French, Italian. Customer-facing content language handling is pending confirmation.</p>
+                <p className="callout">Interface language for the dashboard. Supported: English, German, Turkish, French, Italian, Russian, Kazakh. Customer-facing content language handling is pending confirmation.</p>
                 <LanguageSelect onChange={(l) => void backend.setLanguage(l)} />
                 <div className="flex items-center gap-3 text-sm">
                   <span className="label">{t('theme.label')}</span>

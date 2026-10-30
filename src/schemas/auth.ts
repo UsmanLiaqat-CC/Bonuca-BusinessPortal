@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { BUSINESS_CATEGORIES } from '@/types/domain'
 import { hexColor, requiredText } from './common'
 
-export const LANGUAGE_CODES = ['en', 'de', 'tr', 'fr', 'it'] as const
+export const LANGUAGE_CODES = ['en', 'de', 'tr', 'fr', 'it', 'ru', 'kk'] as const
 
 /** OI-01: provisional minimum password rule — confirm with the client/dev team. */
 export const PASSWORD_RULE_MESSAGE = 'Use at least 8 characters, including a letter and a number.'

@@ -12,10 +12,12 @@ export const COUNTRIES: { code: string; name: string }[] = [
 ]
 
 /** Country → suggested interface language (§1.2). */
-export function suggestedLanguage(code: string): 'en' | 'de' | 'tr' | 'fr' | 'it' {
+export function suggestedLanguage(code: string): 'en' | 'de' | 'tr' | 'fr' | 'it' | 'ru' | 'kk' {
   if (['DE', 'AT'].includes(code)) return 'de'
   if (code === 'TR') return 'tr'
   if (['FR', 'BE', 'LU'].includes(code)) return 'fr'
   if (code === 'IT') return 'it'
+  if (code === 'RU') return 'ru'
+  if (code === 'KZ') return 'kk'
   return 'en'
 }

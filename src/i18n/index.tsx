@@ -5,6 +5,8 @@ import { de } from './locales/de'
 import { tr } from './locales/tr'
 import { fr } from './locales/fr'
 import { it } from './locales/it'
+import { ru } from './locales/ru'
+import { kk } from './locales/kk'
 
 /**
  * Interface languages supported at launch (spec §4.12). To add a language: add a locale file,
@@ -16,9 +18,11 @@ export const LANGUAGES: { code: LanguageCode; label: string }[] = [
   { code: 'tr', label: 'Türkçe' },
   { code: 'fr', label: 'Français' },
   { code: 'it', label: 'Italiano' },
+  { code: 'ru', label: 'Русский' },
+  { code: 'kk', label: 'Қазақша' },
 ]
 
-const DICTIONARIES: Record<LanguageCode, Dictionary> = { en, de, tr, fr, it }
+const DICTIONARIES: Record<LanguageCode, Dictionary> = { en, de, tr, fr, it, ru, kk }
 const KEY = 'bonuca.ui.language'
 
 export type TranslateFn = (key: MessageKey, vars?: Record<string, string | number>) => string

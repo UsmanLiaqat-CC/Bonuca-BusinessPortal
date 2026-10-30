@@ -14,7 +14,7 @@ import type { TeamPermission } from '@/lib/teamPermissions'
 
 /** 'employee' is shown as Staff; 'admin' gets every team permission by default. */
 export type Role = 'owner' | 'admin' | 'manager' | 'employee'
-export type LanguageCode = 'en' | 'de' | 'tr' | 'fr' | 'it'
+export type LanguageCode = 'en' | 'de' | 'tr' | 'fr' | 'it' | 'ru' | 'kk'
 
 export interface User {
   id: string
