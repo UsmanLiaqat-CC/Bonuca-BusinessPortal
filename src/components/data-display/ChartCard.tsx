@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { Segmented } from '@/components/ui/Tabs'
 import { cn } from '@/lib/cn'
+import { useT } from '@/i18n'
 
 /**
  * Chart container with a Chart/Table toggle. The table view is the accessibility relief for
@@ -25,6 +26,7 @@ export function ChartCard({
   filter?: ReactNode
   className?: string
 }) {
+  const t = useT()
   const [view, setView] = useState<'chart' | 'table'>('chart')
   return (
     <Card className={cn('reveal-up flex flex-col', className)}>
@@ -41,8 +43,8 @@ export function ChartCard({
             value={view}
             onChange={setView}
             items={[
-              { value: 'chart', label: 'Chart' },
-              { value: 'table', label: 'Table' },
+              { value: 'chart', label: t('ui.chart.chart') },
+              { value: 'table', label: t('ui.chart.table') },
             ]}
           />
           </>

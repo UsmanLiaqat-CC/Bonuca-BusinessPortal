@@ -1,3 +1,4 @@
+import { useT } from '@/i18n'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Trophy } from 'lucide-react'
@@ -16,6 +17,7 @@ const MEDAL = ['🥇', '🥈', '🥉']
 
 /** Leaderboard tab: how many scans / stamps / points / redemptions each Owner, Manager and Staff member handled. */
 export default function LeaderboardPage() {
+  const t = useT()
   const backend = useBackend()
   const activity = useQuery({ queryKey: ['team-activity'], queryFn: () => backend.getTeamActivity() })
   const [f, setF] = useState({ role: '', user: '', program: '', from: '', to: '' })
@@ -24,13 +26,13 @@ export default function LeaderboardPage() {
   return (
     <>
       <PageHeader
-        title="Leaderboard"
+        title={t('ui.lb.title')}
         breadcrumb={
           <>
             <Trophy className="size-[13px]" aria-hidden /> Engagement
           </>
         }
-        description="Who scanned how much: Owner, Managers and Staff, with filters."
+        description={t('ui.lb.desc')}
       />
       <Card className="reveal-up overflow-hidden">
         <QueryState query={activity}>
@@ -81,14 +83,14 @@ export default function LeaderboardPage() {
                       <thead>
                         <tr>
                           <th>#</th>
-                          <th>Name</th>
-                          <th>Role</th>
-                          <th className="num">Scans</th>
-                          <th className="num">Stamps given</th>
-                          <th className="num">Points given</th>
-                          <th className="num">Redemptions</th>
-                          <th className="num">Customers served</th>
-                          <th className="hidden md:table-cell">Last scan</th>
+                          <th>{t('ui.col.name')}</th>
+                          <th>{t('ui.col.role')}</th>
+                          <th className="num">{t('ui.lb.scans')}</th>
+                          <th className="num">{t('ui.lb.stamps')}</th>
+                          <th className="num">{t('ui.lb.points')}</th>
+                          <th className="num">{t('ui.lb.redemptions')}</th>
+                          <th className="num">{t('ui.lb.served')}</th>
+                          <th className="hidden md:table-cell">{t('ui.lb.last')}</th>
                         </tr>
                       </thead>
                       <tbody>

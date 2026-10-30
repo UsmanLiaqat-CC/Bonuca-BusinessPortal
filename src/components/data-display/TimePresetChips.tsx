@@ -1,14 +1,15 @@
+import { useT, type MessageKey } from '@/i18n'
 import { useState } from 'react'
 import { cn } from '@/lib/cn'
 import { presetRange, type RangePreset } from '@/lib/dates'
 import type { DateRange } from '@/lib/metrics'
 
-const PRESETS: { value: RangePreset; label: string }[] = [
-  { value: 'today', label: 'Today' },
-  { value: 'week', label: 'This Week' },
-  { value: 'month', label: 'This Month' },
-  { value: 'quarter', label: 'This Quarter' },
-  { value: 'custom', label: 'Custom' },
+const PRESETS: { value: RangePreset; label: MessageKey }[] = [
+  { value: 'today', label: 'ui.range.today' },
+  { value: 'week', label: 'ui.range.week' },
+  { value: 'month', label: 'ui.range.month' },
+  { value: 'quarter', label: 'ui.range.quarter' },
+  { value: 'custom', label: 'ui.range.custom' },
 ]
 
 /** Dashboard filter (same chips as the Bonuca Admin dashboard). Owns its preset; reports the range. */
@@ -30,6 +31,7 @@ export function useRangeFilter(initial: Exclude<RangePreset, 'custom'> = 'month'
 
 export function TimePresetChips({ filter, label, className }: { filter: ReturnType<typeof useRangeFilter>; label: string; className?: string }) {
   const { preset, range } = filter
+  const t = useT()
   return (
     <div className={cn('flex flex-col gap-3', className)}>
       <div role="group" aria-label={label} className="flex w-fit flex-wrap items-center gap-1.5 rounded-full border border-line bg-surface-2/60 p-1">
@@ -46,7 +48,7 @@ export function TimePresetChips({ filter, label, className }: { filter: ReturnTy
                 on ? 'bg-accent text-on-accent shadow-sm' : 'text-muted hover:bg-surface hover:text-fg',
               )}
             >
-              {p.label}
+              {t(p.label)}
             </button>
           )
         })}

@@ -1,3 +1,4 @@
+import { useT } from '@/i18n'
 import { useCallback, useState } from 'react'
 import { CheckCircle2, ChevronRight, ScanLine, Search } from 'lucide-react'
 import type { ScanAction, ScanContext, ScanResult } from '@/lib/scanEngine'
@@ -69,6 +70,7 @@ function CustomerSearch({ onPick }: { onPick: (customerId: string) => void }) {
  * customer screen.
  */
 export default function ScannerPage() {
+  const t = useT()
   const toast = useToast()
   const access = useAccess()
   const lookup = useLookupPass()
@@ -108,13 +110,13 @@ export default function ScannerPage() {
   return (
     <>
       <PageHeader
-        title="Award actions"
+        title={t('ui.scanner.title')}
         breadcrumb={
           <>
             <ScanLine className="size-[13px]" aria-hidden /> QR Scanner
           </>
         }
-        description="Scan a customer’s card or search for them, then award or redeem."
+        description={t('ui.scanner.desc')}
       />
       <div className="grid items-start gap-[18px]">
         <div className="flex min-w-0 flex-col gap-[18px]">
@@ -143,8 +145,8 @@ export default function ScannerPage() {
                   value={mode}
                   onChange={setMode}
                   items={[
-                    { value: 'scan', label: 'Scan' },
-                    { value: 'search', label: 'Search' },
+                    { value: 'scan', label: t('ui.scanner.scan') },
+                    { value: 'search', label: t('ui.scanner.search') },
                   ]}
                 />
                 {mode === 'scan' ? (

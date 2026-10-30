@@ -52,11 +52,11 @@ export default function NotificationsPage() {
             <Bell className="size-[13px]" aria-hidden /> {t('nav.group.engagement')}
           </>
         }
-        description="Push messages to your customers’ wallet passes."
+        description={t('ui.notif.desc')}
         actions={
           tab === 'campaigns' && (
             <GuardedButton permission="notifications.manage" onClick={() => setComposer({ editing: null })}>
-              <Plus className="size-[15px]" aria-hidden /> New notification
+              <Plus className="size-[15px]" aria-hidden /> {t('ui.notif.new')}
             </GuardedButton>
           )
         }

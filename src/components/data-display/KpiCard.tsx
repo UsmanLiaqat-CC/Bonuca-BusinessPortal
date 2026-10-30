@@ -1,5 +1,6 @@
 import { TrendingDown, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/cn'
+import { useT } from '@/i18n'
 import { CountUp } from './StatCard'
 import { KpiIcon, type KpiIconName } from './KpiIcons'
 
@@ -37,6 +38,7 @@ export function KpiCard({
   hint?: string
   className?: string
 }) {
+  const t = useT()
   const up = (trend ?? 0) >= 0
   const TrendIcon = up ? TrendingUp : TrendingDown
   return (
@@ -58,7 +60,7 @@ export function KpiCard({
         <CountUp value={value} />
       </p>
       <p className="relative mt-2 text-xs font-medium text-muted">{label}</p>
-      {(trend !== undefined || hint) && <p className="relative mt-0.5 text-[11px] text-faint">{hint ?? 'vs. previous period'}</p>}
+      {(trend !== undefined || hint) && <p className="relative mt-0.5 text-[11px] text-faint">{hint ?? t('ui.hint.vsPrev')}</p>}
     </div>
   )
 }

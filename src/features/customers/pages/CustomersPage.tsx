@@ -96,7 +96,7 @@ export default function CustomersPage() {
                   columns={[
                     {
                       key: 'name',
-                      header: 'Name',
+                      header: t('ui.col.name'),
                       cell: (c) => (
                         <span className="person">
                           <Initials name={c.name || c.customerNumber} />
@@ -104,14 +104,14 @@ export default function CustomersPage() {
                         </span>
                       ),
                     },
-                    { key: 'id', header: 'Customer ID', cell: (c) => <span className="mono text-muted">{c.customerNumber}</span> },
+                    { key: 'id', header: t('ui.col.customerId'), cell: (c) => <span className="mono text-muted">{c.customerNumber}</span> },
                     ...(full
                       ? [
-                          { key: 'email', header: 'Email', hideOnMobile: true, cell: (c: (typeof results)[number]) => c.email || '—' },
-                          { key: 'phone', header: 'Phone', hideOnMobile: true, cell: (c: (typeof results)[number]) => c.phone || '—' },
+                          { key: 'email', header: t('ui.col.email'), hideOnMobile: true, cell: (c: (typeof results)[number]) => c.email || '—' },
+                          { key: 'phone', header: t('ui.col.phone'), hideOnMobile: true, cell: (c: (typeof results)[number]) => c.phone || '—' },
                         ]
                       : []),
-                    { key: 'joined', header: 'Joined', hideOnMobile: true, cell: (c) => <span className="text-muted">{formatDate(c.createdAt)}</span> },
+                    { key: 'joined', header: t('ui.col.joined'), hideOnMobile: true, cell: (c) => <span className="text-muted">{formatDate(c.createdAt)}</span> },
                   ]}
                 />
                 {pages > 1 && (

@@ -151,10 +151,10 @@ export default function CampaignsPage() {
             <Ticket className="size-[13px]" aria-hidden /> Campaigns
           </>
         }
-        description="Special QR codes, vouchers and win-back offers that bring customers in and back."
+        description={t('ui.campaigns.desc')}
         actions={
           <GuardedButton permission="programs.manage" onClick={() => setChooser(true)}>
-            <Plus className="size-[15px]" aria-hidden /> Create campaign
+            <Plus className="size-[15px]" aria-hidden /> {t('ui.campaigns.create')}
           </GuardedButton>
         }
       />
@@ -163,7 +163,7 @@ export default function CampaignsPage() {
           <div className="relative min-w-[220px] flex-1">
             <label htmlFor="campaign-search" className="sr-only">Search campaigns</label>
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" aria-hidden />
-            <Input id="campaign-search" className="pl-9" placeholder="Search by campaign name" value={q} onChange={(e) => setQ(e.target.value)} />
+            <Input id="campaign-search" className="pl-9" placeholder={t('ui.campaigns.search')} value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
           <Select className="w-48" aria-label="Type" value={type} onChange={(e) => setType(e.target.value as typeof type)}>
             <option value="all">All types</option>
@@ -188,15 +188,15 @@ export default function CampaignsPage() {
                 rowKey={(r) => r.id}
                 onRowClick={(r) => navigate(`/app/campaigns/${r.id}`)}
                 columns={[
-                  { key: 'name', header: 'Campaign', cell: (r) => <span className="block min-w-[110px] font-semibold">{r.name}</span> },
-                  { key: 'type', header: 'Type', cell: (r) => <Badge tone="outline">{CAMPAIGN_KIND_LABEL[r.kind]}</Badge> },
-                  { key: 'status', header: 'Status', cell: (r) => <LifecycleBadge status={r.status} /> },
-                  { key: 'offer', header: 'Offer', cell: (r) => <span className="block min-w-[140px] text-muted">{r.offer}</span> },
-                  { key: 'period', header: 'Period', hideOnMobile: true, cell: (r) => <span className="block min-w-[120px] text-muted">{r.period}</span> },
-                  { key: 'customers', header: 'Customers', className: 'num', cell: (r) => r.customers },
-                  { key: 'redeemed', header: 'Redeemed', className: 'num', cell: (r) => r.redeemed },
-                  { key: 'created', header: 'Created', hideOnMobile: true, cell: (r) => <span className="whitespace-nowrap text-muted">{formatDate(r.createdAt)}</span> },
-                  { key: 'action', header: 'Action', className: 'num', cell: (r) => <RowActions row={r} onEnd={setEnding} /> },
+                  { key: 'name', header: t('ui.col.campaign'), cell: (r) => <span className="block min-w-[110px] font-semibold">{r.name}</span> },
+                  { key: 'type', header: t('ui.col.type'), cell: (r) => <Badge tone="outline">{CAMPAIGN_KIND_LABEL[r.kind]}</Badge> },
+                  { key: 'status', header: t('ui.col.status'), cell: (r) => <LifecycleBadge status={r.status} /> },
+                  { key: 'offer', header: t('ui.col.offer'), cell: (r) => <span className="block min-w-[140px] text-muted">{r.offer}</span> },
+                  { key: 'period', header: t('ui.col.period'), hideOnMobile: true, cell: (r) => <span className="block min-w-[120px] text-muted">{r.period}</span> },
+                  { key: 'customers', header: t('ui.col.customers'), className: 'num', cell: (r) => r.customers },
+                  { key: 'redeemed', header: t('ui.col.redeemed'), className: 'num', cell: (r) => r.redeemed },
+                  { key: 'created', header: t('ui.col.created'), hideOnMobile: true, cell: (r) => <span className="whitespace-nowrap text-muted">{formatDate(r.createdAt)}</span> },
+                  { key: 'action', header: t('ui.col.action'), className: 'num', cell: (r) => <RowActions row={r} onEnd={setEnding} /> },
                 ]}
               />
             )

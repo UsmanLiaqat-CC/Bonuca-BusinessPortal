@@ -50,10 +50,10 @@ export default function ProgramsPage() {
             <Stamp className="size-[13px]" aria-hidden /> Programs
           </>
         }
-        description="Programs are what customers join."
+        description={t('ui.programs.desc')}
         actions={
           <GuardedButton permission="programs.manage" extra={access.limit('programs', nonArchived)} onClick={() => setChooser(true)}>
-            <Plus className="size-[15px]" aria-hidden /> Create Program
+            <Plus className="size-[15px]" aria-hidden /> {t('ui.programs.create')}
           </GuardedButton>
         }
       />

@@ -51,17 +51,17 @@ export default function EmployeesPage() {
         actions={
           <>
             <Button variant="secondary" aria-label="Roles information" onClick={() => setRolesOpen(true)}>
-              <Info className="size-[16px]" aria-hidden /> Roles
+              <Info className="size-[16px]" aria-hidden /> {t('ui.employees.roles')}
             </Button>
             <GuardedButton permission="employees.invite" extra={access.limit('employees', staffCount)} onClick={() => setInviting(true)}>
-              <UserPlus className="size-[15px]" aria-hidden /> Invite Employee
+              <UserPlus className="size-[15px]" aria-hidden /> {t('ui.employees.invite')}
             </GuardedButton>
           </>
         }
       />
       <div className="flex flex-col gap-[18px]">
         <Card className="reveal-up overflow-hidden">
-          <CardHeader title="Team" icon={<Users className="size-4" />} />
+          <CardHeader title={t('ui.employees.team')} icon={<Users className="size-4" />} />
           <QueryState query={employees}>
             {(data) => (
               <DataTable
@@ -74,7 +74,7 @@ export default function EmployeesPage() {
                 columns={[
                   {
                     key: 'name',
-                    header: 'Name',
+                    header: t('ui.col.name'),
                     cell: (r) => (
                       <span className="person">
                         <Initials name={r.name === '—' ? r.email : r.name} />
@@ -85,10 +85,10 @@ export default function EmployeesPage() {
                       </span>
                     ),
                   },
-                  { key: 'email', header: 'Email', hideOnMobile: true, cell: (r) => <span className="text-muted">{r.email}</span> },
+                  { key: 'email', header: t('ui.col.email'), hideOnMobile: true, cell: (r) => <span className="text-muted">{r.email}</span> },
                   {
                     key: 'role',
-                    header: 'Role',
+                    header: t('ui.col.role'),
                     cell: (r) => (
                       <span title={ROLE_ACCESS[r.role]}>
                         <Badge tone={ROLE_TONE[r.role]} dot={false} className="capitalize">
@@ -97,11 +97,11 @@ export default function EmployeesPage() {
                       </span>
                     ),
                   },
-                  { key: 'status', header: 'Status', cell: (r) => <Badge tone={r.status === 'Active' ? 'success' : 'warning'} live={r.status === 'Active'}>{r.status === 'Invited' ? 'Invited — awaiting setup' : 'Active'}</Badge> },
-                  { key: 'date', header: 'Since', hideOnMobile: true, cell: (r) => <span className="text-muted">{formatDate(r.date)}</span> },
+                  { key: 'status', header: t('ui.col.status'), cell: (r) => <Badge tone={r.status === 'Active' ? 'success' : 'warning'} live={r.status === 'Active'}>{r.status === 'Invited' ? 'Invited — awaiting setup' : 'Active'}</Badge> },
+                  { key: 'date', header: t('ui.col.since'), hideOnMobile: true, cell: (r) => <span className="text-muted">{formatDate(r.date)}</span> },
                   {
                     key: 'access',
-                    header: 'Access',
+                    header: t('ui.col.access'),
                     className: 'num',
                     cell: (r) =>
                       r.status === 'Active' && r.role !== 'owner' ? (

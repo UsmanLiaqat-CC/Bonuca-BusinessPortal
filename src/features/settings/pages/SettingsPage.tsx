@@ -3,7 +3,7 @@ import { NavLink, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Clock, History, Image as ImageIcon, Languages, MapPin, Palette, Settings as SettingsIcon, Store, type LucideIcon } from 'lucide-react'
 import { BUSINESS_CATEGORIES, type Address, type AuditEntry, type OpeningHours } from '@/types/domain'
-import { useT } from '@/i18n'
+import { useT, type MessageKey } from '@/i18n'
 import { useAccess, useSession } from '@/state/session'
 import { useBackend } from '@/state/services'
 import { useToast } from '@/state/toast'
@@ -27,14 +27,14 @@ import { formatDateTime } from '@/lib/dates'
  * Spec §4.12 settings sections. Manager access is "limited" (OI-15). Employees, Notifications, Billing
  * and Wallet customization were removed from Settings (client change); each has its own menu item.
  */
-const SECTIONS: { id: string; label: string; permission: Permission; icon: LucideIcon }[] = [
-  { id: 'business', label: 'Business information', permission: 'settings.view', icon: Store },
-  { id: 'address', label: 'Address', permission: 'settings.view', icon: MapPin },
-  { id: 'hours', label: 'Opening hours', permission: 'settings.view', icon: Clock },
-  { id: 'logo', label: 'Logo', permission: 'settings.view', icon: ImageIcon },
-  { id: 'brand-colors', label: 'Brand colors', permission: 'settings.view', icon: Palette },
-  { id: 'language', label: 'Language', permission: 'settings.view', icon: Languages },
-  { id: 'audit', label: 'Audit', permission: 'audit.view', icon: History },
+const SECTIONS: { id: string; label: string; key: MessageKey; permission: Permission; icon: LucideIcon }[] = [
+  { id: 'business', label: 'Business information', key: 'ui.settings.business' as const, permission: 'settings.view', icon: Store },
+  { id: 'address', label: 'Address', key: 'ui.settings.address' as const, permission: 'settings.view', icon: MapPin },
+  { id: 'hours', label: 'Opening hours', key: 'ui.settings.hours' as const, permission: 'settings.view', icon: Clock },
+  { id: 'logo', label: 'Logo', key: 'ui.settings.logo' as const, permission: 'settings.view', icon: ImageIcon },
+  { id: 'brand-colors', label: 'Brand colors', key: 'ui.settings.colors' as const, permission: 'settings.view', icon: Palette },
+  { id: 'language', label: 'Language', key: 'language.label' as const, permission: 'settings.view', icon: Languages },
+  { id: 'audit', label: 'Audit', key: 'ui.settings.audit' as const, permission: 'audit.view', icon: History },
 ]
 
 const MODULES: AuditEntry['module'][] = ['Programs', 'Campaigns', 'Award actions', 'Customers', 'Gifts', 'Employees', 'Notifications', 'Settings']
@@ -219,14 +219,14 @@ export default function SettingsPage() {
               return (
                 <NavLink key={s.id} to={`/app/settings/${s.id}`} className={() => cn('whitespace-nowrap', s.id === current.id && 'active')}>
                   <Icon className="size-[17px] shrink-0" aria-hidden />
-                  {s.label}
+                  {t(s.key)}
                 </NavLink>
               )
             })}
           </nav>
         </div>
         <Card className="reveal-up">
-          <CardHeader title={current.label} icon={<current.icon className="size-4" />} />
+          <CardHeader title={t(current.key)} icon={<current.icon className="size-4" />} />
           <CardBody>
             {current.id === 'business' && <BusinessInfo />}
             {current.id === 'address' && <AddressSection />}
