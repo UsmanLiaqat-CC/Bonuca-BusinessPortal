@@ -130,6 +130,11 @@ export class DevBackend implements BusinessBackend {
         if (loaded) {
           for (const ds of Object.values(loaded.datasets)) normalizeDataset(ds)
           this.dbCache = loaded
+          // Data saved by a build without dev tools has no sample accounts: add them (sample business only).
+          if (this.opts.seed && !loaded.credentials.some((c) => c.email === SEED_ACCOUNTS[0]!.email) && !loaded.datasets.biz_sample) {
+            await this.seed(loaded)
+            this.persist()
+          }
         } else {
           this.dbCache = emptyDb()
           if (this.opts.seed) await this.seed(this.dbCache)
