@@ -487,6 +487,18 @@ export class DevBackend implements BusinessBackend {
     }, 'programs.manage')
   }
 
+  async deleteDraftProgram(id: string): Promise<void> {
+    return this.mutate((c) => {
+      const index = c.ds.programs.findIndex((p) => p.id === id)
+      if (index < 0) throw new NotFoundError('Program not found.')
+      const program = c.ds.programs[index]!
+      if (program.status !== 'draft') throw new ValidationError('Only a draft program can be deleted. Archive a published program instead.')
+      if (c.ds.memberships.some((m) => m.programId === id)) throw new ValidationError('This draft already has customers and cannot be deleted.')
+      c.ds.programs.splice(index, 1)
+      this.audit(c, 'Programs', 'Deleted draft program', program.name)
+    }, 'programs.manage')
+  }
+
   async programLifecycle(id: string, action: LifecycleAction): Promise<Program> {
     return this.mutate((c) => {
       const program = c.ds.programs.find((p) => p.id === id)

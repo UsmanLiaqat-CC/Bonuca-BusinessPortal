@@ -298,3 +298,14 @@ describe('history and stored data', () => {
     expect(ds.programs[0]).toMatchObject({ expiresOn: null, location: null, signupPage: { logo: 'L', fields: { email: 'optional', birthday: 'optional' } } })
   })
 })
+
+describe('delete draft loyalty program (BONUCA CHANGES item 9)', () => {
+  it('deletes a draft, refuses a published program, and blocks employees', async () => {
+    const b = await as('owner')
+    await b.deleteDraftProgram('prg_lunch')
+    expect((await b.listPrograms()).some((p) => p.id === 'prg_lunch')).toBe(false)
+    await expect(b.deleteDraftProgram('prg_coffee')).rejects.toThrow(/Only a draft/)
+    const e = await as('employee')
+    await expect(e.deleteDraftProgram('prg_lunch')).rejects.toBeTruthy()
+  })
+})

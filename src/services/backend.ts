@@ -205,6 +205,8 @@ export interface BusinessBackend {
   createProgram(draft: ProgramDraft): Promise<Program>
   updateProgram(id: string, draft: ProgramDraft): Promise<Program>
   programLifecycle(id: string, action: LifecycleAction): Promise<Program>
+  /** Permanently deletes a program that is still a Draft (never published). Published programs can only be archived. */
+  deleteDraftProgram(id: string): Promise<void>
   setDesignMode(id: string, mode: DesignMode): Promise<Program>
   updateSurprise(id: string, surprise: SurpriseConfig): Promise<Program>
   /** Wallet cards (memberships) issued per program id. */

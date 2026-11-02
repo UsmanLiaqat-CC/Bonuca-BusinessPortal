@@ -32,7 +32,7 @@ import { WalletPassPreview } from '@/features/wallet-cards/components/WalletPass
 import { QrDownload } from '@/features/qr-scanner/components/QrDownload'
 import { LifecycleControls } from '../components/LifecycleControls'
 import { VisualFields } from '../components/VisualFields'
-import { useProgramCardCounts, useProgramCustomers, useProgramLifecycle, usePrograms, useSaveProgram } from '../hooks'
+import { useProgramCardCounts, useProgramCustomers, useDeleteDraftProgram, useProgramLifecycle, usePrograms, useSaveProgram } from '../hooks'
 
 type Tab = 'overview' | 'rules' | 'rewards' | 'wallet' | 'customers'
 const TABS: Tab[] = ['overview', 'rules', 'rewards', 'wallet', 'customers']
@@ -211,6 +211,7 @@ export default function ProgramDetailPage() {
   const programs = usePrograms()
   const counts = useProgramCardCounts()
   const lifecycle = useProgramLifecycle()
+  const deleteDraft = useDeleteDraftProgram()
   const [params, setParams] = useSearchParams()
   const requested = params.get('tab') as Tab | null
   const tab: Tab = requested && TABS.includes(requested) ? requested : 'overview'
@@ -261,7 +262,16 @@ export default function ProgramDetailPage() {
                     <CardBody>
                       <LifecycleControls
                         status={program.status}
-                        pending={lifecycle.isPending}
+                        pending={lifecycle.isPending || deleteDraft.isPending}
+                        onDelete={() =>
+                          deleteDraft.mutate(program.id, {
+                            onSuccess: () => {
+                              toast.success('Draft program deleted.')
+                              navigate('/app/programs')
+                            },
+                            onError: (e) => toast.error(errorMessage(e)),
+                          })
+                        }
                         onAction={(action) =>
                           lifecycle.mutate(
                             { id: program.id, action },

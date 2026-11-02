@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Archive, Send } from 'lucide-react'
+import { Archive, Send, Trash2 } from 'lucide-react'
 import type { LifecycleStatus } from '@/types/domain'
 import type { LifecycleAction } from '@/lib/lifecycle'
 import { useAccess } from '@/state/session'
@@ -12,9 +12,9 @@ import { LifecycleBadge } from '@/components/data-display/StatusBadge'
  * Spec §4.2: every program screen has an Enable/Disable toggle (Active ⇄ Paused) plus a separate
  * Archive action. Draft → Active happens on the first "Publish".
  */
-export function LifecycleControls({ status, onAction, pending, noun = 'program' }: { status: LifecycleStatus; onAction: (a: LifecycleAction) => void; pending: boolean; noun?: string }) {
+export function LifecycleControls({ status, onAction, onDelete, pending, noun = 'program' }: { status: LifecycleStatus; onAction: (a: LifecycleAction) => void; /** Shown for Draft only: permanently deletes the draft. */ onDelete?: () => void; pending: boolean; noun?: string }) {
   const access = useAccess()
-  const [confirm, setConfirm] = useState<'archive' | 'publish' | null>(null)
+  const [confirm, setConfirm] = useState<'archive' | 'publish' | 'delete' | null>(null)
   const manage = access.evaluate('programs.manage')
 
   return (
@@ -39,6 +39,11 @@ export function LifecycleControls({ status, onAction, pending, noun = 'program' 
           {!manage.allowed && <p className="lock-note inline-flex text-xs text-warning">{manage.message}</p>}
         </div>
       )}
+      {status === 'draft' && onDelete && (
+        <GuardedButton permission="programs.manage" variant="danger" onClick={() => setConfirm('delete')}>
+          <Trash2 className="size-[15px]" aria-hidden /> Delete draft
+        </GuardedButton>
+      )}
       {status !== 'archived' && (
         <GuardedButton permission="programs.manage" variant="secondary" onClick={() => setConfirm('archive')}>
           <Archive className="size-[15px]" aria-hidden /> Archive
@@ -49,14 +54,17 @@ export function LifecycleControls({ status, onAction, pending, noun = 'program' 
         open={confirm !== null}
         onClose={() => setConfirm(null)}
         onConfirm={() => {
-          if (confirm) onAction(confirm)
+          if (confirm === 'delete') onDelete?.()
+          else if (confirm) onAction(confirm)
           setConfirm(null)
         }}
-        title={confirm === 'archive' ? `Archive this ${noun}?` : `Publish this ${noun}?`}
-        confirmLabel={confirm === 'archive' ? 'Archive' : 'Publish'}
-        tone={confirm === 'archive' ? 'danger' : 'primary'}
+        title={confirm === 'archive' ? `Archive this ${noun}?` : confirm === 'delete' ? `Delete this draft ${noun}?` : `Publish this ${noun}?`}
+        confirmLabel={confirm === 'archive' ? 'Archive' : confirm === 'delete' ? 'Delete draft' : 'Publish'}
+        tone={confirm === 'archive' || confirm === 'delete' ? 'danger' : 'primary'}
         body={
-          confirm === 'archive'
+          confirm === 'delete'
+            ? `This permanently deletes the draft ${noun}. It was never published, so no customers are affected. This cannot be undone.`
+            : confirm === 'archive'
             ? `Archiving permanently retires the ${noun}. It cannot be re-enabled. No customer or transaction data is deleted.`
             : `Publishing makes the ${noun} live and generates its printable QR code.`
         }

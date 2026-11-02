@@ -43,6 +43,12 @@ export function useProgramLifecycle() {
   return useMutation({ mutationFn: ({ id, action }: { id: string; action: LifecycleAction }) => backend.programLifecycle(id, action), onSuccess: invalidate })
 }
 
+export function useDeleteDraftProgram() {
+  const backend = useBackend()
+  const invalidate = useInvalidate()
+  return useMutation({ mutationFn: (id: string) => backend.deleteDraftProgram(id), onSuccess: invalidate })
+}
+
 export function useSetDesignMode() {
   const backend = useBackend()
   const invalidate = useInvalidate()
