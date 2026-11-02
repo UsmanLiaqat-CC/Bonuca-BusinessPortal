@@ -261,14 +261,31 @@ body {
   .wcard.compact .wc-notch { background: var(--color-surface); }
   .wc-status { margin: 4px 0 14px; text-align: center; font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #8b8c96; }
   .phone-screen.signup-screen { padding: 0; }
-  /* BONUCA CHANGES item 2: real-phone look with thin borders (slim bezel, steel edge, side buttons). */
-  .phone { padding: 4px; border-radius: 48px; background: #0b0b0f; box-shadow: 0 34px 60px -28px rgba(10, 12, 40, 0.55), 0 0 0 1.5px #b9bcc6, 0 0 0 2.5px #5d606b; }
-  .phone::before, .phone::after { content: ''; position: absolute; width: 3px; background: #8b8e99; border-radius: 2px; left: -4.5px; }
-  .phone::before { top: 92px; height: 30px; box-shadow: 0 46px 0 #8b8e99; }
-  .phone::after { top: 150px; height: 52px; left: auto; right: -4.5px; }
-  .phone-screen { border-radius: 44px; }
-  .phone.android { border-radius: 36px; }
-  .phone.android .phone-screen { border-radius: 32px; }
+  /* Realistic iPhone 15 Pro style frame (BONUCA CHANGES item 2): titanium band, black bezel, Dynamic Island, status bar, home indicator. */
+  .phone-stage { display: flex; flex-direction: column; align-items: center; padding: 10px 0 4px; }
+  .phone { position: relative; width: 292px; margin: 0 auto; padding: 11px; border-radius: 58px; background: linear-gradient(145deg, #e6e7ea 0%, #9a9da4 20%, #44464b 48%, #8f9299 76%, #dcdde1 100%); box-shadow: 0 60px 90px -40px rgba(10, 12, 40, 0.6), 0 24px 36px -22px rgba(10, 12, 40, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.6), inset 0 0 0 2px rgba(0, 0, 0, 0.3); }
+  .phone::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(115deg, rgba(255, 255, 255, 0.35) 0%, transparent 28%, transparent 72%, rgba(255, 255, 255, 0.18) 100%); }
+  .phone::after { display: none; }
+  .phone .ph-btn { position: absolute; width: 4px; border-radius: 2px; background: linear-gradient(90deg, #6d7076, #c4c6cb 55%, #868990); }
+  .phone .ph-action { left: -3.5px; top: 104px; height: 26px; }
+  .phone .ph-vol-up { left: -3.5px; top: 152px; height: 50px; }
+  .phone .ph-vol-down { left: -3.5px; top: 212px; height: 50px; }
+  .phone .ph-power { right: -3.5px; top: 176px; height: 82px; transform: scaleX(-1); }
+  .phone-screen { border-radius: 47px; box-shadow: 0 0 0 5px #050507; min-height: 560px; padding: 54px 14px 26px; background: linear-gradient(180deg, #f4f4f6, #e9eaee); }
+  .phone-screen::before { z-index: 6; width: 98px; height: 29px; top: 11px; border-radius: 20px; background: #050507; }
+  .phone-screen.signup-screen { padding: 0; }
+  .ph-status { position: absolute; z-index: 5; top: 14px; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 20px 0 30px; color: #0b0b0f; pointer-events: none; }
+  .ph-time { font: 600 13.5px/1 -apple-system, 'SF Pro Text', Inter, system-ui, sans-serif; letter-spacing: -0.01em; }
+  .ph-icons { display: inline-flex; align-items: center; gap: 4px; fill: currentColor; }
+  .ph-icons svg:nth-child(1) { width: 15px; } .ph-icons svg:nth-child(2) { width: 15px; } .ph-icons svg:nth-child(3) { width: 24px; }
+  .ph-home { position: absolute; z-index: 5; bottom: 8px; left: 50%; width: 112px; height: 4.5px; transform: translateX(-50%); border-radius: 4px; background: #0b0b0f; opacity: 0.85; }
+  .phone-cap { max-width: 260px; margin-top: 18px; color: #6e7180; font-size: 12px; line-height: 1.45; text-align: center; }
+  .phone.android { width: 280px; padding: 9px; border-radius: 40px; }
+  .phone.android .phone-screen { border-radius: 31px; box-shadow: 0 0 0 4px #050507; }
+  .phone.android .phone-screen::before { width: 13px; height: 13px; top: 14px; }
+  .phone.android .ph-action, .phone.android .ph-vol-down { display: none; }
+  .phone.android .ph-home { width: 90px; }
+  .phone.android .ph-time { font-family: Roboto, Inter, system-ui, sans-serif; }
 
   /* Customer sign-up page (doc images 4 and 6), modern look. The business colours stay in charge:
      --jbg is the page tint, --jfg the ink/accent. Dark mode follows the portal theme. */
@@ -280,7 +297,7 @@ body {
     --j-glow: rgba(226, 184, 107, 0.5); --j-input: #fff; --j-input-fg: #1d1d1d;
     position: relative; flex: 1; min-height: 100%; display: flex; flex-direction: column; overflow: hidden;
     background: radial-gradient(90% 40% at 50% 0%, color-mix(in srgb, var(--j-acc) 9%, transparent), transparent 70%), var(--j-page);
-    color: var(--jfg); padding: 40px 18px 18px; font-size: 13px; transition: background 0.4s, color 0.4s;
+    color: var(--jfg); padding: 56px 18px 26px; font-size: 13px; transition: background 0.4s, color 0.4s;
   }
   :root[data-theme='dark'] .join-page {
     --j-page: color-mix(in srgb, var(--jfg) 14%, #0c0b0a);

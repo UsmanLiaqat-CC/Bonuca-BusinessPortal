@@ -87,6 +87,20 @@ export function WalletCard({ content, qrCode = 'BNC-PREVIEW', compact = false, c
   )
 }
 
+/** iPhone status bar: time, signal, Wi-Fi and battery (decorative). */
+function StatusBar() {
+  return (
+    <div className="ph-status" aria-hidden>
+      <span className="ph-time">9:41</span>
+      <span className="ph-icons">
+        <svg viewBox="0 0 18 12" width="17" height="11"><rect x="0" y="8" width="3" height="4" rx="1" /><rect x="5" y="5.5" width="3" height="6.5" rx="1" /><rect x="10" y="3" width="3" height="9" rx="1" /><rect x="15" y="0" width="3" height="12" rx="1" /></svg>
+        <svg viewBox="0 0 16 12" width="16" height="11"><path d="M8 2.2c2.3 0 4.4.9 6 2.4l1-1.1A10.2 10.2 0 0 0 8 .7 10.2 10.2 0 0 0 1 3.5l1 1.1a8.6 8.6 0 0 1 6-2.4Zm0 3.4c1.4 0 2.6.5 3.6 1.4l1-1.1A7.1 7.1 0 0 0 8 4.1c-1.8 0-3.5.7-4.6 1.8l1 1.1c1-.9 2.2-1.4 3.6-1.4Zm0 3.3c.7 0 1.3.3 1.8.7L8 11.5 6.2 9.6c.5-.4 1.1-.7 1.8-.7Z" /></svg>
+        <svg viewBox="0 0 27 12" width="26" height="12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".4" /><rect x="2" y="2" width="19" height="8" rx="2.2" /><path d="M24 4v4c.8-.3 1.5-1.1 1.5-2S24.800 4.300 24 4Z" opacity=".45" /></svg>
+      </span>
+    </div>
+  )
+}
+
 /**
  * Live wallet mockup: "this is how it will look on iPhone / Android" (spec §4.3) plus, when given,
  * the customer sign-up page view. Approximation only — real rendering is done by Apple / Google Wallet.
@@ -103,17 +117,25 @@ export function WalletPassPreview({ content, label = 'Live wallet preview', sign
   return (
     <section aria-label={label} className="preview-col">
       <Segmented label="Preview" value={current} onChange={setView} items={items} />
-      <div className={cn('phone max-w-full', current === 'android' && 'android')}>
-        <div className={cn('phone-screen flex flex-col', current === 'signup' && 'signup-screen')}>
-          {current === 'signup' ? (
-            signup
-          ) : (
-            <>
-              <p className="wc-status">{current === 'ios' ? 'Apple Wallet' : 'Google Wallet'}</p>
-              <WalletCard content={content} />
-              <p className="mt-auto pt-6 text-center text-[9px] tracking-[0.3em] text-[#9A9AA3] uppercase">Powered by Bonuca</p>
-            </>
-          )}
+      <div className="phone-stage">
+        <div className={cn('phone max-w-full', current === 'android' && 'android')}>
+          <i className="ph-btn ph-action" aria-hidden />
+          <i className="ph-btn ph-vol-up" aria-hidden />
+          <i className="ph-btn ph-vol-down" aria-hidden />
+          <i className="ph-btn ph-power" aria-hidden />
+          <div className={cn('phone-screen flex flex-col', current === 'signup' && 'signup-screen')}>
+            <StatusBar />
+            {current === 'signup' ? (
+              signup
+            ) : (
+              <>
+                <p className="wc-status">{current === 'ios' ? 'Apple Wallet' : 'Google Wallet'}</p>
+                <WalletCard content={content} />
+                <p className="mt-auto pt-6 text-center text-[9px] tracking-[0.3em] text-[#9A9AA3] uppercase">Powered by Bonuca</p>
+              </>
+            )}
+            <i className="ph-home" aria-hidden />
+          </div>
         </div>
         <p className="phone-cap">
           {current === 'signup' ? 'Customer sign-up page (shown after the first scan)' : `${content.typeLabel} · ${current === 'ios' ? 'Apple Wallet' : 'Google Wallet'} (approximate)`}

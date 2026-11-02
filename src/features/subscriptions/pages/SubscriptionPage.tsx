@@ -10,7 +10,7 @@ import { errorMessage } from '@/lib/errors'
 import { formatDate } from '@/lib/dates'
 import { daysUntil } from '@/lib/plan'
 import { PREVIEW_LOCK_MESSAGE } from '@/lib/access'
-import { IntegrationNotConnectedError, type BillingInfo, type Invoice, type Payment } from '@/services/integrations'
+import type { BillingInfo, Invoice, Payment } from '@/services/integrations'
 import { PageHeader } from '@/components/data-display/PageHeader'
 import { DataTable } from '@/components/data-display/Table'
 import { Card, CardBody, CardHeader } from '@/components/ui/Card'
@@ -20,7 +20,6 @@ import { Select } from '@/components/ui/Field'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/Dialog'
 import { GuardedButton } from '@/components/feedback/GuardedButton'
-import { IntegrationNotice } from '@/components/feedback/Banners'
 import { EmptyState } from '@/components/feedback/QueryState'
 import { Spinner } from '@/components/ui/Spinner'
 import { PlanOptions } from '../components/PlanOptions'
@@ -53,13 +52,13 @@ function useBillingData<T>(key: string, load: () => Promise<T>, preview: boolean
   return preview ? ({ data: sample, isPending: false, isError: false, error: null, refetch: () => q.refetch() } as const) : q
 }
 
-function LoadError({ what, error, onRetry }: { what: string; error: unknown; onRetry: () => void }) {
+/** Spec "Stripe unavailable": show "Couldn’t load …. Try again." with Retry, not the old "Stripe not connected" notice. */
+function LoadError({ what, onRetry }: { what: string; onRetry: () => void }) {
   return (
-    <IntegrationNotice title={error instanceof IntegrationNotConnectedError ? 'Stripe not connected' : 'Unavailable'}>
+    <div className="callout warn items-center" role="alert">
       <p>Couldn’t load {what}. Try again.</p>
-      <p className="text-xs text-muted">{errorMessage(error)}</p>
-      <Button variant="secondary" size="sm" className="mt-2" onClick={onRetry}>Retry</Button>
-    </IntegrationNotice>
+      <Button variant="secondary" size="sm" onClick={onRetry}>Retry</Button>
+    </div>
   )
 }
 
@@ -276,7 +275,7 @@ export default function SubscriptionPage() {
       {invoices.isPending ? (
         <div className="p-5"><Spinner /></div>
       ) : invoices.isError ? (
-        <div className="p-5"><LoadError what="invoices" error={invoices.error} onRetry={() => void invoices.refetch()} /></div>
+        <div className="p-5"><LoadError what="invoices" onRetry={() => void invoices.refetch()} /></div>
       ) : invRows.length === 0 ? (
         <div className="p-5"><EmptyState icon={<CreditCard className="size-6" />} title="No invoices yet. Your first invoice appears after your trial ends and your first payment." /></div>
       ) : (
@@ -311,7 +310,7 @@ export default function SubscriptionPage() {
       {payments.isPending ? (
         <div className="p-5"><Spinner /></div>
       ) : payments.isError ? (
-        <div className="p-5"><LoadError what="payments" error={payments.error} onRetry={() => void payments.refetch()} /></div>
+        <div className="p-5"><LoadError what="payments" onRetry={() => void payments.refetch()} /></div>
       ) : payRows.length === 0 ? (
         <div className="p-5"><EmptyState icon={<CreditCard className="size-6" />} title="No payments yet." /></div>
       ) : (
@@ -352,7 +351,7 @@ export default function SubscriptionPage() {
           {info.isPending ? (
             <Spinner />
           ) : info.isError ? (
-            <LoadError what="billing information" error={info.error} onRetry={() => void info.refetch()} />
+            <LoadError what="billing information" onRetry={() => void info.refetch()} />
           ) : (
             <>
               <dl className="text-sm">
@@ -374,7 +373,7 @@ export default function SubscriptionPage() {
           ) : info.isPending ? (
             <Spinner />
           ) : info.isError ? (
-            <LoadError what="the payment method" error={info.error} onRetry={() => void info.refetch()} />
+            <LoadError what="the payment method" onRetry={() => void info.refetch()} />
           ) : info.data?.card ? (
             <>
               <dl className="text-sm">
