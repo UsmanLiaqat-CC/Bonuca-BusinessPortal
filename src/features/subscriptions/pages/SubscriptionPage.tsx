@@ -74,7 +74,7 @@ function Pager({ page, pages, onPage }: { page: number; pages: number; onPage: (
 }
 
 const money = 'text-right tabular-nums'
-const filterCls = 'w-40'
+const filterCls = '!w-auto min-w-[9rem] !py-2 text-[13px]'
 
 /** Spec §4.11 Subscription Management + §2 plan logic, restructured per BONUCA CHANGES item 7. */
 export default function SubscriptionPage() {
@@ -263,15 +263,20 @@ export default function SubscriptionPage() {
     <Card><CardBody><p className="callout">Billed by {sub.source === 'app_store' ? 'Apple' : 'Google'}. Receipts are sent by {sub.source === 'app_store' ? 'Apple' : 'Google'}.</p></CardBody></Card>
   ) : (
     <Card className="reveal-up overflow-hidden">
-      <CardHeader title="Invoices" actions={SampleTag} />
-      <div className="flex flex-wrap gap-3 px-[22px] pb-3">
-        <Select aria-label="Year" className={filterCls} value={year} onChange={(e) => { setYear(e.target.value); setInvPage(1) }}>
-          <option value="all">All years</option><option value="2026">2026</option><option value="2025">2025</option>
-        </Select>
-        <Select aria-label="Status" className={filterCls} value={invStatus} onChange={(e) => { setInvStatus(e.target.value); setInvPage(1) }}>
-          <option value="all">All statuses</option><option value="paid">Paid</option><option value="open">Open</option><option value="void">Void</option>
-        </Select>
-      </div>
+      <CardHeader
+        title="Invoices"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {SampleTag}
+            <Select aria-label="Year" className={filterCls} value={year} onChange={(e) => { setYear(e.target.value); setInvPage(1) }}>
+              <option value="all">All years</option><option value="2026">2026</option><option value="2025">2025</option>
+            </Select>
+            <Select aria-label="Status" className={filterCls} value={invStatus} onChange={(e) => { setInvStatus(e.target.value); setInvPage(1) }}>
+              <option value="all">All statuses</option><option value="paid">Paid</option><option value="open">Open</option><option value="void">Void</option>
+            </Select>
+          </div>
+        }
+      />
       {invoices.isPending ? (
         <div className="p-5"><Spinner /></div>
       ) : invoices.isError ? (
@@ -301,12 +306,17 @@ export default function SubscriptionPage() {
 
   const paymentsTab = (
     <Card className="reveal-up overflow-hidden">
-      <CardHeader title="Payment history" actions={SampleTag} />
-      <div className="flex flex-wrap gap-3 px-[22px] pb-3">
-        <Select aria-label="Status" className={filterCls} value={payStatus} onChange={(e) => { setPayStatus(e.target.value); setPayPage(1) }}>
-          <option value="all">All statuses</option><option value="succeeded">Succeeded</option><option value="failed">Failed</option><option value="refunded">Refunded</option>
-        </Select>
-      </div>
+      <CardHeader
+        title="Payment history"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {SampleTag}
+            <Select aria-label="Status" className={filterCls} value={payStatus} onChange={(e) => { setPayStatus(e.target.value); setPayPage(1) }}>
+              <option value="all">All statuses</option><option value="succeeded">Succeeded</option><option value="failed">Failed</option><option value="refunded">Refunded</option>
+            </Select>
+          </div>
+        }
+      />
       {payments.isPending ? (
         <div className="p-5"><Spinner /></div>
       ) : payments.isError ? (
