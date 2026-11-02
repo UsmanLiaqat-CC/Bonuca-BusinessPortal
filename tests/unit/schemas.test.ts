@@ -33,6 +33,7 @@ describe('program setup validation (spec §4.2)', () => {
     const d = defaultProgramDraft('membership') as Extract<ProgramDraft, { type: 'membership' }>
     Object.assign(d, { name: 'VIP', visuals: { ...d.visuals, logo: LOGO } })
     d.config.benefitDescription = '10% off'
+    d.termsAndConditions = 'Member only. Show your card before ordering.'
     expect(issues(programSchema.safeParse(d))).toContain('config.discountValue')
     d.config.benefitType = 'perk'
     expect(programSchema.safeParse(d).success).toBe(true)

@@ -23,13 +23,22 @@ export function JoinLanding({ program, businessName, onStart }: { program: Progr
   const earn = earnLine(program)
   const page = program.signupPage
   const hero = page.heroImage ?? program.visuals.heroImage
+  const dots = program.type === 'stamp' ? Math.min(Math.max(program.config.stampsRequired, 1), 10) : 0
+  const steps = ['Join below — takes about ten seconds', 'Add your card to your phone’s wallet', `${program.type === 'stamp' ? 'Earn stamps' : program.type === 'points' ? 'Earn points' : 'Collect visits'} each visit`]
   return (
     <div className="join-page" style={pageStyle(program)}>
       <div className="join-hero" style={hero ? { backgroundImage: `url("${hero}")` } : undefined}>
+        <i className="jh-orb jh-orb-a" aria-hidden />
+        <i className="jh-orb jh-orb-b" aria-hidden />
         <div>
           <span className="jh-logo">{page.logo ? <img src={page.logo} alt="" /> : <ShoppingBag className="size-4" aria-hidden />}</span>
           <h2>{page.headline?.trim() || businessName}</h2>
           <p>{page.tagline?.trim() || program.name}</p>
+          {dots > 0 && (
+            <span className="jh-dots" aria-hidden style={{ '--n': dots } as CSSProperties}>
+              {Array.from({ length: dots }, (_, i) => <b key={i} style={{ '--i': i } as CSSProperties} />)}
+            </span>
+          )}
         </div>
       </div>
       <div className="join-earn">
@@ -42,13 +51,11 @@ export function JoinLanding({ program, businessName, onStart }: { program: Progr
       <div className="join-how">
         <h3>How it works</h3>
         <ol>
-          <li><i>1</i> Join below — takes about ten seconds</li>
-          <li><i>2</i> Add your card to your phone’s wallet</li>
-          <li><i>3</i> {program.type === 'stamp' ? 'Earn stamps' : program.type === 'points' ? 'Earn points' : 'Collect visits'} each visit</li>
+          {steps.map((text, i) => <li key={text} style={{ '--i': i } as CSSProperties}><i>{i + 1}</i> {text}</li>)}
         </ol>
       </div>
       <div className="join-cta">
-        <button type="button" className="join-btn" onClick={onStart}>Get my card</button>
+        <button type="button" className="join-btn" onClick={onStart}><span>Get my card</span></button>
         <small>No app to download</small>
       </div>
       <p className="join-foot">Scan to join — powered by Bonuca</p>
@@ -58,7 +65,7 @@ export function JoinLanding({ program, businessName, onStart }: { program: Progr
 
 /** "Almost there" sign-up form (doc image 4). Name is always required; Email/Birthday per program setup. */
 export function JoinForm({ program, businessName, onSubmit, pending, error }: { program: Pick<Program, 'signupPage'>; businessName: string; onSubmit?: (input: JoinInput) => void; pending?: boolean; error?: string | null }) {
-  const [v, setV] = useState<JoinInput>({ name: '', email: '', birthday: '', acceptTerms: false })
+  const [v, setV] = useState<JoinInput>({ name: '', email: '', phone: '', birthday: '', acceptTerms: false })
   const f = program.signupPage.fields
   const tag = (mode: 'required' | 'optional') => <em className={mode === 'required' ? 'req' : undefined}>{mode === 'required' ? 'Required' : 'Optional'}</em>
   const submit = (e: FormEvent) => {
@@ -77,6 +84,12 @@ export function JoinForm({ program, businessName, onSubmit, pending, error }: { 
         <div className="join-field">
           <label className="jl" htmlFor="join-email">Email {tag(f.email)}</label>
           <input id="join-email" type="email" autoComplete="email" value={v.email} onChange={(e) => setV({ ...v, email: e.target.value })} placeholder="you@email.com" />
+        </div>
+      )}
+      {f.phone && f.phone !== 'off' && (
+        <div className="join-field">
+          <label className="jl" htmlFor="join-phone">Phone number {tag(f.phone)}</label>
+          <input id="join-phone" type="tel" autoComplete="tel" value={v.phone ?? ''} onChange={(e) => setV({ ...v, phone: e.target.value })} placeholder="+49 170 1234567" />
         </div>
       )}
       {f.birthday !== 'off' && (

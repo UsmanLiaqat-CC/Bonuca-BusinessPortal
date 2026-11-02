@@ -50,8 +50,13 @@ export interface AiGateway {
 
 export interface Invoice {
   id: string
+  /** Invoice number, e.g. INV-0003. */
+  number: string
   date: string
+  /** Plan and billing period. */
+  description: string
   amount: string
+  /** Paid, Open or Void. */
   status: string
   url: string | null
 }
@@ -59,16 +64,24 @@ export interface Invoice {
 export interface Payment {
   id: string
   date: string
+  description: string
   amount: string
+  /** Card brand and last four digits. */
   method: string
+  /** Succeeded, Failed or Refunded (a failure reason may follow, e.g. "Failed: card declined"). */
   status: string
+  /** Web (Stripe), App Store or Google Play. */
+  source: string
 }
 
 export interface BillingInfo {
   name: string
   email: string
   address: string
-  paymentMethod: string
+  /** VAT / Tax ID, optional. */
+  taxId: string | null
+  /** Brand, last four digits and expiry only. Card numbers are never stored by Bonuca. */
+  card: { brand: string; last4: string; expires: string } | null
 }
 
 export interface BillingGateway {
@@ -77,6 +90,8 @@ export interface BillingGateway {
   startCheckout(planId: string): Promise<{ checkoutUrl: string }>
   changePlan(planId: string): Promise<void>
   cancel(): Promise<void>
+  /** Resume a cancelling plan before the cancel date (no new charge). */
+  resume(): Promise<void>
   listInvoices(): Promise<Invoice[]>
   listPayments(): Promise<Payment[]>
   getBillingInfo(): Promise<BillingInfo | null>
@@ -119,6 +134,7 @@ export function createDisconnectedIntegrations(): Integrations {
       startCheckout: () => reject('stripe'),
       changePlan: () => reject('stripe'),
       cancel: () => reject('stripe'),
+      resume: () => reject('stripe'),
       listInvoices: () => reject('stripe'),
       listPayments: () => reject('stripe'),
       getBillingInfo: () => reject('stripe'),

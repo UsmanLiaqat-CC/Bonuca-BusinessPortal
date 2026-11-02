@@ -970,6 +970,10 @@ export class DevBackend implements BusinessBackend {
     if (!input.name.trim()) throw new ValidationError('Name is required.')
     if (fields.email === 'required' && !input.email.trim()) throw new ValidationError('Email is required.')
     if (input.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim())) throw new ValidationError('Enter a valid email address.')
+    const phoneMode = fields.phone ?? 'off'
+    const phone = (input.phone ?? '').trim()
+    if (phoneMode === 'required' && !phone) throw new ValidationError('Phone number is required.')
+    if (phoneMode !== 'off' && phone && !/^\+?[0-9 ()-]{6,20}$/.test(phone)) throw new ValidationError('Enter a valid phone number.')
     if (fields.birthday === 'required' && !input.birthday) throw new ValidationError('Birthday is required.')
     if (!input.acceptTerms) throw new ValidationError('Please accept the rewards terms.')
     assertWithinLimit(resolvePlanState(ds.subscription, this.opts.catalog, this.now()), 'customers', ds.customers.length)
@@ -981,7 +985,7 @@ export class DevBackend implements BusinessBackend {
       customerNumber: `C-${next}`,
       name: input.name.trim(),
       email: fields.email === 'off' ? '' : input.email.trim(),
-      phone: '',
+      phone: phoneMode === 'off' ? '' : phone,
       birthday: fields.birthday === 'off' ? '' : input.birthday,
       notes: '',
       createdAt: now,
@@ -992,7 +996,7 @@ export class DevBackend implements BusinessBackend {
       programId: program.id,
       passCode: `BNC-${createToken().slice(0, 8).toUpperCase()}`,
       joinedAt: now,
-      stamps: 0,
+      stamps: program.type === 'stamp' ? Math.min(program.config.startingStamps ?? 0, program.config.stampsRequired) : 0,
       points: 0,
       visits: 0,
       totalSpend: 0,

@@ -63,6 +63,9 @@ export function ProgramForm({ initial, programId, status, onDone }: { initial: P
   const [pendingMaster, setPendingMaster] = useState<{ draft: ProgramDraft; fields: string[] } | null>(null)
   const isDraft = status === null || status === 'draft'
   const type = initial.type
+  // Points/spend bases need a Points program; spend also needs the purchase amount entered at each scan (manual awarding).
+  const pointsPrograms = (programs.data ?? []).filter((p) => p.type === 'points' && p.status !== 'archived')
+  const tierBasisAvailability = { points: pointsPrograms.length > 0, spend: pointsPrograms.some((p) => p.type === 'points' && p.config.awardingMethod === 'manual') }
   const businessName = session.business.name
   const branding = session.business.branding
   const err = (path: string) => (get(form.formState.errors, path) as { message?: string } | undefined)?.message
@@ -156,12 +159,15 @@ export function ProgramForm({ initial, programId, status, onDone }: { initial: P
             <CardBody className="flex flex-col gap-6">
               {type === 'stamp' && <StampFields form={form} />}
               {type === 'membership' && <MembershipFields form={form} />}
-              {type === 'tier' && <TierFields form={form} />}
+              {type === 'tier' && <TierFields form={form} live={!isDraft} availability={tierBasisAvailability} />}
               {type === 'points' && <PointsFields form={form} />}
-              <Field label="Program expiry date" optional error={err('expiresOn')} hint="After this date the program stops awarding. Leave empty for no end date.">
-                {(p) => <Input {...p} type="date" {...form.register('expiresOn', { setValueAs: (v: string | null) => (v ? v : null) })} />}
-              </Field>
-              <TermsField form={form} />
+              {/* Membership cards use Validity instead of a separate program expiry date (BONUCA CHANGES item 3). */}
+              {type !== 'membership' && (
+                <Field label="Program expiry date" optional error={err('expiresOn')} hint="After this date the program stops awarding. Leave empty for no end date.">
+                  {(p) => <Input {...p} type="date" {...form.register('expiresOn', { setValueAs: (v: string | null) => (v ? v : null) })} />}
+                </Field>
+              )}
+              <TermsField form={form} required={type === 'membership'} />
             </CardBody>
           </Card>
         )}
@@ -254,9 +260,9 @@ export function ProgramForm({ initial, programId, status, onDone }: { initial: P
                   <span className="text-sm font-semibold">Name</span>
                   <span className="badge">Always required</span>
                 </div>
-                {(['email', 'birthday'] as const).map((key) => (
+                {(['email', 'phone', 'birthday'] as const).map((key) => (
                   <div key={key} className="option-row">
-                    <label htmlFor={`signup-${key}`} className="text-sm font-semibold">{key === 'email' ? 'Email' : 'Birthday'}</label>
+                    <label htmlFor={`signup-${key}`} className="text-sm font-semibold">{key === 'email' ? 'Email' : key === 'phone' ? 'Phone number' : 'Birthday'}</label>
                     <Select id={`signup-${key}`} className="w-40" {...form.register(`signupPage.fields.${key}`)}>
                       {FIELD_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </Select>

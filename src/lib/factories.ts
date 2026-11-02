@@ -73,7 +73,7 @@ export function defaultStampConfig(): StampConfig {
     stampsRequired: 10,
     stampIcon: { kind: 'preset', preset: 'coffee' },
     rewardDescription: '',
-    rewardType: 'free_item',
+    startingStamps: 0,
     expiry: { enabled: false, days: null },
   }
 }
@@ -82,17 +82,19 @@ export function defaultMembershipConfig(): MembershipConfig {
   return { benefitDescription: '', benefitType: 'percent_discount', discountValue: null, validity: { kind: 'permanent' } }
 }
 
+/** Client defaults (BONUCA CHANGES item 4): Member 0, Silver 10, Gold 25, Platinum 50 (Diamond 100 is our own pick, still editable). */
+const TIER_DEFAULT_VALUES = [0, 10, 25, 50, 100]
 const TIER_COLORS = ['#3A3F55', '#8A8FA3', '#B8902E', '#5E6B7D', '#3D6FB6']
 
 export function defaultTier(index: number) {
-  return { name: DEFAULT_TIER_NAMES[index] ?? `Tier ${index + 1}`, requiredValue: index === 0 ? 0 : index * 10, walletColor: TIER_COLORS[index] ?? '#0A112F', badge: null, rewards: '' }
+  return { name: DEFAULT_TIER_NAMES[index] ?? `Tier ${index + 1}`, requiredValue: TIER_DEFAULT_VALUES[index] ?? (index - 1) * 50, walletColor: TIER_COLORS[index] ?? '#0A112F', badge: null, rewards: '' }
 }
 
 export function defaultTierConfig(): TierConfig {
   return {
     tiersEnabled: true,
     upgradeBasis: 'visits',
-    tiers: [0, 1, 2].map(defaultTier),
+    tiers: [0, 1, 2, 3].map(defaultTier),
     downgrade: { enabled: false, inactivityDays: null },
   }
 }
@@ -115,7 +117,7 @@ export function defaultPointsConfig(currency: PointsConfig['currency'] = 'EUR'):
 
 /** Sign-up page defaults: cream page / dark text as in the client reference; logo from Branding. */
 export function defaultSignupPage(branding?: Pick<BusinessBranding, 'logo'> | null): SignupPageConfig {
-  return { backgroundColor: '#F6F1E9', fontColor: '#2B1A0E', heroImage: null, logo: branding?.logo ?? null, fields: { email: 'optional', birthday: 'optional' } }
+  return { backgroundColor: '#F6F1E9', fontColor: '#2B1A0E', heroImage: null, logo: branding?.logo ?? null, fields: { email: 'optional', phone: 'off', birthday: 'optional' } }
 }
 
 /** Wallet design starts from the business Branding (logo + colours); each program can change it. */
@@ -149,7 +151,8 @@ export function defaultProgramDraft(type: ProgramType, currency?: PointsConfig['
 
 export function toDraft(program: Program): ProgramDraft {
   const { id: _id, businessId: _b, status: _s, joinQrToken: _q, createdAt: _c, publishedAt: _p, updatedAt: _u, ...draft } = program
-  return draft
+  // Programs saved before the phone option existed do not ask for a phone number.
+  return { ...draft, signupPage: { ...draft.signupPage, fields: { ...draft.signupPage.fields, phone: draft.signupPage.fields.phone ?? 'off' } } } as ProgramDraft
 }
 
 /** Country → suggested currency for new Points programs (§1.2: a suggestion, not a global setting). */

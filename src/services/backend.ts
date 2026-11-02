@@ -152,6 +152,7 @@ export interface CampaignClaimResult {
 export interface JoinInput {
   name: string
   email: string
+  phone?: string
   birthday: string
   acceptTerms: boolean
 }

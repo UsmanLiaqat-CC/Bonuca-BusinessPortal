@@ -98,7 +98,7 @@ export function buildPassContent(program: Program, membership?: Membership | nul
       const filled = Math.min(m.stamps, c.stampsRequired)
       return {
         ...base,
-        headline: c.rewardType === 'free_item' ? `Buy ${c.stampsRequired}, get 1 free` : `Collect ${c.stampsRequired} stamps`,
+        headline: `Collect ${c.stampsRequired} stamps`,
         stampGrid: { total: c.stampsRequired, filled, icon: c.stampIcon },
         primary: { label: 'Reward', value: c.rewardDescription || 'Reward description' },
         secondary: [{ label: 'Progress', value: `${Math.max(0, c.stampsRequired - filled)} stamps to go` }],
@@ -107,13 +107,15 @@ export function buildPassContent(program: Program, membership?: Membership | nul
     }
     case 'membership': {
       const c = program.config
+      // BONUCA CHANGES item 3: the pass shows the validity the owner typed ("Valid until 31 Dec 2026").
+      const validUntil = c.validity.kind === 'expires_on' && c.validity.date ? `Valid until ${formatDate(`${c.validity.date}T12:00:00`, 'en-GB')}` : null
       return {
         ...base,
         headline: c.benefitDescription || 'Benefit description',
-        big: formatDate(m.joinedAt),
+        big: validUntil ?? (c.validity.kind === 'renews_annually' ? 'Renews annually' : formatDate(m.joinedAt)),
         primary: { label: 'Benefit', value: c.benefitDescription || 'Benefit description' },
         secondary: [{ label: 'Customer since', value: formatDate(m.joinedAt) }],
-        footer: { label: 'Benefit', value: c.benefitDescription || 'Benefit description', sub: 'Show at every visit' },
+        footer: { label: 'Benefit', value: c.benefitDescription || 'Benefit description', sub: validUntil ?? 'Show at every visit' },
       }
     }
     case 'tier': {

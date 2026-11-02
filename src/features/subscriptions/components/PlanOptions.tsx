@@ -4,9 +4,12 @@ import type { PlanCatalog, PlanDefinition, PlanLimits } from '@/types/domain'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/cn'
 
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
+/** "1 program", "2 programs" — never "Up to 1 programs" (BONUCA CHANGES item 7). */
 function limitLine(limits: PlanLimits): string[] {
-  const fmt = (n: number | null, label: string) => (n === null ? `Unlimited ${label}` : `Up to ${n} ${label}`)
-  return [fmt(limits.customers, 'customers'), fmt(limits.programs, 'programs'), fmt(limits.locations, 'locations'), fmt(limits.employees, 'employees')]
+  const fmt = (n: number | null, one: string, many: string) => (n === null ? `Unlimited ${many}` : plural(n, one, many))
+  return [fmt(limits.customers, 'customer', 'customers'), fmt(limits.programs, 'program', 'programs'), fmt(limits.locations, 'location', 'locations'), fmt(limits.employees, 'employee', 'employees')]
 }
 
 /**
@@ -72,7 +75,7 @@ export function PlanOptions({
   return (
     <div className="grid gap-[18px] md:grid-cols-3">
       {catalog.free.enabled && (
-        <PlanCard title="Free Plan" price="No payment details required" lines={limitLine(catalog.free.plan.limits)} current={currentPlanId === catalog.free.plan.id} action={renderFree()} />
+        <PlanCard title="Free" price="No payment details required" lines={limitLine(catalog.free.plan.limits)} current={currentPlanId === catalog.free.plan.id} action={renderFree()} />
       )}
       {catalog.trial.enabled && (
         <PlanCard
@@ -86,8 +89,8 @@ export function PlanOptions({
       {catalog.paid.map((plan) => (
         <PlanCard
           key={plan.id}
-          title={`${plan.name} Plan`}
-          price={plan.priceLabel ?? <span>Pricing not configured yet <span className="text-xs opacity-75">(set by Bonuca)</span></span>}
+          title={plan.name}
+          price={plan.priceLabel ?? 'Pricing not configured yet'}
           lines={[...limitLine(plan.limits), plan.features.aiCommentary ? 'AI heatmap commentary' : 'Activity heatmap']}
           current={currentPlanId === plan.id}
           ink

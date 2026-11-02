@@ -78,7 +78,7 @@ function rewardsOf(program: Program): [string, string][] {
   const rows: [string, string][] = []
   switch (program.type) {
     case 'stamp':
-      rows.push(['Reward', program.config.rewardDescription || '—'], ['Reward type', program.config.rewardType.replace('_', ' ')])
+      rows.push(['Reward', program.config.rewardDescription || '—'], ['Starting stamps', String(program.config.startingStamps ?? 0)])
       break
     case 'membership':
       rows.push(['Benefit', program.config.benefitDescription || '—'], ['Discount', program.config.discountValue === null ? '—' : String(program.config.discountValue)])

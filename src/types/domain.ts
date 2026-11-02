@@ -192,7 +192,7 @@ export interface SignupPageConfig {
   fontColor: HexColor
   heroImage: ImageRef
   logo: ImageRef
-  fields: { email: SignupPageFieldMode; birthday: SignupPageFieldMode }
+  fields: { email: SignupPageFieldMode; birthday: SignupPageFieldMode; /** Optional / required / not asked (BONUCA CHANGES item 5). Missing = not asked. */ phone?: SignupPageFieldMode }
   /** Big title on the page. Empty = the business name. */
   headline?: string
   /** Small line under the title. Empty = the program name. */
@@ -227,7 +227,10 @@ export interface StampConfig {
   stampsRequired: number
   stampIcon: StampIcon
   rewardDescription: string
-  rewardType: StampRewardType
+  /** Retired from the form (BONUCA CHANGES item 1); kept optional so older programs still load. */
+  rewardType?: StampRewardType
+  /** Stamps a customer already has when they join (0 = none, max 10). Missing = 0. */
+  startingStamps?: number | null
   expiry: { enabled: boolean; days: number | null }
   /** "Allow Multiple Stamps": off = one stamp per scan. max null = unlimited. Missing = off (older programs). */
   multipleStamps?: { enabled: boolean; max: number | null }

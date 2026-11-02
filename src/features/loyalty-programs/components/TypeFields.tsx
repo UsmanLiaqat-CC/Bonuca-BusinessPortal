@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Controller, get, useFieldArray, type UseFormReturn } from 'react-hook-form'
 import { Plus, Trash2 } from 'lucide-react'
 import { CURRENCIES } from '@/types/domain'
@@ -51,15 +52,8 @@ export function StampFields({ form }: { form: Form }) {
       <Field label="Reward Description" required error={e('config.rewardDescription')} hint='What the customer gets, e.g. "1 Free Coffee".'>
         {(p) => <Input {...p} {...register('config.rewardDescription')} />}
       </Field>
-      <Field label="Reward Type" required hint="Used for reporting and the redeem-reward wording.">
-        {(p) => (
-          <Select {...p} {...register('config.rewardType')}>
-            <option value="free_item">Free item</option>
-            <option value="percent_discount">% discount</option>
-            <option value="fixed_discount">Fixed discount</option>
-            <option value="custom">Custom</option>
-          </Select>
-        )}
+      <Field label="Starting Stamps" error={e('config.startingStamps')} hint="Stamps a new customer already has when they join (0 = none, up to 10).">
+        {(p) => <Input {...p} type="number" min={0} max={10} {...register('config.startingStamps', num)} />}
       </Field>
       <div className="sm:col-span-2">
         <ToggleNumber form={form} toggleName="config.expiry.enabled" numberName="config.expiry.days" label="Expiry Rule" description="If enabled, an inactive card resets/expires after X days without a scan." unit="days without a scan" />
@@ -148,7 +142,8 @@ export function MembershipFields({ form }: { form: Form }) {
 }
 
 /* ------------------------------------------------------------------ Tier Program */
-export function TierFields({ form }: { form: Form }) {
+export type TierBasisAvailability = { points: boolean; spend: boolean }
+export function TierFields({ form, availability = { points: true, spend: true }, live = false }: { form: Form; availability?: TierBasisAvailability; live?: boolean }) {
   const { register, control, watch } = form
   const e = (p: string) => errorOf(form, p)
   const tiers = useFieldArray({ control, name: 'config.tiers' })
@@ -160,7 +155,9 @@ export function TierFields({ form }: { form: Form }) {
     if (target > count) for (let i = count; i < target; i++) tiers.append(defaultTier(i))
     if (target < count) tiers.remove(Array.from({ length: count - target }, (_, k) => count - 1 - k))
   }
-  const unit = basis === 'visits' ? 'visits' : basis === 'points' ? 'points' : 'total spend'
+  const unit = basis === 'visits' ? 'visits' : basis === 'points' ? 'points' : '€'
+  const [initialBasis] = useState(basis)
+  const missing = [!availability.points && 'Points needs a Points program.', !availability.spend && 'Total spend needs the employee to enter the purchase amount at each scan (a Points program with manual entry).'].filter(Boolean) as string[]
 
   return (
     <div className="flex flex-col gap-5">
@@ -183,11 +180,15 @@ export function TierFields({ form }: { form: Form }) {
               {(p) => (
                 <Select {...p} {...register('config.upgradeBasis')}>
                   <option value="visits">Visits</option>
-                  <option value="points">Points</option>
-                  <option value="spend">Total Spend</option>
+                  <option value="points" disabled={!availability.points && initialBasis !== 'points'}>Points</option>
+                  <option value="spend" disabled={!availability.spend && initialBasis !== 'spend'}>Total Spend</option>
                 </Select>
               )}
             </Field>
+            {missing.length > 0 && <p className="callout text-xs text-muted sm:col-span-2">{missing.join(' ')}</p>}
+            {live && basis !== initialBasis && (
+              <p className="callout text-xs sm:col-span-2" role="alert">This program is live. Changing the upgrade basis changes how every customer's tier is calculated. Check this before you save.</p>
+            )}
           </div>
           <ol className="flex flex-col gap-3">
             {tiers.fields.map((f, i) => (
@@ -196,8 +197,8 @@ export function TierFields({ form }: { form: Form }) {
                 <Field label="Tier Name" required error={e(`config.tiers.${i}.name`)}>
                   {(p) => <Input {...p} {...register(`config.tiers.${i}.name` as 'config.tiers.0.name')} />}
                 </Field>
-                <Field label={`Required Value (${unit})`} required error={e(`config.tiers.${i}.requiredValue`)}>
-                  {(p) => <Input {...p} type="number" min={0} {...register(`config.tiers.${i}.requiredValue` as 'config.tiers.0.requiredValue', num)} />}
+                <Field label={`Required value (${unit})`} required error={e(`config.tiers.${i}.requiredValue`)} hint={i === 0 ? 'Everyone starts here, so this is fixed at 0.' : undefined}>
+                  {(p) => <Input {...p} type="number" min={0} readOnly={i === 0} {...register(`config.tiers.${i}.requiredValue` as 'config.tiers.0.requiredValue', num)} />}
                 </Field>
                 <Controller
                   control={control}
@@ -320,10 +321,10 @@ export function PointsFields({ form }: { form: Form }) {
   )
 }
 
-export function TermsField({ form }: { form: Form }) {
+export function TermsField({ form, required = false }: { form: Form; required?: boolean }) {
   return (
-    <Field label="Terms & Conditions" optional hint="Shown on the back of the wallet pass.">
-      {(p) => <Textarea {...p} rows={4} {...form.register('termsAndConditions')} />}
+    <Field label="Terms & Conditions" required={required} optional={!required} error={errorOf(form, 'termsAndConditions')} hint={required ? 'Shown on the back of the wallet pass. Example: Member only. Cannot be combined with other offers. Show your card before ordering.' : 'Shown on the back of the wallet pass.'}>
+      {(p) => <Textarea {...p} rows={4} placeholder={required ? 'Member only. Cannot be combined with other offers. Show your card before ordering.' : undefined} {...form.register('termsAndConditions')} />}
     </Field>
   )
 }

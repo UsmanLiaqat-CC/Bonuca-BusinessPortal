@@ -21,7 +21,7 @@ const signupPageSchema = z.object({
   fontColor: hexColor,
   heroImage: optionalImage,
   logo: optionalImage,
-  fields: z.object({ email: z.enum(['required', 'optional', 'off']), birthday: z.enum(['required', 'optional', 'off']) }),
+  fields: z.object({ email: z.enum(['required', 'optional', 'off']), birthday: z.enum(['required', 'optional', 'off']), phone: z.enum(['required', 'optional', 'off']).optional() }),
   headline: z.string().max(60, 'Maximum 60 characters.').optional(),
   tagline: z.string().max(40, 'Maximum 40 characters.').optional(),
 })
@@ -69,7 +69,8 @@ export const stampConfigSchema = z.object({
     z.object({ kind: z.literal('custom'), image: z.string().min(1, 'Upload a stamp icon.') }),
   ]),
   rewardDescription: requiredText('Reward description is required.'),
-  rewardType: z.enum(['free_item', 'percent_discount', 'fixed_discount', 'custom']),
+  rewardType: z.enum(['free_item', 'percent_discount', 'fixed_discount', 'custom']).optional(),
+  startingStamps: z.number().int().min(0).max(10, 'Maximum 10 starting stamps.').nullish(),
   expiry: toggleDays('the expiry rule'),
   multipleStamps: z
     .object({ enabled: z.boolean(), max: z.number().int().min(2, 'At least 2.').nullable() })
@@ -122,10 +123,14 @@ export const tierConfigSchema = z
     if (c.tiers.length < 2 || c.tiers.length > 5) {
       ctx.addIssue({ code: 'custom', message: 'Number of tiers must be between 2 and 5.', path: ['tiers'] })
     }
+    // Tier 1 is where everyone starts, so it is fixed at 0 (BONUCA CHANGES item 4).
+    if (c.tiers[0] && c.tiers[0].requiredValue !== 0) {
+      ctx.addIssue({ code: 'custom', message: 'Tier 1 starts at 0.', path: ['tiers', 0, 'requiredValue'] })
+    }
     c.tiers.forEach((t, i) => {
       const prev = c.tiers[i - 1]
       if (prev && t.requiredValue <= prev.requiredValue) {
-        ctx.addIssue({ code: 'custom', message: 'Must be higher than the previous tier.', path: ['tiers', i, 'requiredValue'] })
+        ctx.addIssue({ code: 'custom', message: `${t.name || `Tier ${i + 1}`} must be higher than ${prev.name || `Tier ${i}`} (${prev.requiredValue})`, path: ['tiers', i, 'requiredValue'] })
       }
     })
   })
@@ -181,6 +186,10 @@ export const programSchema = z
         ctx.addIssue({ code: 'custom', message: 'A custom design needs an RGB background colour.', path: ['visuals', 'background'] })
       }
       return
+    }
+    // BONUCA CHANGES item 3: written terms settle disagreements at the till, so membership cards require them.
+    if (p.type === 'membership' && !p.termsAndConditions.trim()) {
+      ctx.addIssue({ code: 'custom', message: 'Terms & Conditions are required for a membership card.', path: ['termsAndConditions'] })
     }
     // Logo is required for every program type on the template path (§4.2).
     if (!p.visuals.logo) ctx.addIssue({ code: 'custom', message: 'Program logo is required.', path: ['visuals', 'logo'] })
