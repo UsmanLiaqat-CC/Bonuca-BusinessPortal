@@ -54,8 +54,8 @@ export function ImageUpload({
         {!required && <span className="opt">(optional)</span>}
       </span>
       <div className="upload flex-wrap">
-        <div className={cn('tile overflow-hidden', shape === 'wide' && 'wide', value && 'border-solid bg-surface')}>
-          {value ? <img src={value} alt="" className="size-full object-cover" /> : <ImagePlus className="size-[22px]" aria-hidden />}
+        <div className={cn('tile overflow-hidden', shape === 'wide' && 'wide', value && 'border-solid bg-surface p-1')}>
+          {value ? <img src={value} alt="" className="size-full object-contain" /> : <ImagePlus className="size-[22px]" aria-hidden />}
         </div>
         <div className="flex flex-wrap gap-2">
           <button

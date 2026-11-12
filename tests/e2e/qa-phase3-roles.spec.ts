@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { login, shot } from './helpers'
 
 /** QA Phase 3 — Spec §3, §4.6 roles (Owner / Manager / Employee). */
-const ALL_TABS = ['Dashboard', 'Loyalty Programs', 'Wallet Cards', 'QR Scanner', 'Customers', 'Employees', 'Notifications', 'Rewards', 'Analytics', 'Branding', 'Subscription & Billing', 'Settings']
+const ALL_TABS = ['Dashboard', 'Loyalty Programs', 'Wallet Cards', 'QR Scanner', 'Customers', 'Employees', 'Notifications', 'Rewards', 'Analytics', 'Subscription & Billing', 'Settings']
 
 test.describe('Phase 3 · roles', () => {
   test('Owner: full access to every tab', async ({ page }) => {

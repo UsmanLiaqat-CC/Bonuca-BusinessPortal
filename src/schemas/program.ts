@@ -65,7 +65,7 @@ const toggleDays = (label: string) =>
 export const stampConfigSchema = z.object({
   stampsRequired: positiveInt('Enter how many stamps fill the card.').max(50, 'Maximum 50 stamps.'),
   stampIcon: z.discriminatedUnion('kind', [
-    z.object({ kind: z.literal('preset'), preset: z.enum(['coffee', 'star', 'heart', 'scissors', 'croissant', 'check']) }),
+    z.object({ kind: z.literal('preset'), preset: z.enum(['coffee', 'star', 'heart', 'scissors', 'croissant', 'check', 'flower', 'burger', 'crown', 'gift', 'pizza', 'cake', 'icecream', 'wine', 'beer', 'dumbbell', 'paw', 'sparkles']) }),
     z.object({ kind: z.literal('custom'), image: z.string().min(1, 'Upload a stamp icon.') }),
   ]),
   rewardDescription: requiredText('Reward description is required.'),

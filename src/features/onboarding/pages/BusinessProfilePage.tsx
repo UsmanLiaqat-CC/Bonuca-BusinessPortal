@@ -14,7 +14,6 @@ import { DEFAULT_BRAND_COLOR, defaultOpeningHours } from '@/lib/factories'
 import { Field, Input, Select, Toggle } from '@/components/ui/Field'
 import { Button } from '@/components/ui/Button'
 import { ImageUpload } from '@/components/forms/ImageUpload'
-import { ColorField } from '@/components/forms/ColorField'
 import { OpeningHoursField } from '@/components/forms/OpeningHoursField'
 import { AuthLayout } from '@/features/auth/components/AuthLayout'
 import { OnboardingBars, OnboardingSteps } from '../OnboardingSteps'
@@ -55,7 +54,7 @@ export default function BusinessProfilePage() {
   return (
     <AuthLayout
       title={t('onb.business.title')}
-      subtitle="A few basics so your wallet cards look like you. Everything here can be changed later in Settings."
+      subtitle={t('onb.business.subtitle')}
       size="lg"
       top={<OnboardingSteps current={1} />}
       eyebrow={
@@ -67,12 +66,12 @@ export default function BusinessProfilePage() {
       <OnboardingBars current={1} />
       <form onSubmit={onSubmit} noValidate className="form-grid">
         <Field label={t('onb.businessName')} required error={e.name?.message}>
-          {(p) => <Input {...p} placeholder="e.g. Café Lumen" {...register('name')} />}
+          {(p) => <Input {...p} placeholder={t('onb.namePlaceholder')} {...register('name')} />}
         </Field>
         <Field label={t('onb.category')} required error={e.category?.message}>
           {(p) => (
             <Select {...p} {...register('category')}>
-              <option value="">Select…</option>
+              <option value="">{t('onb.select')}</option>
               {BUSINESS_CATEGORIES.map((c) => (
                 <option key={c} value={c}>
                   {t(`cat.${c}`)}
@@ -82,12 +81,7 @@ export default function BusinessProfilePage() {
           )}
         </Field>
         <Controller control={control} name="logo" render={({ field }) => <ImageUpload label={t('onb.logo')} value={field.value} onChange={field.onChange} hint={t('onb.addLater')} />} />
-        <Controller
-          control={control}
-          name="primaryColor"
-          render={({ field }) => <ColorField label={t('onb.brandColor')} value={field.value} onChange={field.onChange} error={e.primaryColor?.message} hint="A default (Bonuca Blue) is applied if you skip this." />}
-        />
-        <Field label={t('onb.language')} required hint="Changeable anytime in Settings.">
+        <Field label={t('onb.language')} required hint={t('onb.hint.language')}>
           {(p) => (
             <Select {...p} {...register('language')}>
               {LANGUAGES.map((l) => (
@@ -104,15 +98,15 @@ export default function BusinessProfilePage() {
             <MapPin className="size-[15px]" aria-hidden /> {t('onb.address')} <span className="opt">— {t('onb.addLater')}</span>
           </legend>
           <div className="form-grid">
-            <Field label="Street">{(p) => <Input {...p} autoComplete="street-address" {...register('address.street')} />}</Field>
-            <Field label="Postal code">{(p) => <Input {...p} autoComplete="postal-code" {...register('address.postalCode')} />}</Field>
-            <Field label="City">{(p) => <Input {...p} autoComplete="address-level2" {...register('address.city')} />}</Field>
-            <Field label="Country / region">{(p) => <Input {...p} {...register('address.country')} />}</Field>
+            <Field label={t('onb.street')}>{(p) => <Input {...p} autoComplete="street-address" {...register('address.street')} />}</Field>
+            <Field label={t('onb.postal')}>{(p) => <Input {...p} autoComplete="postal-code" {...register('address.postalCode')} />}</Field>
+            <Field label={t('onb.city')}>{(p) => <Input {...p} autoComplete="address-level2" {...register('address.city')} />}</Field>
+            <Field label={t('onb.country')}>{(p) => <Input {...p} {...register('address.country')} />}</Field>
           </div>
         </fieldset>
         <div className="full flex flex-col gap-3">
           <Toggle
-            label={`${t('onb.hours')} — add now`}
+            label={t('onb.hoursAddNow')}
             description={t('onb.addLater')}
             checked={hoursNow}
             onChange={(on) => {

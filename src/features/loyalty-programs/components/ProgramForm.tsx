@@ -6,6 +6,7 @@ import type { ProgramDraft } from '@/services/backend'
 import { programSchema } from '@/schemas/program'
 import { zodResolver } from '@/lib/forms'
 import { errorMessage } from '@/lib/errors'
+import { Segmented } from '@/components/ui/Tabs'
 import { buildPassContent } from '@/lib/walletContent'
 import { visualsFromBranding } from '@/lib/factories'
 import { cn } from '@/lib/cn'
@@ -13,7 +14,7 @@ import { useT } from '@/i18n'
 import { useAccess, useSession } from '@/state/session'
 import { useToast } from '@/state/toast'
 import { Card, CardBody, CardHeader } from '@/components/ui/Card'
-import { Field, Input, Select, Toggle } from '@/components/ui/Field'
+import { Field, Input, Toggle } from '@/components/ui/Field'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/Dialog'
 import { ColorField } from '@/components/forms/ColorField'
@@ -38,8 +39,8 @@ const STEPS: { title: string; fields: FieldPath<ProgramDraft>[] }[] = [
 ]
 
 const FIELD_MODES: { value: SignupPageFieldMode; label: string }[] = [
-  { value: 'optional', label: 'Optional' },
   { value: 'required', label: 'Required' },
+  { value: 'optional', label: 'Optional' },
   { value: 'off', label: 'Not asked' },
 ]
 
@@ -177,7 +178,7 @@ export function ProgramForm({ initial, programId, status, onDone }: { initial: P
             <CardHeader
               step={3}
               title="Wallet design"
-              description="Your Branding logo and colours are the defaults. Changes here apply to this program’s wallet card only."
+              description="Start from your business logo and colours, then design this program’s card your way. Changes apply to this program only."
               actions={
                 <Button
                   size="sm"
@@ -189,7 +190,7 @@ export function ProgramForm({ initial, programId, status, onDone }: { initial: P
                     form.setValue('visuals.accentColor', b.accentColor, { shouldDirty: true })
                   }}
                 >
-                  Use Branding defaults
+                  Use business defaults
                 </Button>
               }
             />
@@ -251,21 +252,18 @@ export function ProgramForm({ initial, programId, status, onDone }: { initial: P
                 </Field>
                 <Controller control={form.control} name="signupPage.backgroundColor" render={({ field }) => <ColorField label="Background colour" required value={field.value} onChange={field.onChange} error={err('signupPage.backgroundColor')} />} />
                 <Controller control={form.control} name="signupPage.fontColor" render={({ field }) => <ColorField label="Font colour" required value={field.value} onChange={field.onChange} error={err('signupPage.fontColor')} />} />
-                <Controller control={form.control} name="signupPage.heroImage" render={({ field }) => <ImageUpload label="Hero image" shape="wide" value={field.value} onChange={field.onChange} hint="Large image at the top of the page." />} />
-                <Controller control={form.control} name="signupPage.logo" render={({ field }) => <ImageUpload label="Logo" value={field.value} onChange={field.onChange} hint="Defaults to your Branding logo." />} />
+                <Controller control={form.control} name="signupPage.logo" render={({ field }) => <ImageUpload label="Logo" value={field.value} onChange={field.onChange} hint="Defaults to your business logo (Settings → Logo)." />} />
               </div>
               <fieldset className="flex flex-col gap-2">
                 <legend className="label mb-2">Sign-up fields</legend>
-                <div className="option-row">
-                  <span className="text-sm font-semibold">Name</span>
-                  <span className="badge">Always required</span>
-                </div>
-                {(['email', 'phone', 'birthday'] as const).map((key) => (
+                {(['name', 'email', 'phone', 'birthday'] as const).map((key) => (
                   <div key={key} className="option-row">
-                    <label htmlFor={`signup-${key}`} className="text-sm font-semibold">{key === 'email' ? 'Email' : key === 'phone' ? 'Phone number' : 'Birthday'}</label>
-                    <Select id={`signup-${key}`} className="w-40" {...form.register(`signupPage.fields.${key}`)}>
-                      {FIELD_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-                    </Select>
+                    <span className="text-sm font-semibold">{key === 'name' ? 'Name' : key === 'email' ? 'Email' : key === 'phone' ? 'Phone number' : 'Birthday'}</span>
+                    {key === 'name' ? (
+                      <Segmented role="radiogroup" label="Name requirement" value="required" onChange={() => undefined} items={[{ value: 'required', label: 'Required' }]} />
+                    ) : (
+                      <Controller control={form.control} name={`signupPage.fields.${key}`} render={({ field }) => <Segmented role="radiogroup" label={`${key} requirement`} value={field.value} onChange={field.onChange} items={FIELD_MODES} />} />
+                    )}
                   </div>
                 ))}
               </fieldset>

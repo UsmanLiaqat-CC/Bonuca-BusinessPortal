@@ -35,11 +35,11 @@ export function StampFields({ form }: { form: Form }) {
             <legend className="label mb-2 flex-wrap">
               Stamp Icon <span className="opt">(optional — default coffee cup)</span>
             </legend>
-            <div role="radiogroup" aria-label="Stamp icon" className="flex flex-wrap gap-1.5">
+            <div role="radiogroup" aria-label="Stamp icon" className="grid grid-cols-6 gap-1.5 sm:grid-cols-9">
               {STAMP_PRESETS.map(({ value, label, icon: Icon }) => {
                 const selected = field.value.kind === 'preset' && field.value.preset === value
                 return (
-                  <button key={value} type="button" role="radio" aria-checked={selected} aria-label={label} title={label} onClick={() => field.onChange({ kind: 'preset', preset: value })} className={cn('grid size-[42px] place-items-center rounded-xl border transition hover:-translate-y-0.5', selected ? 'border-transparent bg-accent text-white shadow-[var(--shadow-cta)]' : 'border-line-strong bg-surface')}>
+                  <button key={value} type="button" role="radio" aria-checked={selected} aria-label={label} title={label} onClick={() => field.onChange({ kind: 'preset', preset: value })} className={cn('grid aspect-square w-full place-items-center rounded-xl border transition hover:-translate-y-0.5', selected ? 'border-transparent bg-accent text-white shadow-[var(--shadow-cta)]' : 'border-line-strong bg-surface')}>
                     <Icon className="size-4" aria-hidden />
                   </button>
                 )
@@ -56,7 +56,7 @@ export function StampFields({ form }: { form: Form }) {
         {(p) => <Input {...p} type="number" min={0} max={10} {...register('config.startingStamps', num)} />}
       </Field>
       <div className="sm:col-span-2">
-        <ToggleNumber form={form} toggleName="config.expiry.enabled" numberName="config.expiry.days" label="Expiry Rule" description="If enabled, an inactive card resets/expires after X days without a scan." unit="days without a scan" />
+        <ToggleNumber form={form} toggleName="config.expiry.enabled" numberName="config.expiry.days" label="Stamp expiry" description="If enabled, an inactive card resets/expires after X days without a scan." unit="days without a scan" />
       </div>
       <div className="sm:col-span-2">
         <Controller
@@ -176,7 +176,7 @@ export function TierFields({ form, availability = { points: true, spend: true },
                 </Select>
               )}
             </Field>
-            <Field label="Upgrade Basis" required hint="One basis applies to all tiers.">
+            <Field label="How customers level up" required hint="One basis applies to all tiers.">
               {(p) => (
                 <Select {...p} {...register('config.upgradeBasis')}>
                   <option value="visits">Visits</option>
@@ -212,7 +212,7 @@ export function TierFields({ form, availability = { points: true, spend: true },
               </li>
             ))}
           </ol>
-          <ToggleNumber form={form} toggleName="config.downgrade.enabled" numberName="config.downgrade.inactivityDays" label="Downgrade Rule" description="If enabled, a customer drops one tier after X days of no visits." unit="days without a visit" />
+          <ToggleNumber form={form} toggleName="config.downgrade.enabled" numberName="config.downgrade.inactivityDays" label="Level-down rule" description="If enabled, a customer drops one tier after X days of no visits." unit="days without a visit" />
         </>
       )}
     </div>
@@ -247,7 +247,7 @@ export function PointsFields({ form }: { form: Form }) {
         )}
         <fieldset className="flex flex-col gap-1.5 sm:col-span-2">
           <legend className="label mb-2 flex-wrap">
-            Calculation Basis / Ratio<span className="req ml-0.5" aria-hidden>*</span>
+            Points you give for spending<span className="req ml-0.5" aria-hidden>*</span>
           </legend>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <Input type="number" min={0} step="0.01" className="w-28" aria-label="Spend amount" {...register('config.ratio.spend', num)} />
@@ -257,7 +257,7 @@ export function PointsFields({ form }: { form: Form }) {
           </div>
           {(e('config.ratio.spend') || e('config.ratio.points')) && <p className="error-msg" role="alert">{e('config.ratio.spend') ?? e('config.ratio.points')}</p>}
         </fieldset>
-        <Field label="Awarding Method" required hint="Fixed = same points every scan. Manual = employee enters the purchase amount.">
+        <Field label="How points are given" required hint="Fixed = same points every scan. Manual = employee enters the purchase amount.">
           {(p) => (
             <Select {...p} {...register('config.awardingMethod')}>
               <option value="manual">Manual entry</option>
@@ -270,7 +270,7 @@ export function PointsFields({ form }: { form: Form }) {
             {(p) => <Input {...p} type="number" min={1} {...register('config.pointsPerScan', num)} />}
           </Field>
         )}
-        <Field label="Rounding Rule" required hint="Applied to the calculated point value.">
+        <Field label="Round points" required hint="Applied to the calculated point value.">
           {(p) => (
             <Select {...p} {...register('config.rounding')}>
               <option value="down">Round down</option>
@@ -279,10 +279,10 @@ export function PointsFields({ form }: { form: Form }) {
             </Select>
           )}
         </Field>
-        <Field label="Minimum Purchase Amount" optional error={e('config.minimumPurchase')} hint="Purchases below this earn no points.">
+        <Field label="Minimum spend" optional error={e('config.minimumPurchase')} hint="Purchases below this earn no points.">
           {(p) => <Input {...p} type="number" min={0} step="0.01" {...register('config.minimumPurchase', num)} />}
         </Field>
-        <Field label="Maximum Points per Transaction" optional error={e('config.maxPointsPerTransaction')} hint="Caps how many points one scan can award.">
+        <Field label="Most points per visit" optional error={e('config.maxPointsPerTransaction')} hint="Caps how many points one scan can award.">
           {(p) => <Input {...p} type="number" min={1} {...register('config.maxPointsPerTransaction', num)} />}
         </Field>
       </div>

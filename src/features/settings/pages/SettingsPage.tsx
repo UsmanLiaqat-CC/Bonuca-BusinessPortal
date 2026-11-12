@@ -32,8 +32,8 @@ const SECTIONS: { id: string; label: string; key: MessageKey; permission: Permis
   { id: 'address', label: 'Address', key: 'ui.settings.address' as const, permission: 'settings.view', icon: MapPin },
   { id: 'hours', label: 'Opening hours', key: 'ui.settings.hours' as const, permission: 'settings.view', icon: Clock },
   { id: 'logo', label: 'Logo', key: 'ui.settings.logo' as const, permission: 'settings.view', icon: ImageIcon },
-  { id: 'brand-colors', label: 'Brand colors', key: 'ui.settings.colors' as const, permission: 'settings.view', icon: Palette },
   { id: 'language', label: 'Language', key: 'language.label' as const, permission: 'settings.view', icon: Languages },
+  { id: 'design', label: 'Design', key: 'theme.label' as const, permission: 'settings.view', icon: Palette },
   { id: 'audit', label: 'Audit', key: 'ui.settings.audit' as const, permission: 'audit.view', icon: History },
 ]
 
@@ -232,16 +232,17 @@ export default function SettingsPage() {
             {current.id === 'address' && <AddressSection />}
             {current.id === 'hours' && <HoursSection />}
             {current.id === 'logo' && <BrandingForm sections={['logo']} />}
-            {current.id === 'brand-colors' && <BrandingForm sections={['colors', 'font']} />}
             {current.id === 'audit' && <AuditLog />}
             {current.id === 'language' && (
               <div className="flex flex-col gap-4">
                 <p className="callout">{t('ui.settings.languageNote', { list: LANGUAGES.map((l) => l.label).join(', ') })}</p>
                 <LanguageSelect onChange={(l) => void backend.setLanguage(l)} />
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="label">{t('theme.label')}</span>
-                  <ThemeToggle />
-                </div>
+              </div>
+            )}
+            {current.id === 'design' && (
+              <div className="flex items-center gap-3 text-sm">
+                <span className="label">{t('theme.label')}</span>
+                <ThemeToggle />
               </div>
             )}
           </CardBody>

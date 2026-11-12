@@ -115,7 +115,7 @@ function WalletCardSection({ program, activeCards }: { program: Program; activeC
           <CardHeader
             title="Card design"
             icon={<WalletCards className="size-4" />}
-            description="Branding colours and logo are the defaults. Changes here apply to this program only."
+            description="Start from your business logo and colours, then design this card your way. Changes apply to this program only."
             actions={
               <Button
                 size="sm"
@@ -127,7 +127,7 @@ function WalletCardSection({ program, activeCards }: { program: Program; activeC
                   form.setValue('visuals.accentColor', b.accentColor, { shouldDirty: true })
                 }}
               >
-                Use Branding defaults
+                Use business defaults
               </Button>
             }
           />

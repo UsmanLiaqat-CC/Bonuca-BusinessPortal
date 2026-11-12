@@ -1,4 +1,4 @@
-import { BarChart3, Bell, Building2, CreditCard, Gift, LayoutDashboard, Palette, QrCode, Settings, Stamp, Ticket, Trophy, UserCircle, Users, UsersRound, type LucideIcon } from 'lucide-react'
+import { BarChart3, Bell, Building2, CreditCard, Gift, LayoutDashboard, QrCode, Settings, Stamp, Ticket, Trophy, UserCircle, Users, UsersRound, type LucideIcon } from 'lucide-react'
 import type { Permission } from '@/lib/access'
 import type { MessageKey } from '@/i18n'
 import type { Role } from '@/types/domain'
@@ -31,7 +31,6 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/app/analytics', labelKey: 'nav.analytics', icon: BarChart3, permission: 'analytics.view', group: 'engagement' },
   // Leaderboard tab (client change): right below Analytics.
   { to: '/app/leaderboard', labelKey: 'nav.leaderboard', icon: Trophy, permission: 'leaderboard.view', group: 'engagement' },
-  { to: '/app/branding', labelKey: 'nav.branding', icon: Palette, permission: 'settings.view', group: 'business' },
   { to: '/app/subscription', labelKey: 'nav.subscription', icon: CreditCard, permission: 'subscription.view', group: 'business' },
   { to: '/app/settings', labelKey: 'nav.settings', icon: Settings, permission: 'settings.view', group: 'business' },
   { to: '/app/account', labelKey: 'nav.account', icon: UserCircle, permission: 'account.view', roles: ['employee'], group: 'business' },

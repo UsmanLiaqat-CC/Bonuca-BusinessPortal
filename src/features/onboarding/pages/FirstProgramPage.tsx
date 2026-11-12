@@ -1,11 +1,13 @@
 import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Coffee, Coins, Crown, Eye, Layers, Stamp } from 'lucide-react'
+import { ArrowRight, Coins, Crown, Eye, Layers, Stamp } from 'lucide-react'
 import { useT } from '@/i18n'
 import { useBackend } from '@/state/services'
 import { SESSION_KEY, useSessionQuery } from '@/state/session'
-import { PROGRAM_TYPES, type ProgramType } from '@/types/domain'
+import { PROGRAM_TYPES, type Program, type ProgramType } from '@/types/domain'
+import { buildPassContent } from '@/lib/walletContent'
+import { WalletPassPreview } from '@/features/wallet-cards/components/WalletPassPreview'
 import { defaultProgramDraft, suggestedCurrency } from '@/lib/factories'
 import { resolvePlanState } from '@/lib/plan'
 import { PREVIEW_LOCK_MESSAGE } from '@/lib/access'
@@ -19,64 +21,6 @@ import { OnboardingBars, OnboardingSteps } from '../OnboardingSteps'
 const ICONS: Record<ProgramType, typeof Stamp> = { stamp: Stamp, membership: Crown, tier: Layers, points: Coins }
 /** Type-card accent colours from the redesign (decorative only). */
 const COLORS: Record<ProgramType, string> = { stamp: '#1747F8', membership: '#7C3AED', tier: '#0F9D6E', points: '#C2410C' }
-const BLURB: Record<ProgramType, string> = {
-  stamp: 'Collect stamps, earn a reward',
-  membership: 'A standing perk for customers',
-  tier: 'Levels unlocked by visits',
-  points: 'Earn points per purchase',
-}
-
-/** Live preview of the quick-create values in the default Bonuca pass look. Illustration only. */
-function QuickPassPreview({ type, name, reward, rule }: { type: ProgramType; name: string; reward: string; rule: number }) {
-  const stamps = Math.min(Math.max(rule || 0, 1), 12)
-  return (
-    <div className="pass" aria-hidden>
-      <div className="pass-top">
-        <div className="pass-logo ph">{(name || 'P').slice(0, 1).toUpperCase()}</div>
-        <div className="pass-name">{name || 'Coffee Card'}</div>
-      </div>
-      {type === 'stamp' && (
-        <>
-          <div className="pass-lbl">Reward</div>
-          <div className="pass-val">{reward || '1 Free Coffee'}</div>
-          <div className="stamps">
-            {Array.from({ length: stamps }, (_, i) => (
-              <span key={i} className={i < Math.min(3, stamps) ? 'stamp on' : 'stamp'}>
-                <Coffee />
-              </span>
-            ))}
-          </div>
-        </>
-      )}
-      {type === 'membership' && (
-        <>
-          <div className="pass-lbl">Benefit</div>
-          <div className="pass-val">{reward || '—'}</div>
-        </>
-      )}
-      {type === 'tier' && (
-        <>
-          <div className="pass-lbl">Current tier</div>
-          <div className="pass-val">Member</div>
-          <div className="prog">
-            <i style={{ '--w': '40%' } as CSSProperties} />
-          </div>
-          <div className="pass-lbl">Top tier reward</div>
-          <div className="pass-val sm">{reward || '—'}</div>
-        </>
-      )}
-      {type === 'points' && (
-        <>
-          <div className="pass-lbl">Balance</div>
-          <div className="pass-val">0 pts</div>
-          <div className="pass-lbl">First reward</div>
-          <div className="pass-val sm">{reward || '—'}</div>
-        </>
-      )}
-    </div>
-  )
-}
-
 /** Spec §1.6 — optional quick-create with essential fields (name, reward, key rule). Always skippable. */
 export default function FirstProgramPage() {
   const t = useT()
@@ -102,16 +46,12 @@ export default function FirstProgramPage() {
     navigate('/app/dashboard', { replace: true })
   }
 
-  const rewardLabel = { stamp: 'Reward', membership: 'Benefit', tier: 'Top tier reward', points: 'First reward' }[type]
-  const ruleLabel = { stamp: 'Number of stamps required', membership: '', tier: 'Visits needed for the second tier', points: 'Points earned per 1 unit spent' }[type]
+  const rewardLabel = t(`fq.reward.${type}`)
+  const ruleLabel = type === 'membership' ? '' : t(`fq.rule.${type}`)
 
-  const create = async () => {
-    setError(null)
+  const buildDraft = () => {
     const n = Number(rule)
-    if (!name.trim()) return setError('Program name is required.')
-    if (!reward.trim()) return setError(`${rewardLabel} is required.`)
-    if (type !== 'membership' && !(n > 0)) return setError(`${ruleLabel} must be greater than 0.`)
-    const draft = defaultProgramDraft(type, suggestedCurrency(data.business!.country))
+    const draft = defaultProgramDraft(type, suggestedCurrency(data.business!.country), data.business!.branding)
     draft.name = name.trim()
     if (draft.type === 'stamp') Object.assign(draft.config, { rewardDescription: reward.trim(), stampsRequired: n })
     if (draft.type === 'membership') Object.assign(draft.config, { benefitDescription: reward.trim(), benefitType: 'perk' })
@@ -122,6 +62,16 @@ export default function FirstProgramPage() {
       draft.config.ratio = { spend: 1, points: n }
       draft.config.rewards = [{ ...draft.config.rewards[0]!, name: reward.trim(), pointsRequired: 100 }]
     }
+    return draft
+  }
+
+  const create = async () => {
+    setError(null)
+    const n = Number(rule)
+    if (!name.trim()) return setError(t('fq.err.name'))
+    if (!reward.trim()) return setError(t('fq.err.required', { label: rewardLabel }))
+    if (type !== 'membership' && !(n > 0)) return setError(t('fq.err.gt0', { label: ruleLabel }))
+    const draft = buildDraft()
     setBusy(true)
     try {
       if (!created) {
@@ -138,7 +88,7 @@ export default function FirstProgramPage() {
   return (
     <AuthLayout
       title={t('onb.first.title')}
-      subtitle="Saved as a Draft. Finish the full setup (logo, design, publishing) in Loyalty Programs."
+      subtitle={t('fq.subtitle')}
       size="xl"
       top={<OnboardingSteps current={3} />}
       eyebrow={
@@ -150,7 +100,7 @@ export default function FirstProgramPage() {
       <OnboardingBars current={3} />
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
         <div className="flex flex-col gap-[18px]">
-          <div role="radiogroup" aria-label="Program type" className="type-grid">
+          <div role="radiogroup" aria-label={t('fq.typeAria')} className="type-grid">
             {PROGRAM_TYPES.map((p) => {
               const Icon = ICONS[p]
               return (
@@ -162,13 +112,14 @@ export default function FirstProgramPage() {
                   <button type="button" role="radio" aria-checked={type === p} onClick={() => setType(p)} className="text-left font-display text-base font-semibold tracking-[-0.01em] after:absolute after:inset-0 after:rounded-[20px] after:content-['']">
                     {t(`type.${p}`)}
                   </button>
-                  <small>{BLURB[p]}</small>
+                  <small>{t(`fq.desc.${p}`)}</small>
+                  <em className="not-italic text-xs text-faint">{t(`fq.ex.${p}`)}</em>
                 </div>
               )
             })}
           </div>
           <div className="grid gap-[18px] sm:grid-cols-3">
-            <Field label="Program name" required>
+            <Field label={t('fq.name')} required>
               {(p) => <Input {...p} value={name} onChange={(e) => setName(e.target.value)} placeholder={type === 'stamp' ? 'Coffee Card' : undefined} />}
             </Field>
             <Field label={rewardLabel} required>
@@ -192,7 +143,7 @@ export default function FirstProgramPage() {
           )}
           <div className="flex flex-wrap items-center gap-3">
             <Button size="lg" onClick={create} loading={busy} disabled={isPreview} aria-disabled={isPreview}>
-              Create program
+              {t('fq.create')}
               <ArrowRight className="size-[15px]" aria-hidden />
             </Button>
             <Button variant="ghost" onClick={() => void finish()}>
@@ -204,7 +155,9 @@ export default function FirstProgramPage() {
           <div className="eyebrow w-full justify-center">
             <Eye className="size-[13px]" aria-hidden /> {t('onb.livePreview')}
           </div>
-          <QuickPassPreview type={type} name={name} reward={reward} rule={Number(rule)} />
+          <WalletPassPreview
+            content={buildPassContent({ ...buildDraft(), name: name.trim() || buildDraft().name, id: 'preview', businessId: '', status: 'draft', joinQrToken: null, createdAt: '', publishedAt: null, updatedAt: '' } as Program, null, data.business.name)}
+          />
         </div>
       </div>
     </AuthLayout>

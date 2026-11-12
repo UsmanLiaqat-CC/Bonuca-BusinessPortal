@@ -55,17 +55,17 @@ describe('program setup conditional fields (spec §4.2)', () => {
   it('stamp rules have an expiry date; the expiry toggle reveals days; the step validates required fields', async () => {
     const { user } = await toRules('stamp')
     expect(screen.getByLabelText(/Program expiry date/)).toBeInTheDocument()
-    const toggle = await screen.findByRole('switch', { name: 'Expiry Rule' })
-    expect(screen.queryByLabelText(/Expiry Rule \(days/)).toBeNull()
+    const toggle = await screen.findByRole('switch', { name: 'Stamp expiry' })
+    expect(screen.queryByLabelText(/Stamp expiry \(days/)).toBeNull()
     await user.click(toggle)
-    expect(screen.getByLabelText(/Expiry Rule \(days/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Stamp expiry \(days/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Next: Wallet design/ }))
     expect(await screen.findByText('Reward description is required.')).toBeInTheDocument()
   })
 
   it('points: fixed awarding reveals points per scan; live preview shows iPhone/Android and the sign-up page', async () => {
     const { user } = await toRules('points')
-    await user.selectOptions(await screen.findByLabelText(/Awarding Method/), 'fixed')
+    await user.selectOptions(await screen.findByLabelText(/How points are given/), 'fixed')
     expect(screen.getByLabelText(/Points per scan/)).toBeInTheDocument()
     const preview = screen.getByRole('region', { name: 'Live wallet preview' })
     expect(within(preview).getByRole('tab', { name: /iPhone/ })).toHaveAttribute('aria-selected', 'true')

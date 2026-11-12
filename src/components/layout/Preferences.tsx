@@ -1,4 +1,4 @@
-import { Monitor, Moon, Sun } from 'lucide-react'
+import { Moon, Sun } from 'lucide-react'
 import { LANGUAGES, useI18n } from '@/i18n'
 import { useTheme, type ThemePreference } from '@/state/theme'
 import type { LanguageCode } from '@/types/domain'
@@ -28,13 +28,12 @@ export function LanguageSelect({ onChange, compact }: { onChange?: (l: LanguageC
   )
 }
 
-const OPTIONS: { value: ThemePreference; icon: typeof Sun; key: 'theme.light' | 'theme.dark' | 'theme.system' }[] = [
+const OPTIONS: { value: ThemePreference; icon: typeof Sun; key: 'theme.light' | 'theme.dark' }[] = [
   { value: 'light', icon: Sun, key: 'theme.light' },
   { value: 'dark', icon: Moon, key: 'theme.dark' },
-  { value: 'system', icon: Monitor, key: 'theme.system' },
 ]
 
-/** Light / Dark / System switch (redesign icon segmented control with sliding thumb). */
+/** Light / Dark switch (redesign icon segmented control with sliding thumb). */
 export function ThemeToggle() {
   const { preference, setPreference } = useTheme()
   const { t } = useI18n()

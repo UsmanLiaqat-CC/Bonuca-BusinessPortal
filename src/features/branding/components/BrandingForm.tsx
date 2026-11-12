@@ -28,7 +28,7 @@ export function BrandingForm({ sections = ['logo', 'colors', 'font'] }: { sectio
   const font = FONTS.find((f) => f.value === b.font)!
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className={sections.includes('colors') ? 'grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]' : undefined}>
       <div className="flex flex-col gap-[18px]">
         {sections.includes('logo') && <ImageUpload label="Logo" value={b.logo} onChange={(logo) => setB({ ...b, logo })} />}
         {sections.includes('colors') && (
@@ -55,6 +55,7 @@ export function BrandingForm({ sections = ['logo', 'colors', 'font'] }: { sectio
           </GuardedButton>
         </div>
       </div>
+      {sections.includes('colors') && (
       <div className="flex flex-col gap-2 lg:sticky lg:top-24 lg:self-start">
       <div className="eyebrow mb-0 justify-center">Live preview</div>
       <div className="rounded-[20px] border border-line-strong p-5 shadow-[var(--shadow-card)] transition-colors" style={{ background: b.backgroundColor, fontFamily: font.stack }} aria-label="Branding preview">
@@ -68,6 +69,7 @@ export function BrandingForm({ sections = ['logo', 'colors', 'font'] }: { sectio
         <p className="mt-3 text-xs" style={{ color: b.secondaryColor }}>Preview of your business colours on customer-facing surfaces.</p>
       </div>
       </div>
+      )}
     </div>
   )
 }

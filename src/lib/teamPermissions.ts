@@ -38,8 +38,8 @@ export const TEAM_PERMISSIONS: { key: TeamPermission; tab: string; label: string
   { key: 'rewards', tab: 'Rewards', label: 'Manage rewards', level: 'edit' },
   { key: 'notifications', tab: 'Notifications', label: 'Manage notifications', level: 'edit' },
   { key: 'team', tab: 'Employees', label: 'Manage team members', level: 'edit' },
-  { key: 'settings', tab: 'Settings & Branding', label: 'Edit settings and branding', level: 'edit' },
-  { key: 'audit', tab: 'Settings & Branding', label: 'View audit', level: 'read' },
+  { key: 'settings', tab: 'Settings', label: 'Edit settings', level: 'edit' },
+  { key: 'audit', tab: 'Settings', label: 'View audit', level: 'read' },
 ]
 
 const STAFF: TeamPermission[] = ['scan', 'redeem']

@@ -23,17 +23,11 @@ test.describe('Phase 8 · insights, branding, subscription, settings', () => {
     await shot(page, 'p8-02-analytics')
   })
 
-  test('Branding: logo, primary/secondary/background, font; Bonuca tokens table', async ({ page }) => {
+  test('Branding section is gone: old URL lands on Settings → Logo; Design is its own Settings section', async ({ page }) => {
     await page.goto('/app/branding')
-    await page.getByLabel('Primary Color', { exact: true }).fill('#AA2200')
-    await page.getByLabel('Secondary Color', { exact: true }).fill('#222222')
-    await page.getByLabel('Background', { exact: true }).fill('#FFF8F0')
-    await expect(page.getByLabel('Font').locator('option')).toHaveText(['System', 'Serif', 'Rounded'])
-    await page.getByLabel('Font').selectOption('serif')
-    await page.getByRole('button', { name: 'Save' }).click()
-    await expect(page.getByText('Branding saved.')).toBeVisible()
-    for (const v of ['#F3F3F1', '#010414', '#0A0A0A', '#1747F8', '#2F5BFF', '#FFD43B']) await expect(page.getByText(v).first()).toBeVisible()
-    await expect(page.getByText(/Auto Branding/i)).toHaveCount(0)
+    await expect(page).toHaveURL(/\/app\/settings\/logo/)
+    await expect(page.getByLabel('Primary Color', { exact: true })).toHaveCount(0)
+    await expect(page.getByText('Bonuca platform colours')).toHaveCount(0)
     await shot(page, 'p8-03-branding')
   })
 

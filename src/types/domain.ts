@@ -45,7 +45,7 @@ export interface Invite {
 
 /* ------------------------------------------------------------------ Business (§1.4, §4.10, §4.12) */
 
-export const BUSINESS_CATEGORIES = ['cafe', 'restaurant', 'barber_shop', 'beauty_salon', 'bakery', 'other'] as const
+export const BUSINESS_CATEGORIES = ['cafe', 'restaurant', 'barber_shop', 'beauty_salon', 'bakery', 'florist', 'tattoo_studio', 'other'] as const
 export type BusinessCategory = (typeof BUSINESS_CATEGORIES)[number]
 
 export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
@@ -219,7 +219,7 @@ export interface SurpriseConfig {
   pool: string[]
 }
 
-export type StampIconPreset = 'coffee' | 'star' | 'heart' | 'scissors' | 'croissant' | 'check'
+export type StampIconPreset = 'coffee' | 'star' | 'heart' | 'scissors' | 'croissant' | 'check' | 'flower' | 'burger' | 'crown' | 'gift' | 'pizza' | 'cake' | 'icecream' | 'wine' | 'beer' | 'dumbbell' | 'paw' | 'sparkles'
 export type StampIcon = { kind: 'preset'; preset: StampIconPreset } | { kind: 'custom'; image: string }
 export type StampRewardType = 'free_item' | 'percent_discount' | 'fixed_discount' | 'custom'
 

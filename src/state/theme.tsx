@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 
-export type ThemePreference = 'system' | 'light' | 'dark'
+export type ThemePreference = 'light' | 'dark'
 const KEY = 'bonuca.ui.theme'
 
 interface ThemeValue {
@@ -18,25 +18,17 @@ function systemTheme(): 'light' | 'dark' {
 function readPreference(): ThemePreference {
   try {
     const v = localStorage.getItem(KEY)
-    return v === 'light' || v === 'dark' || v === 'system' ? v : 'system'
+    // Legacy 'system' value (removed option) falls back to the OS theme once.
+    return v === 'light' || v === 'dark' ? v : systemTheme()
   } catch {
-    return 'system'
+    return systemTheme()
   }
 }
 
 /** Light/Dark mode for the Bonuca dashboard chrome (spec §4.10). */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [preference, setPreferenceState] = useState<ThemePreference>(readPreference)
-  const [system, setSystem] = useState<'light' | 'dark'>(systemTheme)
-  const resolved = preference === 'system' ? system : preference
-
-  useEffect(() => {
-    const mq = window.matchMedia?.('(prefers-color-scheme: dark)')
-    if (!mq) return
-    const onChange = () => setSystem(mq.matches ? 'dark' : 'light')
-    mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
-  }, [])
+  const resolved = preference
 
   useEffect(() => {
     document.documentElement.dataset.theme = resolved

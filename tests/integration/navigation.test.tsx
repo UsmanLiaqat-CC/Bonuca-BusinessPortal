@@ -7,7 +7,7 @@ describe('role-aware navigation (spec §3, §4.1, §4.6)', () => {
     await renderApp('/app', { login: 'owner' })
     expect(await screen.findByRole('heading', { name: 'Dashboard', level: 1 })).toBeInTheDocument()
     const nav = screen.getAllByRole('navigation', { name: 'Main' })[0]!
-    for (const label of ['Dashboard', 'Loyalty Programs', 'QR Scanner', 'Customers', 'Employees', 'Notifications', 'Rewards', 'Analytics', 'Branding', 'Subscription & Billing', 'Settings']) {
+    for (const label of ['Dashboard', 'Loyalty Programs', 'QR Scanner', 'Customers', 'Employees', 'Notifications', 'Rewards', 'Analytics', 'Subscription & Billing', 'Settings']) {
       expect(within(nav).getByRole('link', { name: label })).toBeInTheDocument()
     }
     // The Wallet Cards tab was removed: each wallet card lives inside its loyalty program.
